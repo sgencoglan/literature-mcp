@@ -5,7 +5,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEST="$ROOT/packages/sciencedirect-meta/data/scimagojr_2024.csv.gz"
-URL="${SCIMAGO_URL:-https://raw.githubusercontent.com/WandLZhang/scimagojr_2024/main/scimagojr_2024.csv.gz}"
+URL="${SCIMAGO_URL:-https://raw.githubusercontent.com/WandLZhang/scimagojr_2024/main/scimagojr_2024.csv}"
 
 mkdir -p "$(dirname "$DEST")"
 
@@ -14,16 +14,24 @@ if [[ -s "$DEST" ]]; then
   exit 0
 fi
 
-echo "İndiriliyor: $URL"
-tmp="$(mktemp "$DEST.tmp.XXXXXX")"
-trap 'rm -f "$tmp"' EXIT
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
 
-if ! curl -fL --retry 3 --connect-timeout 20 -o "$tmp" "$URL"; then
+echo "İndiriliyor: $URL"
+raw="$tmpdir/scimago.csv"
+if ! curl -fL --retry 3 --connect-timeout 20 -o "$raw" "$URL"; then
   echo "İndirme başarısız. SCIMAGO_URL ile başka bir ayna/URL verin." >&2
   echo "Kaynak: https://www.scimagojr.com/journalrank.php" >&2
   exit 1
 fi
 
-gzip -t "$tmp"
-mv "$tmp" "$DEST"
+if [[ "$URL" == *.gz ]]; then
+  gzip -t "$raw"
+  cp "$raw" "$tmpdir/scimago.csv.gz"
+else
+  gzip -c "$raw" > "$tmpdir/scimago.csv.gz"
+  gzip -t "$tmpdir/scimago.csv.gz"
+fi
+
+mv "$tmpdir/scimago.csv.gz" "$DEST"
 echo "Yazıldı: $DEST"
