@@ -1431,7 +1431,7 @@ def analysis_updates(
         hint = (
             "Bu proje için analysis_updates dosyasını oluşturun."
             if project
-            else "Set ANALYSIS_UPDATES_JSON or restore data/analysis_updates.json."
+            else "Set ANALYSIS_UPDATES_JSON or add analysis_json to the project registry."
         )
         return _error("analysis updates file not found", path=str(path), hint=hint)
     try:
