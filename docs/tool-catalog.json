@@ -1,0 +1,919 @@
+{
+  "schema": 1,
+  "generated_at": "2026-10-20T06:23:41+00:00",
+  "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
+  "servers": {
+    "sciencedirect-meta": {
+      "tool_count": 19,
+      "tools": [
+        {
+          "name": "search_sciencedirect",
+          "description": "Search Elsevier/ScienceDirect-indexed articles without an Elsevier API key. Uses OpenAlex (Elsevier publisher filter) and resolves exact ScienceDirect PII links via Crossref when possible. Results also include priority-ordered links for Ovid LWW, ScienceDirect, SpringerLink, Wiley and Taylor & Francis.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Topic, title or keyword query."
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+              },
+              "year_from": {
+                "type": "integer",
+                "description": "Earliest publication year."
+              },
+              "year_to": {
+                "type": "integer",
+                "description": "Latest publication year."
+              },
+              "open_access_only": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
+          "name": "search_pubmed",
+          "description": "Search PubMed via NCBI E-utilities (no API key required). Returns abstracts, DOIs and PMIDs; Elsevier DOIs get a ScienceDirect DOI link.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
+          "name": "search_europepmc",
+          "description": "Search Europe PMC (no API key required). Returns abstracts, DOIs, PMIDs, citation counts and open-access PDF links.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
+          "name": "search_all",
+          "description": "Combined search across OpenAlex (all publishers), PubMed and Europe PMC. Deduplicates results and ranks links in this order: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis. Set priority_only=true to restrict results to these publishers.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "priority_only": {
+                "type": "boolean",
+                "default": false,
+                "description": "Only return records that have a real publisher link in the allowed_publishers set."
+              },
+              "allowed_publishers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ovid_lww",
+                    "sciencedirect",
+                    "springerlink",
+                    "wiley",
+                    "taylor_francis"
+                  ]
+                },
+                "description": "Publisher/source allowlist. Default: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis."
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
+          "name": "get_article",
+          "description": "Look up one article by DOI or PMID across OpenAlex and Europe PMC; returns metadata, abstract, citation count and priority-ordered publisher links.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "DOI or PMID value."
+              },
+              "id_type": {
+                "type": "string",
+                "enum": [
+                  "doi",
+                  "pmid"
+                ],
+                "default": "doi"
+              }
+            },
+            "required": [
+              "identifier"
+            ]
+          }
+        },
+        {
+          "name": "get_links",
+          "description": "Return priority-ordered links for one DOI or PMID: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis, then the DOI resolver. Also returns preferred_url and publisher_url.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "DOI or PMID value."
+              },
+              "id_type": {
+                "type": "string",
+                "enum": [
+                  "doi",
+                  "pmid"
+                ],
+                "default": "doi"
+              }
+            },
+            "required": [
+              "identifier"
+            ]
+          }
+        },
+        {
+          "name": "list_projects",
+          "description": "List registered literature projects (shared registry with the paperqa-local MCP). Each project is isolated: own PDF folder, manifest CSV and PaperQA2 index. Shows per-project PDF counts, detected DOIs, manifest status, and files not yet in the manifest.",
+          "input_schema": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        {
+          "name": "project_audit",
+          "description": "Audit one registered project's PDFs without mixing projects: per unique DOI returns metadata (OpenAlex/Europe PMC, Crossref fallback), database provenance (found_in), Crossref vs OpenAlex citation counts, SCImago quartile, and OpenAlex retraction flags. This is the project-scoped version of the Ek C style metrics table.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              },
+              "include_quartiles": {
+                "type": "boolean",
+                "default": true
+              },
+              "check_retractions": {
+                "type": "boolean",
+                "default": true
+              },
+              "max_dois": {
+                "type": "integer",
+                "default": 50,
+                "minimum": 1,
+                "maximum": 200
+              }
+            },
+            "required": [
+              "project"
+            ]
+          }
+        },
+        {
+          "name": "search_literature",
+          "description": "Find DOIs and metadata across OpenAlex, PubMed, Europe PMC and Crossref. By default only records with a real publisher link from the allowed set are returned (Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis). Adds local_pdf when a matching PDF is already available; pass project=... to check only that project's folder.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "openalex",
+                    "pubmed",
+                    "europepmc",
+                    "crossref"
+                  ]
+                },
+                "description": "Metadata sources to query. Default: all available sources."
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "priority_only": {
+                "type": "boolean",
+                "default": true
+              },
+              "allowed_publishers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ovid_lww",
+                    "sciencedirect",
+                    "springerlink",
+                    "wiley",
+                    "taylor_francis"
+                  ]
+                },
+                "description": "Publisher/source allowlist. Default: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis."
+              },
+              "include_local_pdf": {
+                "type": "boolean",
+                "default": true
+              },
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
+          "name": "deep_research",
+          "description": "Decompose a research question into facets (overview, reviews, prevalence, risk factors, interventions, qualitative) and run multi-source DOI searches. By default only allowed publisher records are returned. Pass subtopics to control the decomposition explicitly.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "question": {
+                "type": "string"
+              },
+              "subtopics": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "max_subtopics": {
+                "type": "integer",
+                "default": 5,
+                "minimum": 1,
+                "maximum": 8
+              },
+              "results_per_topic": {
+                "type": "integer",
+                "default": 5,
+                "minimum": 1,
+                "maximum": 20
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "openalex",
+                    "pubmed",
+                    "europepmc",
+                    "crossref"
+                  ]
+                },
+                "description": "Metadata sources to query. Default: all available sources."
+              },
+              "priority_only": {
+                "type": "boolean",
+                "default": true
+              },
+              "allowed_publishers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ovid_lww",
+                    "sciencedirect",
+                    "springerlink",
+                    "wiley",
+                    "taylor_francis"
+                  ]
+                },
+                "description": "Publisher/source allowlist. Default: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis."
+              }
+            },
+            "required": [
+              "question"
+            ]
+          }
+        },
+        {
+          "name": "verify_doi_and_publisher",
+          "description": "Verify a DOI in Crossref and via doi.org, identify the publisher, resolve the Elsevier PII when present, and return the ScienceDirect and priority links.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "doi": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "doi"
+            ]
+          }
+        },
+        {
+          "name": "doi_provenance",
+          "description": "Report which metadata databases index a DOI (Crossref, OpenAlex, Europe PMC, PubMed), including each database's record ID and title. Use this to audit where a selected DOI came from.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "doi": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "doi"
+            ]
+          }
+        },
+        {
+          "name": "read_paper",
+          "description": "Read a full-text PDF from the local library (matched by DOI or title) or from an explicit pdf_path. With no arguments, lists the local library. Pass project=... to search only that project's folder.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "DOI, PMID, or title (with id_type=title)."
+              },
+              "id_type": {
+                "type": "string",
+                "enum": [
+                  "doi",
+                  "pmid",
+                  "title"
+                ],
+                "default": "doi"
+              },
+              "pdf_path": {
+                "type": "string"
+              },
+              "max_chars": {
+                "type": "integer",
+                "default": 30000,
+                "minimum": 1000
+              },
+              "max_pages": {
+                "type": "integer",
+                "default": 40,
+                "minimum": 1
+              },
+              "page_start": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "page_end": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              }
+            }
+          }
+        },
+        {
+          "name": "compare_studies",
+          "description": "Build a methods/sample/results/limitations table for DOIs, PMIDs, or a query. Uses local full-text PDFs when available, otherwise abstracts. Pass project=... so full texts are only taken from that project.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "identifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "query": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "integer",
+                "default": 6,
+                "minimum": 1,
+                "maximum": 12
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "openalex",
+                    "pubmed",
+                    "europepmc",
+                    "crossref"
+                  ]
+                },
+                "description": "Metadata sources to query. Default: all available sources."
+              },
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              }
+            }
+          }
+        },
+        {
+          "name": "evidence_check",
+          "description": "Match claims against sentences in a local full-text PDF or abstract. Returns strong/moderate/weak/not_found verdicts and the best matching sentences. Pass project=... to restrict local PDF lookups to that project.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "claims": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "identifier": {
+                "type": "string"
+              },
+              "id_type": {
+                "type": "string",
+                "enum": [
+                  "doi",
+                  "pmid",
+                  "title"
+                ],
+                "default": "doi"
+              },
+              "pdf_path": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "top_k": {
+                "type": "integer",
+                "default": 3,
+                "minimum": 1,
+                "maximum": 10
+              },
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              }
+            },
+            "required": [
+              "claims"
+            ]
+          }
+        },
+        {
+          "name": "export_review",
+          "description": "Save a cited review as Markdown, CSV, or JSON inside REVIEW_OUTPUT_DIR. Accepts sections, references, and evidence-check claims.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "heading": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "content": {
+                "type": "string"
+              },
+              "references": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "claims": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "markdown",
+                  "md",
+                  "csv",
+                  "json"
+                ],
+                "default": "markdown"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "output_path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "title"
+            ]
+          }
+        },
+        {
+          "name": "journal_rank",
+          "description": "Look up SCImago Journal Rank 2024 Q1-Q4 quartiles for journal titles. Reads a local CSV; does not call external services at runtime.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "journals": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Journal titles, e.g. ['Journal of Example Work']."
+              },
+              "include_categories": {
+                "type": "boolean",
+                "default": true,
+                "description": "Include SCImago subject categories and areas."
+              }
+            },
+            "required": [
+              "journals"
+            ]
+          }
+        },
+        {
+          "name": "analysis_updates",
+          "description": "Return the saved full-text citation audit for the active project. Includes page-level full-text quotes, translations, constructed sentences, abstract-vs-full-text corrections, document-level citation metrics, the claim evidence matrix, the risk-of-bias assessment, the source budget, and an optional gap analysis. Filter by DOI, entry_id, or query.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "doi": {
+                "type": "string",
+                "description": "Optional DOI filter, e.g. 10.1111/bjep.12553."
+              },
+              "entry_id": {
+                "type": "integer",
+                "description": "Optional audit entry number (1-13)."
+              },
+              "query": {
+                "type": "string",
+                "description": "Optional case-insensitive search in headings, quotes, translations, notes, corrections, claim matrix, risk-of-bias records, source budget, and gap analysis."
+              },
+              "include_entries": {
+                "type": "boolean",
+                "default": true,
+                "description": "Include matching audit entries."
+              },
+              "include_corrections": {
+                "type": "boolean",
+                "default": true,
+                "description": "Include matching abstract-vs-full-text corrections."
+              },
+              "include_matrices": {
+                "type": "boolean",
+                "default": true,
+                "description": "Include claim_matrix, risk_of_bias, and source_budget."
+              },
+              "include_gap_analysis": {
+                "type": "boolean",
+                "default": true,
+                "description": "Include the optional gap analysis."
+              },
+              "project": {
+                "type": "string",
+                "description": "Registered project name; reads that project's own analysis_json file instead of the global audit."
+              }
+            }
+          }
+        },
+        {
+          "name": "library_status",
+          "description": "List PDFs in the local library with detected DOIs and titles. Pass project=... to scan only that registered project's folder.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              }
+            }
+          }
+        }
+      ]
+    },
+    "paperqa-local": {
+      "tool_count": 7,
+      "tools": [
+        {
+          "name": "paperqa_projects",
+          "description": "Kayıtlı projeleri durumlarıyla listeler (izole PDF klasörü + manifest + indeks).",
+          "input_schema": {
+            "properties": {},
+            "title": "paperqa_projectsArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_register_project",
+          "description": "Bir PDF klasörünü izole proje olarak kaydeder ve manifest CSV üretir.\n\n- DOI, dosya adından (``10.1007s...pdf`` gibi) veya ilk iki sayfadan algılanır.\n- Metadata Crossref (yedek: OpenAlex) ile zenginleştirilir; API anahtarı gerekmez.\n- Mevcut manifest ``refresh_manifest=True`` verilmedikçe korunur.\n- DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz\n  (``include_files_without_doi=True`` ile dahil edilir).\n- İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.\n",
+          "input_schema": {
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "paper_directory": {
+                "title": "Paper Directory",
+                "type": "string"
+              },
+              "title": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Title"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "include_subdirectories": {
+                "default": false,
+                "title": "Include Subdirectories",
+                "type": "boolean"
+              },
+              "include_files_without_doi": {
+                "default": false,
+                "title": "Include Files Without Doi",
+                "type": "boolean"
+              },
+              "refresh_manifest": {
+                "default": false,
+                "title": "Refresh Manifest",
+                "type": "boolean"
+              },
+              "enrich_metadata": {
+                "default": true,
+                "title": "Enrich Metadata",
+                "type": "boolean"
+              },
+              "index_directory": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Index Directory"
+              },
+              "index_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Index Name"
+              }
+            },
+            "required": [
+              "name",
+              "paper_directory"
+            ],
+            "title": "paperqa_register_projectArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_build_index",
+          "description": "Projenin indeksini manifest üyeliğine göre kurar/günceller.\n\n- İndekse yalnızca manifestteki dosyalar girer (klasör taraması değil).\n- ``rebuild=True`` proje indeks klasörünü silip sıfırdan kurar.\n- Diğer projelerin indekslerine dokunulmaz.\n",
+          "input_schema": {
+            "properties": {
+              "project": {
+                "title": "Project",
+                "type": "string"
+              },
+              "rebuild": {
+                "default": false,
+                "title": "Rebuild",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "project"
+            ],
+            "title": "paperqa_build_indexArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_status",
+          "description": "Bir projenin indeks durumunu (dosya, doküman, metin parçası) döndürür.",
+          "input_schema": {
+            "properties": {
+              "project": {
+                "title": "Project",
+                "type": "string"
+              }
+            },
+            "required": [
+              "project"
+            ],
+            "title": "paperqa_statusArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_search",
+          "description": "Proje içinde semantik arama (yalnızca o projenin indeksi; LLM çağrılmaz).\n\nKanıt ve sayfa aralığı bulmak için kullanın; önemli alıntıları\n``paperqa_read_pages`` ile doğrulayın.\n",
+          "input_schema": {
+            "properties": {
+              "project": {
+                "title": "Project",
+                "type": "string"
+              },
+              "query": {
+                "title": "Query",
+                "type": "string"
+              },
+              "k": {
+                "default": 6,
+                "title": "K",
+                "type": "integer"
+              },
+              "max_chars": {
+                "default": 1600,
+                "title": "Max Chars",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "project",
+              "query"
+            ],
+            "title": "paperqa_searchArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_read_pages",
+          "description": "Projedeki bir PDF'ten sayfa metni okur (DOI → manifest eşlemesi).\n\nSayfa numaraları 1 tabanlıdır. ``paperqa_search`` sonucundaki alıntıları\nbu araçla doğrulayın. DOI başka bir projede olsa bile burada bulunmaz.\n",
+          "input_schema": {
+            "properties": {
+              "project": {
+                "title": "Project",
+                "type": "string"
+              },
+              "doi": {
+                "title": "Doi",
+                "type": "string"
+              },
+              "page_start": {
+                "default": 1,
+                "title": "Page Start",
+                "type": "integer"
+              },
+              "page_end": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Page End"
+              },
+              "max_chars": {
+                "default": 12000,
+                "title": "Max Chars",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "project",
+              "doi"
+            ],
+            "title": "paperqa_read_pagesArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_ask",
+          "description": "Proje indeksi üzerinde yerel Qwen modeline soru sorar (taslak cevap).\n\nCPU'da yavaştır ve 1.5B model atıf hatası yapabilir. Cevabı taslak kabul\nedip her iddiayı ``paperqa_search`` veya ``paperqa_read_pages`` ile\ndoğrulayın.\n",
+          "input_schema": {
+            "properties": {
+              "project": {
+                "title": "Project",
+                "type": "string"
+              },
+              "question": {
+                "title": "Question",
+                "type": "string"
+              },
+              "evidence_k": {
+                "default": 3,
+                "title": "Evidence K",
+                "type": "integer"
+              },
+              "max_sources": {
+                "default": 3,
+                "title": "Max Sources",
+                "type": "integer"
+              },
+              "timeout_seconds": {
+                "default": 300,
+                "title": "Timeout Seconds",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "project",
+              "question"
+            ],
+            "title": "paperqa_askArguments",
+            "type": "object"
+          }
+        }
+      ]
+    }
+  },
+  "total_tools": 26
+}

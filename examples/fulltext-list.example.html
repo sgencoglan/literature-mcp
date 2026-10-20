@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Örnek Bölüm — Uzaktan Çalışma ve Çalışan Refahı — Fulltext listesi</title>
+<style>
+:root {
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --ink: #16212b;
+  --muted: #5b6b7b;
+  --line: #dbe2e9;
+  --accent: #0b5cad;
+  --accent-soft: #e7f0fa;
+  --red: #b3261e;
+  --green: #1e7d4f;
+  --amber: #9a6400;
+  --gray: #5f6b76;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+a { color: var(--accent); }
+.hero {
+  background: #0b2540;
+  color: #fff;
+  padding: 30px 22px 26px;
+}
+.hero .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+  opacity: .8;
+}
+.hero h1 { margin: 8px 0 6px; font-size: 26px; line-height: 1.25; }
+.hero p { margin: 0; max-width: 900px; opacity: .92; }
+.hero .meta { margin-top: 14px; font-size: 13px; opacity: .85; }
+main { max-width: 1400px; margin: 0 auto; padding: 20px 22px 40px; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.stat {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.stat .num { font-size: 24px; font-weight: 700; }
+.stat small { color: var(--muted); display: block; }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.toolbar .search { display: flex; gap: 8px; align-items: center; }
+.toolbar input[type="search"] {
+  min-width: 260px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  font: inherit;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+.table-wrap {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+table { width: 100%; border-collapse: collapse; min-width: 1080px; }
+thead th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  background: #f8fafc;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 10px;
+  white-space: nowrap;
+}
+tbody td { border-bottom: 1px solid var(--line); padding: 12px 10px; vertical-align: top; }
+tbody tr:hover { background: #fcfdff; }
+td.check { width: 42px; text-align: center; }
+td.check input { width: 18px; height: 18px; }
+td.num { width: 34px; color: var(--muted); }
+td.prio { width: 120px; }
+td.src { min-width: 340px; }
+td.journal { min-width: 170px; }
+td.cites { width: 70px; text-align: right; white-space: nowrap; }
+td.access { min-width: 120px; }
+td.links { min-width: 190px; white-space: nowrap; }
+.authors { font-size: 12.5px; color: var(--muted); }
+.title { font-weight: 600; margin: 2px 0 5px; }
+.rationale { font-size: 12.5px; color: var(--muted); }
+.muted { color: var(--muted); font-size: 12.5px; }
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.prio-a { background: #fde8e6; color: #9b1c13; }
+.prio-b { background: #fff4d6; color: #7a5200; }
+.prio-c { background: #edf1f5; color: var(--gray); }
+.oa { background: #e2f4ea; color: var(--green); }
+.closed { background: #f0f2f4; color: var(--gray); }
+.q1 { background: #e2f4ea; color: var(--green); }
+.q2 { background: #e7f0fa; color: var(--accent); }
+.q3 { background: #fff4d6; color: var(--amber); }
+.q4, .q-none { background: #f0f2f4; color: var(--gray); }
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.btn.doi { border-color: #b9d3ee; background: var(--accent-soft); }
+.btn.pub { background: #fff; }
+.btn.oa { border-color: #bfe3cd; background: #eefaf2; color: var(--green); }
+.notes {
+  margin: 14px 0 0;
+  background: #fffdf3;
+  border: 1px solid #f0e2b6;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+}
+.empty { text-align: center; color: var(--muted); padding: 26px; }
+footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 22px 36px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+@media print {
+  body { background: #fff; font-size: 10pt; }
+  .hero { background: #fff; color: #000; border-bottom: 2px solid #000; padding: 0 0 12px; }
+  .toolbar, .no-print { display: none !important; }
+  .stats { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat, .table-wrap { border: 1px solid #666; box-shadow: none; }
+  thead th { background: #eee; color: #000; }
+  table { min-width: 0; }
+  tbody td { padding: 6px 5px; }
+  tr { break-inside: avoid; }
+  .btn { border: 0; padding: 0; margin: 0 6px 0 0; background: none !important; color: #000; text-decoration: underline; }
+  a { color: #000; }
+  footer { padding-bottom: 0; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="eyebrow">Fulltext indirme listesi</div>
+  <h1>Örnek Bölüm — Uzaktan Çalışma ve Çalışan Refahı</h1>
+  <p>Uzaktan çalışmanın çalışan refahı ve iş-yaşam dengesi üzerindeki etkileri</p>
+  <div class="meta">Proje: <strong>ornek-proje</strong> &middot; Oluşturma: 2026-10-20 &middot; Hedef: 4 kaynak</div>
+</header>
+<main>
+  <section class="stats" aria-label="Özet">
+    <div class="stat"><span class="num">4</span><small>Toplam kaynak</small></div>
+    <div class="stat"><span class="num">2</span><small>Açık erişim</small></div>
+    <div class="stat"><span class="num">1</span><small>Q1 dergi</small></div>
+    <div class="stat"><span class="num" id="stat-done">0</span><small>İndirildi</small></div>
+    <div class="stat"><span class="num" id="stat-left">4</span><small>Kalan</small></div>
+  </section>
+  <section class="toolbar no-print">
+    <label class="search">Ara
+      <input type="search" id="filter" placeholder="Başlık, yazar, dergi, DOI…" autocomplete="off">
+    </label>
+    <div class="actions">
+      <button type="button" id="print">Yazdır / PDF</button>
+      <button type="button" id="clear">İşaretleri temizle</button>
+    </div>
+  </section>
+  <div class="table-wrap">
+    <table id="sources">
+      <thead>
+        <tr>
+          <th scope="col">İndirildi</th>
+          <th scope="col">#</th>
+          <th scope="col">Öncelik</th>
+          <th scope="col">Kaynak</th>
+          <th scope="col">Dergi / Q</th>
+          <th scope="col">Atıf</th>
+          <th scope="col">Erişim</th>
+          <th scope="col">Linkler</th>
+        </tr>
+      </thead>
+      <tbody>
+
+      <tr>
+        <td class="check">
+          <input type="checkbox" class="dl" data-doi="10.5555/example.2026.001" aria-label="Uzaktan çalışma ve çalışan refahı: sistematik derleme — indirildi">
+        </td>
+        <td class="num">1</td>
+        <td class="prio"><span class="badge prio-a">A · Öncelikli</span></td>
+        <td class="src">
+          <div class="authors">Örnek, A.; Demo, B.; Test, C. (2026)</div>
+          <div class="title">Uzaktan çalışma ve çalışan refahı: sistematik derleme</div>
+          <div class="rationale">Uzaktan çalışma ile refah arasındaki ilişkiyi doğrudan sentezliyor.</div>
+        </td>
+        <td class="journal">
+          <div>Journal of Example Work</div>
+          <div><span class="badge q1">Q1</span></div>
+        </td>
+        <td class="cites">12</td>
+        <td class="access">
+          <div><span class="badge oa">OA</span></div>
+          <div class="muted">Açık erişim</div>
+        </td>
+        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2026.001" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://www.sciencedirect.com/science/article/pii/EXAMPLE0001" target="_blank" rel="noopener">ScienceDirect</a> <a class="btn oa" href="https://example.org/oa/example-0001.pdf" target="_blank" rel="noopener">OA PDF</a></td>
+      </tr>
+
+      <tr>
+        <td class="check">
+          <input type="checkbox" class="dl" data-doi="10.5555/example.2025.002" aria-label="Hibrit çalışma düzenlerinde iş-yaşam dengesi: boylamsal bulgular — indirildi">
+        </td>
+        <td class="num">2</td>
+        <td class="prio"><span class="badge prio-a">A · Öncelikli</span></td>
+        <td class="src">
+          <div class="authors">Demo, B.; Örnek, A. (2025)</div>
+          <div class="title">Hibrit çalışma düzenlerinde iş-yaşam dengesi: boylamsal bulgular</div>
+          <div class="rationale">Hibrit düzenlerde zaman içindeki değişimi boylamsal veriyle gösteriyor.</div>
+        </td>
+        <td class="journal">
+          <div>Example Journal of Organizational Behavior</div>
+          <div><span class="badge q2">Q2</span></div>
+        </td>
+        <td class="cites">34</td>
+        <td class="access">
+          <div><span class="badge closed">Kapalı</span></div>
+          <div class="muted">Kurum erişimi</div>
+        </td>
+        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2025.002" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://link.springer.com/article/10.5555/example.2025.002" target="_blank" rel="noopener">SpringerLink</a></td>
+      </tr>
+
+      <tr>
+        <td class="check">
+          <input type="checkbox" class="dl" data-doi="10.5555/example.2024.003" aria-label="Uzaktan çalışmada sınır yönetimi ve tükenmişlik — indirildi">
+        </td>
+        <td class="num">3</td>
+        <td class="prio"><span class="badge prio-b">B · Güçlü ikinci</span></td>
+        <td class="src">
+          <div class="authors">Test, C.; Örnek, A. (2024)</div>
+          <div class="title">Uzaktan çalışmada sınır yönetimi ve tükenmişlik</div>
+          <div class="rationale">Sınır yönetimi mekanizması için nitel bağlam sağlıyor.</div>
+        </td>
+        <td class="journal">
+          <div>Example Journal of Occupational Health</div>
+          <div><span class="badge q3">Q3</span></div>
+        </td>
+        <td class="cites">7</td>
+        <td class="access">
+          <div><span class="badge closed">Kapalı</span></div>
+          <div class="muted">Kurum erişimi</div>
+        </td>
+        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2024.003" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://onlinelibrary.wiley.com/doi/10.5555/example.2024.003" target="_blank" rel="noopener">Wiley</a></td>
+      </tr>
+
+      <tr>
+        <td class="check">
+          <input type="checkbox" class="dl" data-doi="10.5555/example.2023.004" aria-label="Çalışan refahı için örgütsel destek: kavramsal bir çerçeve — indirildi">
+        </td>
+        <td class="num">4</td>
+        <td class="prio"><span class="badge prio-c">C · Yedek / bağlam</span></td>
+        <td class="src">
+          <div class="authors">Demo, B.; Test, C. (2023)</div>
+          <div class="title">Çalışan refahı için örgütsel destek: kavramsal bir çerçeve</div>
+          <div class="rationale">Kavramsal çerçeve; doğrudan veri değil, bağlam ve tanım desteği.</div>
+        </td>
+        <td class="journal">
+          <div>Example Review of Management</div>
+          <div><span class="badge q-none">-</span></div>
+        </td>
+        <td class="cites">—</td>
+        <td class="access">
+          <div><span class="badge oa">OA</span></div>
+          <div class="muted">Açık erişim</div>
+        </td>
+        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2023.004" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://www.tandfonline.com/doi/full/10.5555/example.2023.004" target="_blank" rel="noopener">Taylor &amp; Francis</a> <a class="btn oa" href="https://example.org/oa/example-0004.pdf" target="_blank" rel="noopener">OA PDF</a></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" id="empty" hidden>Filtreye uyan kayıt yok.</p>
+<p class="notes"><strong>Not:</strong> Bu dosya yalnızca biçim örneğidir. Kayıtlar kurgusaldır; gerçek DOI veya yayıncı sayfası içermez. Kendi adaylarınızla değiştirin.</p>
+</main>
+<footer>
+  Bu liste yalnızca DOI ve yayıncı sayfası bağlantıları içerir; PDF indirmez, ödeme duvarını veya erişim kontrolünü aşmaz.
+  Tam metinleri kendi kurum hesabınızdan indirip proje klasörüne koyun. "İndirildi" işaretleri bu tarayıcıda saklanır.
+</footer>
+<script>
+const PROJECT = "ornek-proje";
+const STORAGE_KEY = "fulltext-downloaded:" + PROJECT;
+const boxes = Array.from(document.querySelectorAll("input.dl"));
+const rows = Array.from(document.querySelectorAll("#sources tbody tr"));
+const filter = document.getElementById("filter");
+const empty = document.getElementById("empty");
+const doneEl = document.getElementById("stat-done");
+const leftEl = document.getElementById("stat-left");
+
+function readState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch (err) {
+    return new Set();
+  }
+}
+
+function writeState() {
+  try {
+    const done = boxes.filter(b => b.checked).map(b => b.dataset.doi);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(done));
+  } catch (err) {
+    /* localStorage kapalıysa sessizce devam et */
+  }
+  updateStats();
+}
+
+function updateStats() {
+  const done = boxes.filter(b => b.checked).length;
+  doneEl.textContent = String(done);
+  leftEl.textContent = String(boxes.length - done);
+}
+
+function applyFilter() {
+  const q = (filter.value || "").toLocaleLowerCase("tr");
+  let visible = 0;
+  rows.forEach(row => {
+    const show = !q || row.textContent.toLocaleLowerCase("tr").includes(q);
+    row.hidden = !show;
+    if (show) visible += 1;
+  });
+  empty.hidden = visible !== 0;
+}
+
+boxes.forEach(box => box.addEventListener("change", writeState));
+if (filter) filter.addEventListener("input", applyFilter);
+document.getElementById("print").addEventListener("click", () => window.print());
+document.getElementById("clear").addEventListener("click", () => {
+  if (!boxes.some(b => b.checked)) return;
+  if (!window.confirm("Tüm indirildi işaretleri temizlensin mi?")) return;
+  boxes.forEach(box => { box.checked = false; });
+  writeState();
+});
+
+const saved = readState();
+boxes.forEach(box => { box.checked = saved.has(box.dataset.doi); });
+updateStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "description": "Example registry for literature-mcp. Copy to ~/.literature-mcp/projects.json and edit the paths.",
+  "projects": {
+    "example-project": {
+      "title": "Example literature project",
+      "description": "Replace with your own project. Keep every project isolated.",
+      "paper_directory": "~/Documents/papers/example",
+      "include_subdirectories": false,
+      "manifest": "~/.literature-mcp/projects/example-project/manifest.csv",
+      "index_directory": "~/.literature-mcp/indexes",
+      "index_name": "example-project",
+      "output_directory": "~/.literature-mcp/outputs/example-project",
+      "analysis_json": null
+    }
+  }
+}

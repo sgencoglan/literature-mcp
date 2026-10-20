@@ -1,0 +1,13 @@
+{
+  "id": "D1",
+  "location": "Giriş, 2. paragraf",
+  "author_sentence": "Uzaktan çalışma çalışan refahını her durumda artırmaktadır.",
+  "source_sentence": "Remote work was associated with higher autonomy, but the evidence for wellbeing outcomes was mixed and depended on boundary management.",
+  "source_translation": "Uzaktan çalışma daha yüksek özerklikle ilişkilendirildi; ancak refah sonuçlarına ilişkin kanıtlar karışıktı ve sınır yönetimine bağlıydı.",
+  "source_doi": "10.5555/example.2026.001",
+  "source_page": 4,
+  "rewritten_sentence": "Uzaktan çalışma çalışanlara daha fazla özerklik sağlayabilir; ancak refah üzerindeki etkisi koşullara ve sınır yönetimine bağlı olarak değişmektedir.",
+  "note": "Yazar cümlesi koşulsuz bir artış iddiası içeriyor. Kaynak yalnızca özerklik artışını ve karışık refah kanıtını destekliyor.",
+  "evidence_status": "partially_supported",
+  "source_url": "https://doi.org/10.5555/example.2026.001"
+}

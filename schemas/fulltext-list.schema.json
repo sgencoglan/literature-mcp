@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/literature-mcp/schemas/fulltext-list.schema.json",
+  "title": "Fulltext indirme listesi",
+  "description": "Görev 1 adım 5 çıktısı. scripts/build_fulltext_list.py bu dosyayı HTML'e çevirir.",
+  "type": "object",
+  "required": ["project", "title", "query", "candidates"],
+  "properties": {
+    "project": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO 8601 tarih veya tarih-saat."
+    },
+    "target_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "notes": {
+      "type": "string",
+      "description": "Seçim ölçütleri, dışlananlar veya diğer bağlam."
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": [
+        "doi",
+        "title",
+        "authors",
+        "year",
+        "journal",
+        "publisher",
+        "priority",
+        "rationale"
+      ],
+      "properties": {
+        "doi": {
+          "type": "string",
+          "pattern": "^10\\.",
+          "description": "DOI, ön ek olmadan (ör. 10.1111/josh.13316)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authors": {
+          "type": "string",
+          "description": "Yazar, A.; Yazar, B. biçimi."
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 1800,
+          "maximum": 2100
+        },
+        "journal": {
+          "type": "string"
+        },
+        "quartile": {
+          "enum": ["Q1", "Q2", "Q3", "Q4", "-"]
+        },
+        "citations": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "open_access": {
+          "type": "boolean"
+        },
+        "publisher": {
+          "enum": [
+            "Ovid LWW",
+            "ScienceDirect",
+            "SpringerLink",
+            "Wiley",
+            "Taylor & Francis",
+            "Diğer"
+          ]
+        },
+        "publisher_url": {
+          "type": ["string", "null"]
+        },
+        "oa_pdf_url": {
+          "type": ["string", "null"]
+        },
+        "priority": {
+          "enum": ["A", "B", "C"],
+          "description": "A = vazgeçilmez, B = güçlü ikinci halka, C = yedek/bağlam."
+        },
+        "access": {
+          "type": "string",
+          "description": "Açık erişim, kurum erişimi, erişim yok vb."
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

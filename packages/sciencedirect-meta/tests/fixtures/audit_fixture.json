@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "revision": "test-audit-v1",
+  "matrix_revision": "test-matrix-v1",
+  "entry_format": "synthetic-test-fixture",
+  "topic": "Example workplace wellbeing",
+  "generated_at": "2026-10-20T00:00:00Z",
+  "source_policy": "Synthetic fixture; not a real literature audit.",
+  "entries": [
+    {
+      "id": 1,
+      "doi": "10.5555/example.2026.001",
+      "citation": "Example et al., 2026, s. 4",
+      "constructed_sentence": "Remote work may support wellbeing through greater autonomy.",
+      "full_text_evidence": [
+        {
+          "original": "Remote work was associated with higher autonomy, but the evidence for wellbeing outcomes was mixed.",
+          "turkish": "Uzaktan çalışma daha yüksek özerklikle ilişkilendirildi; ancak refah sonuçlarına ilişkin kanıtlar karışıktı."
+        }
+      ],
+      "notes": "Synthetic evidence for tests."
+    }
+  ],
+  "documents": [
+    {
+      "doi": "10.5555/example.2026.001",
+      "authors": "Example, A.; Demo, B.",
+      "journal": "Journal of Example Work",
+      "quartile": "Q1"
+    }
+  ],
+  "corrections": [
+    {
+      "doi": "10.5555/example.2026.001",
+      "author_year": "Example et al., 2026",
+      "abstract_claim": "Remote work improves wellbeing.",
+      "full_text_finding": "Evidence is mixed and depends on boundary management.",
+      "action": "Rewrite the claim as conditional."
+    }
+  ],
+  "claim_matrix": [
+    {
+      "id": 1,
+      "doi": "10.5555/example.2026.001",
+      "paragraph": "Giriş, 2. paragraf",
+      "citation": "Example et al., 2026, s. 4",
+      "claim": "Remote work improves wellbeing in all cases.",
+      "key_evidence": "wellbeing evidence was mixed",
+      "evidence_type": "full_text",
+      "support": "partial",
+      "strength": "Orta",
+      "decision": "revise"
+    }
+  ],
+  "risk_of_bias": [
+    {
+      "doi": "10.5555/example.2026.001",
+      "study": "Example et al., 2026",
+      "design": "Systematic review",
+      "strengths": "Synthesizes multiple studies.",
+      "limitations": "Heterogeneous outcomes.",
+      "overall": "Orta",
+      "chapter_implication": "Sonuçlar tek bir bağlama genellenemez."
+    }
+  ],
+  "source_budget": [
+    {
+      "level": "Giriş",
+      "words": "500",
+      "ideal_sources": "2-3",
+      "max_sources": "4",
+      "note": "Synthetic budget."
+    }
+  ],
+  "gap_analysis": {
+    "comparison": [
+      {
+        "capability": "Local evidence check",
+        "reference": "Not covered",
+        "local": "Available",
+        "gap": "Page-level verification",
+        "chapter_relevance": "High"
+      }
+    ],
+    "chapter_improvements": [
+      {
+        "priority": "High",
+        "improvement": "Make causal claims conditional.",
+        "status": "Open",
+        "detail": "Use the full-text finding."
+      }
+    ]
+  }
+}

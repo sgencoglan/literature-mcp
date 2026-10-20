@@ -1,0 +1,32 @@
+{
+  "mcp": {
+    "servers": {
+      "sciencedirect-meta": {
+        "type": "local",
+        "command": [
+          "/path/to/literature-mcp/.venv/bin/sciencedirect-meta-mcp"
+        ],
+        "environment": {
+          "LIT_PROJECTS_REGISTRY": "/home/you/.literature-mcp/projects.json",
+          "PAPER_LIBRARY_DIR": "/home/you/Documents/papers",
+          "REVIEW_OUTPUT_DIR": "/home/you/Documents/reviews",
+          "JOURNAL_RANK_CSV": "/path/to/literature-mcp/packages/sciencedirect-meta/data/scimagojr_2024.csv.gz",
+          "CROSSREF_MAILTO": "you@example.org"
+        }
+      },
+      "paperqa-local": {
+        "type": "local",
+        "command": [
+          "/path/to/literature-mcp/.venv/bin/python",
+          "/path/to/literature-mcp/packages/paperqa-local/paperqa_mcp.py"
+        ],
+        "environment": {
+          "LIT_PROJECTS_REGISTRY": "/home/you/.literature-mcp/projects.json",
+          "PAPERQA_INDEX_ROOT": "/home/you/.literature-mcp/indexes",
+          "PAPERQA_PROJECTS_ROOT": "/home/you/.literature-mcp/projects",
+          "CROSSREF_MAILTO": "you@example.org"
+        }
+      }
+    }
+  }
+}

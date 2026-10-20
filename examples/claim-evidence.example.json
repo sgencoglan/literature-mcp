@@ -1,0 +1,12 @@
+{
+  "claim_id": "C1",
+  "claim": "Uzaktan çalışma çalışan refahını her durumda artırır.",
+  "source_doi": "10.5555/example.2026.001",
+  "source_page": 4,
+  "evidence_quote": "Remote work was associated with higher autonomy, but the evidence for wellbeing outcomes was mixed and depended on boundary management.",
+  "evidence_translation": "Uzaktan çalışma daha yüksek özerklikle ilişkilendirildi; ancak refah sonuçlarına ilişkin kanıtlar karışıktı ve sınır yönetimine bağlıydı.",
+  "support": "partial",
+  "strength": "moderate",
+  "decision": "revise",
+  "note": "Özerklik artışı destekleniyor; koşulsuz refah artışı desteklenmiyor. Cümle koşullu hâle getirilmeli."
+}

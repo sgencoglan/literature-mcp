@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/literature-mcp/schemas/claim-evidence.schema.json",
+  "title": "İddia–kanıt matrisi satırı",
+  "description": "Görev 2 Ek 2: her iddia için kaynak, sayfa, kısa kanıt ve karar.",
+  "type": "object",
+  "required": [
+    "claim_id",
+    "claim",
+    "source_doi",
+    "source_page",
+    "evidence_quote",
+    "evidence_translation",
+    "support",
+    "strength",
+    "decision"
+  ],
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "pattern": "^C[0-9]+[a-z]?$",
+      "description": "C1, C2a, C2b, C3, ..."
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_doi": {
+      "type": "string",
+      "pattern": "^10\\."
+    },
+    "source_page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "evidence_quote": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Kısa, birebir alıntı."
+    },
+    "evidence_translation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "support": {
+      "enum": ["full", "partial", "none", "contradicts"]
+    },
+    "strength": {
+      "enum": ["strong", "moderate", "weak"]
+    },
+    "decision": {
+      "enum": ["keep", "revise", "delete", "add_source"]
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

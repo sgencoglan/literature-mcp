@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/literature-mcp/schemas/change-card.schema.json",
+  "title": "Düzeltme kartı",
+  "description": "Görev 2 çıktısı: yazar cümlesi → kaynak cümlesi → Türkçesi → yeniden yazılan cümle → not.",
+  "type": "object",
+  "required": [
+    "id",
+    "location",
+    "author_sentence",
+    "source_sentence",
+    "source_translation",
+    "source_doi",
+    "source_page",
+    "rewritten_sentence",
+    "note",
+    "evidence_status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^D[0-9]+$",
+      "description": "D1, D2, ..."
+    },
+    "location": {
+      "type": "string",
+      "description": "Bölüm, paragraf veya cümle konumu."
+    },
+    "author_sentence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Yazarın özgün cümlesi."
+    },
+    "source_sentence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "PDF'ten birebir alıntı; özet değil."
+    },
+    "source_translation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Kaynak cümlesinin Türkçesi; yorumsuz."
+    },
+    "source_doi": {
+      "type": "string",
+      "pattern": "^10\\."
+    },
+    "source_page": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1 tabanlı PDF sayfa numarası."
+    },
+    "rewritten_sentence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Kanıta uygun yeniden yazım; HTML'de kırmızı."
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Gerekçe, sınırlılık, dikkat."
+    },
+    "evidence_status": {
+      "enum": [
+        "supported",
+        "partially_supported",
+        "contradicted",
+        "not_found"
+      ]
+    },
+    "source_url": {
+      "type": "string",
+      "description": "Yalnızca https://doi.org/... biçimi."
+    },
+    "reviewer_note": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}
