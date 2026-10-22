@@ -74,7 +74,9 @@ gözden geçirilmiş olması gerekir.
 - Yazdırma: kırmızı zemin korunur, kartlar sayfa ortasında bölünmez.
 
 Tasarım [`packages/report-kit/src/report_kit/templates/chapter-report.css`](../packages/report-kit/src/report_kit/templates/chapter-report.css)
-içinde tek kaynaktır. Rapor üreticisi bu dosyayı gömülü CSS olarak yazar.
+içinde tek kaynaktır. Rapor üreticisi bu dosyayı gömülü CSS olarak yazar. b1
+raporunun mevcut CSS kuralları birebir korunur; yalnızca tablo sarmalayıcı,
+footer, dar ekran ve yazdırma için ek kurallar eklenmiştir.
 
 ## Temizlik
 
