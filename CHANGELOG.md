@@ -1,5 +1,20 @@
 # Değişiklik Günlüğü
 
+## v2.1.0 — 2026-10-22
+
+### Eklendi
+
+- `chapter-report --markdown`: HTML ile aynı veriden üretilen düzenleme katmanı.
+- Markdown çıktısı manifestte `markdown` türüyle izlenir; `--cleanup intermediate`
+  HTML ve Markdown'ı korur, yalnızca CSV/JSON ara dosyalarını siler.
+- Silinmiş manifest dosyaları temizlikte hata vermek yerine atlanır.
+
+### Değişti
+
+- Örnek rapor `examples/chapter-report.example.md` ile genişletildi.
+- README, output-spec, report-standard, workflows ve AGENTS Markdown eşlik
+  dosyasına göre güncellendi.
+
 ## v2.0.0 — 2026-10-22
 
 ### Eklendi

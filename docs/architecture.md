@@ -1,6 +1,6 @@
 # Mimari
 
-Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırlarını tanımlar. İnsanlar için özet: iki MCP sunucusu, ortak bir proje kaydı ve dosya tabanlı çıktılar.
+Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırlarını tanımlar. İnsanlar için özet: iki MCP sunucusu, ortak bir proje kaydı, altın standart rapor üreteci ve dosya tabanlı çıktılar.
 
 ## Bileşenler
 

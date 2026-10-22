@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "packages" / "report-kit" / "src"))
 
 from report_kit.cleanup import CleanupError, cleanup_manifest, write_manifest  # noqa: E402
+from report_kit.markdown import render_markdown  # noqa: E402
 from report_kit.render import render_report  # noqa: E402
 from report_kit.validate import validate_data, validate_html  # noqa: E402
 
@@ -49,6 +50,16 @@ class RenderTests(unittest.TestCase):
         html = render_report(data)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
         self.assertNotIn("<script>alert(1)</script>", html)
+
+    def test_markdown_has_same_sections(self) -> None:
+        markdown = render_markdown(example_data())
+        self.assertIn("# 1. Giriş", markdown)
+        self.assertIn("## Ek 1 — Değişikliklerin Kaynak Cümleleriyle Karşılaştırması", markdown)
+        self.assertIn("## Ek 2 — Kaynak Denetimi ve İddia–Kanıt Matrisi", markdown)
+        self.assertIn("| # | Kaynak | DOI |", markdown)
+        self.assertIn("https://doi.org/10.5555/ornek.2024.001", markdown)
+        self.assertNotIn("file://", markdown)
+        self.assertNotIn("/home/", markdown)
 
 
 class ValidationTests(unittest.TestCase):
@@ -104,6 +115,23 @@ class CleanupTests(unittest.TestCase):
             self.assertTrue(unrelated.exists())
             self.assertFalse(csv.exists())
 
+    def test_intermediate_cleanup_keeps_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            html = root / "05_bolum_raporu.html"
+            md = root / "05_bolum_raporu.md"
+            csv = root / "ara.csv"
+            html.write_text("<html></html>", encoding="utf-8")
+            md.write_text("# rapor", encoding="utf-8")
+            csv.write_text("x", encoding="utf-8")
+            manifest = root / "manifest.json"
+            write_manifest(manifest, "test", [(html, "html"), (md, "markdown"), (csv, "intermediate")])
+            with redirect_stdout(io.StringIO()):
+                cleanup_manifest(manifest, scope="intermediate", yes=True)
+            self.assertTrue(html.exists())
+            self.assertTrue(md.exists())
+            self.assertFalse(csv.exists())
+
     def test_all_cleanup_removes_html_but_keeps_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -143,6 +171,18 @@ class CleanupTests(unittest.TestCase):
             with self.assertRaises(CleanupError):
                 cleanup_manifest(manifest, scope="intermediate", yes=True)
             self.assertTrue(outside.exists())
+
+    def test_missing_manifest_file_is_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            csv = root / "ara.csv"
+            csv.write_text("x", encoding="utf-8")
+            manifest = root / "manifest.json"
+            write_manifest(manifest, "test", [(csv, "intermediate")])
+            csv.unlink()
+            with redirect_stdout(io.StringIO()):
+                deleted = cleanup_manifest(manifest, scope="intermediate", yes=True)
+            self.assertEqual(deleted, [])
 
     def test_dry_run_does_not_delete(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

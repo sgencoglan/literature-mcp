@@ -144,8 +144,8 @@ def cleanup_manifest(
 ) -> list[Path]:
     """Delete generated files listed in a manifest.
 
-    ``scope='intermediate'`` keeps HTML files; ``scope='all'`` also removes the
-    HTML report. The manifest itself is kept by default.
+    ``scope='intermediate'`` keeps HTML and Markdown deliverables; ``scope='all'``
+    also removes them. The manifest itself is kept by default.
     """
     if scope not in {"intermediate", "all"}:
         raise CleanupError("scope 'intermediate' veya 'all' olmalı")
@@ -160,10 +160,11 @@ def cleanup_manifest(
             continue
         if entry.kind == "manifest":
             continue
-        if scope == "intermediate" and entry.kind == "html":
+        if scope == "intermediate" and entry.kind in {"html", "markdown"}:
             continue
         if not entry.path.exists():
-            raise CleanupError(f"Manifestteki dosya bulunamadı: {entry.path}")
+            print(f"UYARI: manifestteki dosya zaten yok, atlandı: {entry.path}")
+            continue
         if not entry.path.is_file():
             raise CleanupError(f"Manifest kaydı dosya değil: {entry.path}")
         if entry.sha256 and not force:
@@ -173,7 +174,12 @@ def cleanup_manifest(
                     f"Dosya manifestten sonra değişmiş: {entry.path} "
                     "(yine de silmek için --force kullanın)"
                 )
-        selected.append((entry, "HTML" if entry.kind == "html" else "ara dosya"))
+        selected.append(
+            (
+                entry,
+                "HTML" if entry.kind == "html" else "Markdown" if entry.kind == "markdown" else "ara dosya",
+            )
+        )
 
     if not selected:
         print("Silinecek dosya yok.")

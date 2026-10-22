@@ -23,10 +23,12 @@ python -m pip install -e packages/report-kit
 chapter-report build examples/chapter-report.example.json --check
 
 # HTML üret
-chapter-report build rapor.json -o 05_bolum_raporu.html
+chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md
 
 # Üret + ara dosyaları manifest üzerinden temizleme seçeneği
 chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md \
   --artifact 02_degisiklik_kartlari.json \
   --artifact 03_iddia_kanit_matrisi.csv \
   --cleanup ask
@@ -38,7 +40,7 @@ chapter-report build rapor.json -o 05_bolum_raporu.html \
 |---|---|
 | `keep` | Hiçbir şey silmez (varsayılan). |
 | `ask` | Üretim sonunda onay sorar; terminal yoksa silmez. |
-| `intermediate` | HTML dışındaki manifest kayıtlarını siler. |
+| `intermediate` | HTML ve Markdown dışındaki manifest kayıtlarını siler. |
 | `all` | Manifestteki tüm üretilmiş dosyaları siler; manifest kalır. |
 
 Silme yalnızca `05_bolum_raporu.manifest.json` içinde listelenen, proje klasörü

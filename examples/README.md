@@ -10,6 +10,7 @@ biçimini göstermektir.
 | `change-card.example.json` | `schemas/change-card.schema.json` |
 | `claim-evidence.example.json` | `schemas/claim-evidence.schema.json` |
 | `chapter-report.example.json` | `schemas/chapter-report.schema.json` |
+| `chapter-report.example.html` / `.md` | Aynı veriden üretilen örnek çıktılar |
 | `projects.example.json` | Proje kaydı (şema dışı örnek) |
 
 HTML örneğini yeniden üretmek için:
@@ -24,5 +25,6 @@ Altın standart bölüm raporu örneği:
 
 ```bash
 .venv/bin/chapter-report build examples/chapter-report.example.json \
-  -o examples/chapter-report.example.html --force
+  -o examples/chapter-report.example.html \
+  --markdown examples/chapter-report.example.md --force
 ```

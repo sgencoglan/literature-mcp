@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .cleanup import CleanupError, cleanup_manifest, write_manifest
+from .markdown import render_markdown
 from .render import render_report
 from .validate import (
     ValidationResult,
@@ -79,8 +80,22 @@ def _cmd_build(args: argparse.Namespace) -> int:
     output.write_text(html_text, encoding="utf-8")
     print(f"HTML yazıldı: {output} ({len(html_text.encode('utf-8'))} bayt)")
 
-    manifest = Path(args.manifest) if args.manifest else output.with_name(output.stem + ".manifest.json")
     files: list[tuple[str | Path, str]] = [(output, "html")]
+    if args.markdown:
+        markdown_path = Path(args.markdown)
+        if markdown_path.exists() and not args.force:
+            print(
+                f"HATA: Markdown çıktısı zaten var: {markdown_path} (üzerine yazmak için --force)",
+                file=sys.stderr,
+            )
+            return 2
+        markdown_path.parent.mkdir(parents=True, exist_ok=True)
+        markdown_text = render_markdown(data)
+        markdown_path.write_text(markdown_text, encoding="utf-8")
+        print(f"Markdown yazıldı: {markdown_path} ({len(markdown_text.encode('utf-8'))} bayt)")
+        files.append((markdown_path, "markdown"))
+
+    manifest = Path(args.manifest) if args.manifest else output.with_name(output.stem + ".manifest.json")
     for raw in args.artifact or []:
         for part in str(raw).split(","):
             part = part.strip()
@@ -148,6 +163,7 @@ def build_parser() -> argparse.ArgumentParser:
     build = sub.add_parser("build", help="JSON verisinden HTML rapor üret")
     build.add_argument("input", help="Rapor JSON dosyası")
     build.add_argument("-o", "--output", help="Çıktı HTML dosyası")
+    build.add_argument("--markdown", help="Opsiyonel Markdown çıktısı (düzenleme katmanı)")
     build.add_argument("--manifest", help="Manifest yolu (varsayılan: <html>.manifest.json)")
     build.add_argument("--artifact", action="append", help="Manifeste eklenecek ara dosya; birden çok kez veya virgülle")
     build.add_argument("--schema", help="JSON Schema yolu")

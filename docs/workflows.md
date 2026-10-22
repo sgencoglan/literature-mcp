@@ -184,7 +184,8 @@ Ardından insan için altın standart HTML teslim üretilir:
 
 ```bash
 chapter-report build rapor.json -o 05_bolum_raporu.html --check
-chapter-report build rapor.json -o 05_bolum_raporu.html
+chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md
 ```
 
 HTML'de kaynaklar `https://doi.org/...` ile listelenir; yerel PDF yolu bulunmaz. Teslimden sonra `--cleanup intermediate` veya `--cleanup all` seçeneği sunulur.
@@ -319,7 +320,8 @@ Ardından insan için altın standart HTML: düzeltilmiş metin, Ek 1 değişikl
 
 ```bash
 chapter-report build rapor.json -o 05_bolum_raporu.html --check
-chapter-report build rapor.json -o 05_bolum_raporu.html
+chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md
 ```
 
 Teslimden sonra üretilmiş ara dosyaları temizleme seçeneği sunulur:

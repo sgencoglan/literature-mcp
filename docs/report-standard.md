@@ -25,6 +25,8 @@ bir teslim üretmektir.
    - Düzeltme özeti.
    - Notlar ve sınırlılıklar.
 4. **Kaynakça (opsiyonel)** — yalnızca `https://doi.org/...` linkleri.
+5. **Markdown eşlik dosyası (opsiyonel)** — aynı veriden üretilen düzenleme
+   katmanı; HTML'deki kırmızı vurgu `**değişen cümle**` olarak temsil edilir.
 
 ## Kanıt kuralları
 
@@ -83,7 +85,7 @@ manifestteki dosyaları kapsar:
 # Ne silineceğini göster
 chapter-report cleanup --manifest 05_bolum_raporu.manifest.json --dry-run
 
-# HTML dışındaki ara dosyaları sil
+# HTML dışındaki ara dosyaları sil (Markdown korunur)
 chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
   --scope intermediate --yes
 

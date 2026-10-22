@@ -29,6 +29,7 @@ Proje `output_directory` altında:
 | `04_denetim_raporu.md` | Markdown | İnsan + ajan | Düzenlenebilir rapor |
 | `04_denetim_raporu.json` | JSON | Ajan | Tam yapılandırılmış rapor |
 | `05_bolum_raporu.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + Ek 1 + Ek 2 |
+| `05_bolum_raporu.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
 | `05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
 Proje adı önek olarak eklenebilir: `<proje-adi>_01_fulltext_listesi.html`. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
@@ -251,7 +252,8 @@ standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
 
 ```bash
 chapter-report build rapor.json -o 05_bolum_raporu.html --check
-chapter-report build rapor.json -o 05_bolum_raporu.html
+chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md
 ```
 
 Zorunlu alanlar, DOI biçimi, sayfa/kanıt, yerel yol yasağı ve HTML dengesi
@@ -267,8 +269,8 @@ chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
   --scope intermediate --yes
 ```
 
-`intermediate` HTML'i korur; `all` HTML'i de siler; manifest kalır. PDF, indeks
-ve registry dosyaları manifest dışında olduğu için silinmez.
+`intermediate` HTML ve Markdown'ı korur; `all` ikisini de siler; manifest kalır.
+PDF, indeks ve registry dosyaları manifest dışında olduğu için silinmez.
 
 ## Kalite kontrol
 

@@ -127,6 +127,7 @@ Proje `output_directory` altında:
 04_denetim_raporu.html
 04_denetim_raporu.md
 05_bolum_raporu.html
+05_bolum_raporu.md
 05_bolum_raporu.manifest.json
 ```
 
@@ -154,7 +155,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo public v2.0.0'dır; yayımlanmamış bölüm metni ve gerçek proje çıktıları
+- Depo public v2.1.0'dır; yayımlanmamış bölüm metni ve gerçek proje çıktıları
   depoya konmaz.
 - Canlı MCP: `sciencedirect-meta` 19 araç, `paperqa-local` 7 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
@@ -181,7 +182,8 @@ python3 scripts/build_fulltext_list.py input.json -o 01_fulltext_listesi.html
 
 # Altın standart rapor: doğrula + üret + temizlik seçeneği
 .venv/bin/chapter-report build rapor.json -o 05_bolum_raporu.html --check
-.venv/bin/chapter-report build rapor.json -o 05_bolum_raporu.html
+.venv/bin/chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md
 .venv/bin/chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
   --scope intermediate --dry-run
 

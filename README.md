@@ -5,7 +5,7 @@
 Kaynaklı literatür taraması ve kitap bölümü denetimi için iki yerel MCP
 sunucusu, şemalar, dokümantasyon ve tek dosyalık HTML üreticileri.
 
-> **Durum:** public v2.0.0. Depoda PDF, indeks, kişisel proje kaydı veya
+> **Durum:** public v2.1.0. Depoda PDF, indeks, kişisel proje kaydı veya
 > yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
@@ -36,7 +36,7 @@ yeniden üretilebilir hâle getirir:
   matrisi, düzeltme özeti ve sınırlılıklar,
 - tek dosya, gömülü CSS, yazdırma desteği, harici JS yok.
 
-Örnek çıktı: [`examples/chapter-report.example.html`](examples/chapter-report.example.html).
+Örnek çıktı: [`examples/chapter-report.example.html`](examples/chapter-report.example.html) ve [`examples/chapter-report.example.md`](examples/chapter-report.example.md).
 
 ```bash
 python -m pip install -e packages/report-kit
@@ -57,6 +57,7 @@ manifestte listelenen üretilmiş dosyalar silinebilir:
 
 ```bash
 chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md \
   --artifact 02_degisiklik_kartlari.json \
   --artifact 03_iddia_kanit_matrisi.csv \
   --cleanup ask
@@ -66,7 +67,7 @@ chapter-report build rapor.json -o 05_bolum_raporu.html \
 |---|---|
 | `keep` | Silmez (varsayılan). |
 | `ask` | Onay sorar; terminal yoksa silmez. |
-| `intermediate` | HTML dışındaki manifest kayıtlarını siler. |
+| `intermediate` | HTML ve Markdown dışındaki manifest kayıtlarını siler. |
 | `all` | Manifestteki tüm üretilmiş dosyaları siler; manifest kalır. |
 
 PDF, indeks, registry ve manifest dışındaki dosyalara dokunulmaz. `--dry-run`
@@ -230,11 +231,12 @@ Her projenin `output_directory` klasöründe:
 04_denetim_raporu.html
 04_denetim_raporu.md
 05_bolum_raporu.html
+05_bolum_raporu.md
 05_bolum_raporu.manifest.json
 ```
 
 - HTML: insan tarafından okunur, tek dosya, yazdırılabilir.
-- Markdown: düzenleme ve sürüm kontrolü.
+- Markdown: düzenleme ve sürüm kontrolü; HTML ile aynı veriden üretilir.
 - CSV/JSON: veri işleme ve ajanlar.
 - DOI linkleri yalnızca `https://doi.org/...`; teslimlerde yerel PDF yolu veya
   `file://` linki bulunmaz.

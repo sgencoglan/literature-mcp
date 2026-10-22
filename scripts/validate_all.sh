@@ -84,14 +84,19 @@ if ! PYTHONPATH="$ROOT/packages/report-kit/src${PYTHONPATH:+:$PYTHONPATH}" \
   "$PY" - <<'PY'
 import json
 from pathlib import Path
+from report_kit.markdown import render_markdown
 from report_kit.render import render_report
 
 data = json.loads(Path("examples/chapter-report.example.json").read_text(encoding="utf-8"))
-expected = Path("examples/chapter-report.example.html").read_text(encoding="utf-8")
-actual = render_report(data)
-if actual != expected:
+expected_html = Path("examples/chapter-report.example.html").read_text(encoding="utf-8")
+actual_html = render_report(data)
+if actual_html != expected_html:
     raise SystemExit("examples/chapter-report.example.html güncel değil; yeniden üretin")
-print("OK: chapter-report örneği güncel")
+expected_md = Path("examples/chapter-report.example.md").read_text(encoding="utf-8")
+actual_md = render_markdown(data)
+if actual_md != expected_md:
+    raise SystemExit("examples/chapter-report.example.md güncel değil; yeniden üretin")
+print("OK: chapter-report HTML ve Markdown örnekleri güncel")
 PY
 then
   bad "chapter-report örnek HTML'i kaynakla uyuşmuyor"
