@@ -59,6 +59,7 @@ Komut şunları denetler:
 - DOI biçimi ve tekrarı,
 - her kartta kaynak + sayfa + alıntı + çeviri + not,
 - her destekli iddiada sayfa ve atıf,
+- her değişiklik kartındaki DOI'nin kaynak envanterinde bulunması,
 - yerel yol/PDF dosya adı sızıntısı,
 - HTML etiket dengesi ve `<script>` yasağı.
 

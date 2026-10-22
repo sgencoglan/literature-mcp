@@ -1,5 +1,18 @@
 # Değişiklik Günlüğü
 
+## v2.2.0 — 2026-10-22
+
+### Eklendi
+
+- Kalite kapısı, her değişiklik kartındaki DOI'nin kaynak envanterinde
+  bulunmasını zorunlu tutar; envanterde olmayan DOI raporu düşürür.
+- Bu çapraz kontrol için birim testi eklendi.
+
+### Değişti
+
+- `docs/report-standard.md` ve `packages/report-kit/README.md` yeni DOI
+  envanteri kuralına göre güncellendi.
+
 ## v2.1.0 — 2026-10-22
 
 ### Eklendi

@@ -255,6 +255,27 @@ def validate_data(data: Any, strict: bool = False) -> ValidationResult:
     _validate_references(data.get("references"), result)
     _check_local_paths(data, result)
 
+    # Every card source must be present in the audited source inventory. This
+    # prevents a report from citing a DOI that was never quality-checked.
+    audit_dois = {
+        str(item.get("doi") or "").strip().lower()
+        for item in (data.get("source_audit") or [])
+        if isinstance(item, dict) and str(item.get("doi") or "").strip()
+    }
+    if audit_dois:
+        for cindex, card in enumerate(data.get("change_cards") or []):
+            if not isinstance(card, dict):
+                continue
+            for sindex, source in enumerate(card.get("sources") or []):
+                if not isinstance(source, dict):
+                    continue
+                doi = str(source.get("doi") or "").strip().lower()
+                if doi and doi not in audit_dois:
+                    result.add_error(
+                        f"$.change_cards[{cindex}].sources[{sindex}].doi: "
+                        f"DOI kaynak envanterinde yok: {doi}"
+                    )
+
     summary = data.get("summary")
     if summary is not None:
         if not isinstance(summary, dict):

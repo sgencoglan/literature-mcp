@@ -52,7 +52,8 @@ dosyalara dokunulmaz. `--dry-run` yalnızca neyin silineceğini gösterir;
 
 `build` komutu, HTML yazmadan önce zorunlu alanları ve şu kuralları denetler:
 
-- her değişiklik kartında en az bir DOI + sayfa + birebir alıntı + Türkçe çeviri,
+- her değişiklik kartında en az bir DOI + sayfa + birebir alıntı + Türkçe çeviri;
+  kart DOI'si kaynak envanterinde bulunmalı,
 - her destekli/kısmi iddiada sayfa içeren kanıt ve atıf,
 - yalnızca `https://doi.org/...` linkleri,
 - `file://`, `/home/...`, `C:\...` ve yerel PDF dosya adı yasağı,

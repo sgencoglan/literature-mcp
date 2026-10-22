@@ -95,6 +95,13 @@ class ValidationTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertTrue(any("summary.claims" in error for error in result.errors))
 
+    def test_card_doi_must_be_in_source_inventory(self) -> None:
+        data = copy.deepcopy(example_data())
+        data["change_cards"][0]["sources"][0]["doi"] = "10.5555/ornek.9999.999"
+        result = validate_data(data)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("kaynak envanterinde yok" in error for error in result.errors))
+
 
 class CleanupTests(unittest.TestCase):
     def test_intermediate_cleanup_keeps_html_and_unrelated_file(self) -> None:

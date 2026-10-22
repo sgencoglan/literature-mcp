@@ -155,7 +155,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo public v2.1.0'dır; yayımlanmamış bölüm metni ve gerçek proje çıktıları
+- Depo public v2.2.0'dır; yayımlanmamış bölüm metni ve gerçek proje çıktıları
   depoya konmaz.
 - Canlı MCP: `sciencedirect-meta` 19 araç, `paperqa-local` 7 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur

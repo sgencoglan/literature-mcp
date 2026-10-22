@@ -5,7 +5,7 @@
 Kaynaklı literatür taraması ve kitap bölümü denetimi için iki yerel MCP
 sunucusu, şemalar, dokümantasyon ve tek dosyalık HTML üreticileri.
 
-> **Durum:** public v2.1.0. Depoda PDF, indeks, kişisel proje kaydı veya
+> **Durum:** public v2.2.0. Depoda PDF, indeks, kişisel proje kaydı veya
 > yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?

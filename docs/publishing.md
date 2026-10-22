@@ -1,6 +1,6 @@
 # Public repo kontrolü
 
-Bu depo **public v2.1.0** olarak yayımlanmıştır. Bu belge, yeni bir sürüm
+Bu depo **public v2.2.0** olarak yayımlanmıştır. Bu belge, yeni bir sürüm
 yayımlamadan veya public görünürlüğü değiştirmeden önce uygulanacak kontrol
 listesini korur.
 
@@ -59,9 +59,9 @@ branch protection ve zorunlu CI kontrolü açılmalıdır.
 ## 5. Sürüm yayını sırası
 
 1. Yerel depoyu hazırlayın: `git add .`, `git commit`.
-2. `git tag -a v2.1.0 -m "Altın standart rapor + güvenli temizlik"`.
+2. `git tag -a v2.2.0 -m "Altın standart rapor + güvenli temizlik"`.
 3. `git push origin main --tags`.
-4. `gh release create v2.1.0 --title "v2.1.0" --notes-file CHANGELOG.md`.
+4. `gh release create v2.2.0 --title "v2.2.0" --notes-file CHANGELOG.md`.
 5. Bir kez daha `git ls-files` ve `git grep` ile sızıntı kontrolü yapın.
 6. Public görünürlüğü yalnızca kontrol listesi tamamsa değiştirin.
 
