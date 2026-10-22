@@ -88,7 +88,7 @@ manifestteki dosyaları kapsar:
 # Ne silineceğini göster
 chapter-report cleanup --manifest 05_bolum_raporu.manifest.json --dry-run
 
-# HTML dışındaki ara dosyaları sil (Markdown korunur)
+# HTML ve Markdown dışındaki ara dosyaları sil
 chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
   --scope intermediate --yes
 
