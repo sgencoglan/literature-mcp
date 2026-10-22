@@ -108,7 +108,7 @@ Kurallar:
 ### Adım 6: Fulltext listesi HTML'ini üret
 
 ```bash
-cd /path/to/literature-mcp
+cd <repo>
 python3 scripts/build_fulltext_list.py adaylar.json -o 01_fulltext_listesi.html
 ```
 
@@ -180,7 +180,14 @@ export_review(
 )
 ```
 
-Ardından insan için HTML teslim üretilir. HTML'de kaynaklar `https://doi.org/...` ile listelenir; yerel PDF yolu bulunmaz.
+Ardından insan için altın standart HTML teslim üretilir:
+
+```bash
+chapter-report build rapor.json -o 05_bolum_raporu.html --check
+chapter-report build rapor.json -o 05_bolum_raporu.html
+```
+
+HTML'de kaynaklar `https://doi.org/...` ile listelenir; yerel PDF yolu bulunmaz. Teslimden sonra `--cleanup intermediate` veya `--cleanup all` seçeneği sunulur.
 
 ## Görev 2 — Mevcut taslağı denetleme
 
@@ -308,7 +315,19 @@ export_review(format="csv", filename="03_iddia_kanit_matrisi.csv")
 export_review(format="json", filename="02_degisiklik_kartlari.json")
 ```
 
-Ardından insan için HTML: düzeltme kartları, kaynak denetimi, iddia–kanıt matrisi, kaynakça. DOI linkleri `https://doi.org/...`.
+Ardından insan için altın standart HTML: düzeltilmiş metin, Ek 1 değişiklik kartları, Ek 2 kaynak denetimi + iddia–kanıt matrisi, düzeltme özeti ve sınırlılıklar. DOI linkleri `https://doi.org/...`.
+
+```bash
+chapter-report build rapor.json -o 05_bolum_raporu.html --check
+chapter-report build rapor.json -o 05_bolum_raporu.html
+```
+
+Teslimden sonra üretilmiş ara dosyaları temizleme seçeneği sunulur:
+
+```bash
+chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
+  --scope intermediate --dry-run
+```
 
 ## Karar noktaları
 

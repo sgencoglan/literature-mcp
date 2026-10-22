@@ -32,11 +32,12 @@ python3 -m pip install "paperqa" mcp pymupdf httpx
 Python 3.10+ gerekir. Yerel model için Ollama:
 
 ```bash
-ollama pull qwen2.5:1.5b-instruct
+ollama pull qwen2.5:3b-instruct
 ```
 
 Model adı `paperqa_mcp.py` içinde `LOCAL_LLM` olarak tanımlıdır; farklı bir
-model kullanacaksanız bu sabiti değiştirin.
+model kullanacaksanız `PAPERQA_LOCAL_LLM` ortam değişkenini ayarlayın. 7B ve
+üzeri modeller 8 GB RAM'li, GPU'suz sistemlerde önerilmez.
 
 ## Proje kaydı
 
@@ -126,8 +127,8 @@ Tam iki sunuculu örnek:
 ## Sınırlar
 
 - PDF indirmez; yalnızca kullanıcının yerel klasöründeki dosyaları okur.
-- `paperqa_ask` 1.5B modelle çalışır; atıf ve sayfa hatası yapabilir. Kanıt
-  olarak kullanılamaz.
+- `paperqa_ask` yerel modelle (varsayılan 3B) çalışır; atıf ve sayfa hatası
+  yapabilir. Kanıt olarak kullanılamaz.
 - İndeksleme CPU'da yavaş olabilir; büyük projelerde disk alanı gerekir.
 - İndeksler ve PDF'ler depoya commit edilmez.
 

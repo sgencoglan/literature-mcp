@@ -62,7 +62,9 @@ DEFAULT_PROJECTS_ROOT = Path(
 ).expanduser()
 
 EMBEDDING = "st-multi-qa-MiniLM-L6-cos-v1"
-LOCAL_LLM = "ollama/qwen2.5:1.5b-instruct"
+LOCAL_LLM = os.environ.get(
+    "PAPERQA_LOCAL_LLM", "ollama/qwen2.5:3b-instruct"
+)
 LOCAL_LLM_CONFIG = {
     "model_list": [
         {
@@ -1069,7 +1071,7 @@ async def paperqa_ask(
 ) -> dict[str, Any]:
     """Proje indeksi üzerinde yerel Qwen modeline soru sorar (taslak cevap).
 
-    CPU'da yavaştır ve 1.5B model atıf hatası yapabilir. Cevabı taslak kabul
+    CPU'da yavaştır ve yerel model atıf hatası yapabilir. Cevabı taslak kabul
     edip her iddiayı ``paperqa_search`` veya ``paperqa_read_pages`` ile
     doğrulayın.
     """
@@ -1113,7 +1115,7 @@ async def paperqa_ask(
             for context in session.contexts
         ],
         "warning": (
-            "Local 1.5B answer; verify every claim against paperqa_search "
+            "Local model answer; verify every claim against paperqa_search "
             "or paperqa_read_pages."
         ),
     }

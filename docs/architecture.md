@@ -51,8 +51,16 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 
 - **7 araç:** `paperqa_projects`, `paperqa_register_project`, `paperqa_build_index`, `paperqa_status`, `paperqa_search`, `paperqa_read_pages`, `paperqa_ask`.
 - `paperqa_search` ve `paperqa_read_pages` LLM çağırmaz; embedding tabanlı arama ve PyMuPDF sayfa çıkarımı yapar.
-- `paperqa_ask` yerel `ollama/qwen2.5:1.5b-instruct` modelini kullanır. CPU'da yavaştır ve 1.5B model atıf hatası yapabilir; çıktısı **taslaktır**, kanıt değildir.
+- `paperqa_ask` yerel `ollama/qwen2.5:3b-instruct` modelini kullanabilir. CPU'da yavaştır ve 3B model bile atıf hatası yapabilir; çıktısı **taslaktır**, kanıt değildir. 7B model bu donanım sınıfında önerilmez.
 - İndeks üyeliği manifest ile sabittir. Klasöre sonradan bırakılan PDF, manifeste eklenmedikçe indekse girmez.
+
+### report-kit
+
+- **1 CLI:** `chapter-report`.
+- Düzeltilmiş bölüm metni + Ek 1 + Ek 2'yi tek dosyalık HTML'e yazar.
+- Kalite kapısı: DOI/sayfa/alıntı/çeviri zorunluluğu, yerel yol yasağı, HTML dengesi.
+- Manifest tabanlı temizlik: yalnızca üretilmiş dosyaları siler; PDF/indeks/registry'ye dokunmaz.
+- Tasarım tek CSS dosyasındadır: `packages/report-kit/src/report_kit/templates/chapter-report.css`.
 
 ### Ortak proje kaydı
 
@@ -128,7 +136,10 @@ Proje + taslak
    ├─ iddia–kanıt matrisi
    │      └─ schemas/claim-evidence.schema.json
    │
-   └─ 04_denetim_raporu.html + MD + CSV + JSON
+   ├─ chapter-report kalite kapısı
+   │      └─ schemas/chapter-report.schema.json
+   │
+   └─ 05_bolum_raporu.html + manifest
 ```
 
 ## Sınırlar ve güvenlik

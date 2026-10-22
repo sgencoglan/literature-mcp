@@ -1,0 +1,32 @@
+# Değişiklik Günlüğü
+
+## v2.0.0 — 2026-10-22
+
+### Eklendi
+
+- `packages/report-kit`: altın standart bölüm raporu üreteci (`chapter-report`).
+- Tek dosyalık HTML şablonu: düzeltilmiş metin, Ek 1 değişiklik kartları,
+  Ek 2 kaynak denetimi ve iddia–kanıt matrisi.
+- `schemas/chapter-report.schema.json` ve sentetik
+  `examples/chapter-report.example.json` / `.html`.
+- Kalite kapısı: DOI, sayfa, birebir alıntı, Türkçe çeviri, atıf, yerel yol
+  yasağı ve HTML dengesi denetimi.
+- Manifest tabanlı güvenli temizlik: `--cleanup keep|ask|intermediate|all`,
+  `--dry-run`, `--yes`, hash doğrulaması ve path traversal koruması.
+- `docs/report-standard.md`, `docs/ollama.md`.
+- `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `VERSION`.
+
+### Değişti
+
+- README public v2 kurulumu, altın standart rapor ve temizlik akışıyla
+  güncellendi.
+- `AGENTS.md`, `docs/output-spec.md`, `docs/workflows.md`,
+  `docs/architecture.md` yeni rapora göre güncellendi.
+- Yerel model önerisi 1.5B'den 3B'ye yükseltildi; 7B'nin bu donanım sınıfında
+  uygun olmadığı belgelendi.
+
+### Korundu
+
+- `sciencedirect-meta` 19 araç, `paperqa-local` 7 araç.
+- Proje izolasyonu, DOI/sayfa doğrulaması ve `paperqa_ask` yasağı.
+- MIT lisansı ve public depoda PDF/indeks/kişisel veri bulunmaması.

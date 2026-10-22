@@ -1,0 +1,248 @@
+{
+  "schema": 2,
+  "project": "ornek-uzaktan-calisma",
+  "title": "1. Giriş",
+  "generated_at": "2026-10-22",
+  "meta_prefix": "Düzeltilmiş taslak",
+  "meta_note": "Kırmızı zemin: önceki taslağa göre değiştirilen veya eklenen cümleler",
+  "summary": {
+    "change_cards": 3,
+    "sources": 3,
+    "claims": 4,
+    "not_found": 1
+  },
+  "intro": {
+    "heading": "1. Giriş",
+    "paragraphs": [
+      {
+        "segments": [
+          {
+            "text": "Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir. ",
+            "changed": false
+          },
+          {
+            "text": "Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).",
+            "changed": true
+          }
+        ]
+      },
+      {
+        "segments": [
+          {
+            "text": "Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez. ",
+            "changed": true
+          },
+          {
+            "text": "Bununla birlikte sınır yönetimi becerileri, iş–aile çatışması ve tükenme arasındaki ilişkiyi anlamak için daha güvenilir bir çerçeve sunar (Kaya & Yılmaz, 2023).",
+            "changed": true
+          }
+        ]
+      },
+      {
+        "segments": [
+          {
+            "text": "Bu bölümün amacı, uzaktan çalışma düzenlerinde çalışan refahını destekleyen koşulları tartışmak ve yöneticilere uygulanabilir bir çerçeve sunmaktır. ",
+            "changed": false
+          },
+          {
+            "text": "Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).",
+            "changed": true
+          }
+        ]
+      }
+    ]
+  },
+  "appendix_intro": "Kırmızı ile işaretlenen her değişiklik için sırasıyla yazarın taslakta yazdığı cümle, kaynaktaki orijinal cümle, bu cümlenin Türkçesi, yeniden yazılan cümle ve düzeltme notu verilmiştir. Bu dosyadaki kaynaklar ve DOI’ler yalnızca biçim gösterimi için üretilmiş sentetik örneklerdir.",
+  "change_cards": [
+    {
+      "id": "D1",
+      "title": "Uzaktan çalışmanın refah etkisini tek yönlü sunmak",
+      "location": "1. paragraf, 2. cümle",
+      "author_sentence": "Uzaktan çalışma çalışan refahını azaltır; esneklik bu olumsuz etkiyi telafi edemez.",
+      "sources": [
+        {
+          "citation": "Demir (2024)",
+          "page": "4",
+          "doi": "10.5555/ornek.2024.001",
+          "quote": "Remote work had heterogeneous associations with well-being: autonomy was linked to higher satisfaction, whereas after-hours connectivity was linked to exhaustion.",
+          "translation": "Uzaktan çalışma refahla heterojen ilişkiler göstermiştir: özerklik daha yüksek memnuniyetle, mesai dışı erişilebilirlik ise tükenmeyle ilişkilendirilmiştir.",
+          "quote_language": "en"
+        }
+      ],
+      "rewritten_sentence": "Uzaktan çalışmanın refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).",
+      "notes": [
+        {
+          "label": "Düzeltme notu — 1. cümle",
+          "what": "“Refahı azaltır” kesinliği yerine heterojen ilişki vurgusu getirildi; özerklik ve mesai dışı erişilebilirlik ayrı ayrı anıldı.",
+          "why": "Kaynak, tek yönlü bir azalma değil, koşullara bağlı farklı yönler bildiriyor. Kanıtın kapsamı genişletilmeden aktarıldı."
+        }
+      ],
+      "evidence_status": "partially_supported"
+    },
+    {
+      "id": "D2",
+      "title": "İşten ayrılma niyeti için doğrudan kanıt varmış gibi yazmak",
+      "location": "2. paragraf, 1. cümle",
+      "author_sentence": "Uzaktan çalışma işten ayrılma niyetini doğrudan artırır.",
+      "sources": [
+        {
+          "citation": "Kaya & Yılmaz (2023)",
+          "page": "7",
+          "doi": "10.5555/ornek.2023.002",
+          "quote": "Boundary management explained additional variance in work–family conflict, but turnover intention was not included as an outcome in the model.",
+          "translation": "Sınır yönetimi, iş–aile çatışmasındaki ek varyansı açıklamış; ancak işten ayrılma niyeti modelde sonuç değişkeni olarak yer almamıştır.",
+          "quote_language": "en"
+        }
+      ],
+      "rewritten_sentence": "Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.",
+      "notes": [
+        {
+          "label": "Düzeltme notu — 1. cümle",
+          "what": "Doğrudan nedensellik iddiası kaldırıldı; kaynağın ölçmediği sonuç için temkinli bir ifade kullanıldı.",
+          "why": "Kaynakta işten ayrılma niyeti ölçülmemiş. Sınır yönetimi bulgusu farklı bir sonuç değişkenine ait."
+        }
+      ],
+      "evidence_status": "not_found"
+    },
+    {
+      "id": "D3",
+      "title": "Yönetici desteğini bireysel dayanıklılığa indirgemek",
+      "location": "3. paragraf, 2. cümle",
+      "author_sentence": "Tükenmeyi önlemenin tek yolu çalışanların bireysel dayanıklılığını artırmaktır.",
+      "sources": [
+        {
+          "citation": "Arslan vd. (2025)",
+          "page": "11",
+          "doi": "10.5555/ornek.2025.003",
+          "quote": "Leader support was negatively associated with exhaustion after controlling for individual resilience, suggesting that organizational factors also matter.",
+          "translation": "Yönetici desteği, bireysel dayanıklılık kontrol edildikten sonra da tükenmeyle negatif ilişkiliydi; bu, örgütsel etkenlerin de önemli olduğunu göstermektedir.",
+          "quote_language": "en"
+        }
+      ],
+      "rewritten_sentence": "Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).",
+      "notes": [
+        {
+          "label": "Düzeltme notu — 1. cümle",
+          "what": "“Tek yol” ifadesi kaldırıldı; yönetici desteği ve örgütsel tasarım birlikte vurgulandı.",
+          "why": "Kaynak, bireysel dayanıklılık kontrol edildiğinde bile yönetici desteğinin anlamlı kaldığını gösteriyor; tek faktörlü açıklama kanıtla uyuşmuyor."
+        }
+      ],
+      "evidence_status": "supported"
+    }
+  ],
+  "source_audit": [
+    {
+      "no": 1,
+      "citation": "Demir — Uzaktan çalışma ve refah",
+      "doi": "10.5555/ornek.2024.001",
+      "journal": "Örnek İş ve Örgüt Psikolojisi Dergisi",
+      "year": 2024,
+      "quartile": "Q1",
+      "citations_crossref": 12,
+      "citations_openalex": 14,
+      "open_access": true,
+      "retraction": "yok",
+      "role": "çekirdek",
+      "limitation": "Kesitsel veri; nedensellik kurulamaz."
+    },
+    {
+      "no": 2,
+      "citation": "Kaya & Yılmaz — Sınır yönetimi",
+      "doi": "10.5555/ornek.2023.002",
+      "journal": "Örnek Çalışma Yaşamı Dergisi",
+      "year": 2023,
+      "quartile": "Q2",
+      "citations_crossref": 8,
+      "citations_openalex": 9,
+      "open_access": false,
+      "retraction": "yok",
+      "role": "destek",
+      "limitation": "İşten ayrılma niyeti ölçülmemiş; örneklem tek sektör."
+    },
+    {
+      "no": 3,
+      "citation": "Arslan vd. — Yönetici desteği ve tükenme",
+      "doi": "10.5555/ornek.2025.003",
+      "journal": "Örnek Örgütsel Davranış Dergisi",
+      "year": 2025,
+      "quartile": "Q1",
+      "citations_crossref": 3,
+      "citations_openalex": 4,
+      "open_access": true,
+      "retraction": "yok",
+      "role": "çekirdek",
+      "limitation": "Yalnızca beyaz yakalı örneklem; kültürel genelleme sınırlı."
+    }
+  ],
+  "source_note": "Not: Bu örnekteki kaynaklar, yazarlar ve DOI’ler sentetiktir; gerçek bir literatür taramasına atıf olarak kullanılamaz.",
+  "claim_matrix": [
+    {
+      "claim_id": "C1",
+      "claim": "Uzaktan çalışma refahı tek yönlü azaltır.",
+      "citations": "Demir (2024)",
+      "status": "partial",
+      "evidence": "Demir s. 4: özerklik memnuniyetle, mesai dışı erişilebilirlik tükenmeyle ilişkili; tek yönlü azalma yok.",
+      "note": "İfade heterojen ilişkiye göre yumuşatıldı."
+    },
+    {
+      "claim_id": "C2",
+      "claim": "Uzaktan çalışma işten ayrılma niyetini doğrudan artırır.",
+      "citations": "Kaya & Yılmaz (2023)",
+      "status": "not_found",
+      "evidence": "Kaya & Yılmaz s. 7: işten ayrılma niyeti modelde sonuç değişkeni değil.",
+      "note": "Doğrudan kanıt yok; iddia kaldırıldı."
+    },
+    {
+      "claim_id": "C3",
+      "claim": "Yönetici desteği tükenmeyle negatif ilişkilidir.",
+      "citations": "Arslan vd. (2025)",
+      "status": "supported",
+      "evidence": "Arslan vd. s. 11: bireysel dayanıklılık kontrol edildikten sonra da negatif ilişki sürüyor.",
+      "note": "Kanıt doğrudan; örgütsel tasarım vurgusu eklendi."
+    },
+    {
+      "claim_id": "C4",
+      "claim": "Bu bölüm yöneticilere uygulanabilir bir çerçeve sunar.",
+      "citations": "—",
+      "status": "out_of_scope",
+      "evidence": "Amaç beyanı; ampirik iddia değil.",
+      "note": "Kanıt gerektirmez; bölümün kendi katkısı olarak konumlandırıldı."
+    }
+  ],
+  "correction_summary": [
+    "**C1 — nüans:** Tek yönlü refah azalması yerine özerklik ve mesai dışı erişilebilirlik ayrımı getirildi.",
+    "**C2 — kanıt sınırı:** İşten ayrılma niyeti iddiası kaldırıldı; kaynakta bu sonuç ölçülmemiş.",
+    "**C3 — örgütsel çerçeve:** “Tek yol” ifadesi yerine yönetici desteği ve örgütsel tasarım birlikte vurgulandı."
+  ],
+  "limitations": [
+    "**Sentetik örnek:** Kaynaklar, yazarlar ve DOI’ler gerçek değildir; yalnızca rapor biçimini göstermek için üretilmiştir.",
+    "**Kesitsel kanıt:** Refah ve tükenme ilişkileri nedensellik olarak yorumlanmamalıdır.",
+    "**Örneklem sınırı:** Kaynaklar farklı sektör ve kültürlerden; genelleme öncesi bağlam kontrol edilmelidir.",
+    "**Tam metin:** Örnekte yalnızca kısa alıntılar ve sayfa numaraları gösterilmiştir; gerçek teslimde tam metin sayfası doğrulanmalıdır."
+  ],
+  "method": "Sentetik örnek; project_audit ve sayfa doğrulamalı paperqa_search akışıyla üretildi. paperqa_ask kanıt olarak kullanılmadı.",
+  "references": [
+    {
+      "authors": "Demir, A.",
+      "year": 2024,
+      "title": "Uzaktan çalışma ve refah: Heterojen ilişkiler",
+      "journal": "Örnek İş ve Örgüt Psikolojisi Dergisi",
+      "doi": "10.5555/ornek.2024.001"
+    },
+    {
+      "authors": "Kaya, B.; Yılmaz, C.",
+      "year": 2023,
+      "title": "Sınır yönetimi ve iş–aile çatışması",
+      "journal": "Örnek Çalışma Yaşamı Dergisi",
+      "doi": "10.5555/ornek.2023.002"
+    },
+    {
+      "authors": "Arslan, D.; Öz, E.; Tan, F.",
+      "year": 2025,
+      "title": "Yönetici desteği, dayanıklılık ve tükenme",
+      "journal": "Örnek Örgütsel Davranış Dergisi",
+      "doi": "10.5555/ornek.2025.003"
+    }
+  ],
+  "footer": "literature-mcp · chapter-report v2.0.0 · Sentetik örnek; gerçek kaynak değildir."
+}

@@ -26,7 +26,7 @@ else
 fi
 
 note "Python sözdizimi"
-if ! "$PY" -m compileall -q scripts packages/sciencedirect-meta/src packages/paperqa-local; then
+if ! "$PY" -m compileall -q scripts packages/sciencedirect-meta/src packages/paperqa-local packages/report-kit/src; then
   bad "Python derleme hatası"
 fi
 
@@ -43,6 +43,7 @@ pairs = [
     ("schemas/fulltext-list.schema.json", "examples/fulltext-list.example.json"),
     ("schemas/change-card.schema.json", "examples/change-card.example.json"),
     ("schemas/claim-evidence.schema.json", "examples/claim-evidence.example.json"),
+    ("schemas/chapter-report.schema.json", "examples/chapter-report.example.json"),
 ]
 failed = False
 for schema_path, example_path in pairs:
@@ -65,6 +66,35 @@ note "sciencedirect-meta birim testleri"
 if ! PYTHONPATH="$ROOT/packages/sciencedirect-meta/src${PYTHONPATH:+:$PYTHONPATH}" \
   "$PY" -m unittest discover -s packages/sciencedirect-meta/tests -v; then
   bad "birim testleri başarısız"
+fi
+
+note "report-kit birim testleri"
+if ! PYTHONPATH="$ROOT/packages/report-kit/src${PYTHONPATH:+:$PYTHONPATH}" \
+  "$PY" -m unittest discover -s packages/report-kit/tests -v; then
+  bad "report-kit testleri başarısız"
+fi
+
+note "chapter-report kalite kapısı"
+if ! PYTHONPATH="$ROOT/packages/report-kit/src${PYTHONPATH:+:$PYTHONPATH}" \
+  "$PY" -m report_kit build examples/chapter-report.example.json --check; then
+  bad "chapter-report örneği doğrulanamadı"
+fi
+
+if ! PYTHONPATH="$ROOT/packages/report-kit/src${PYTHONPATH:+:$PYTHONPATH}" \
+  "$PY" - <<'PY'
+import json
+from pathlib import Path
+from report_kit.render import render_report
+
+data = json.loads(Path("examples/chapter-report.example.json").read_text(encoding="utf-8"))
+expected = Path("examples/chapter-report.example.html").read_text(encoding="utf-8")
+actual = render_report(data)
+if actual != expected:
+    raise SystemExit("examples/chapter-report.example.html güncel değil; yeniden üretin")
+print("OK: chapter-report örneği güncel")
+PY
+then
+  bad "chapter-report örnek HTML'i kaynakla uyuşmuyor"
 fi
 
 note "Fulltext üreticisi"

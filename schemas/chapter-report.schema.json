@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sgencoglan/literature-mcp/schemas/chapter-report.schema.json",
+  "title": "Altın standart kitap bölümü raporu",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "project",
+    "title",
+    "intro",
+    "change_cards",
+    "source_audit",
+    "claim_matrix"
+  ],
+  "properties": {
+    "schema": { "const": 2 },
+    "project": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "generated_at": { "type": "string" },
+    "meta_prefix": { "type": "string" },
+    "meta_note": { "type": "string" },
+    "appendix_intro": { "type": "string" },
+    "method": { "type": "string" },
+    "source_note": { "type": "string" },
+    "footer": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "change_cards": { "type": "integer", "minimum": 0 },
+        "sources": { "type": "integer", "minimum": 0 },
+        "claims": { "type": "integer", "minimum": 0 },
+        "not_found": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "headings": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "intro": {
+      "type": "object",
+      "required": ["paragraphs"],
+      "properties": {
+        "heading": { "type": "string" },
+        "paragraphs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "text": { "type": "string" },
+                  "segments": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "oneOf": [
+                        { "type": "string" },
+                        {
+                          "type": "object",
+                          "required": ["text"],
+                          "properties": {
+                            "text": { "type": "string", "minLength": 1 },
+                            "changed": { "type": "boolean" }
+                          },
+                          "additionalProperties": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                "anyOf": [
+                  { "required": ["text"] },
+                  { "required": ["segments"] }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "change_cards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "location",
+          "author_sentence",
+          "sources",
+          "rewritten_sentence",
+          "notes"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "location": { "type": "string", "minLength": 1 },
+          "author_sentence": { "type": "string", "minLength": 1 },
+          "evidence_status": { "type": "string" },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["citation", "page", "doi", "quote", "translation"],
+              "properties": {
+                "citation": { "type": "string", "minLength": 1 },
+                "page": { "type": "string", "minLength": 1 },
+                "doi": {
+                  "type": "string",
+                  "pattern": "^10\\.\\d{4,9}/\\S+$"
+                },
+                "quote": { "type": "string", "minLength": 1 },
+                "translation": { "type": "string", "minLength": 1 },
+                "quote_language": { "type": "string" }
+              }
+            }
+          },
+          "rewritten_sentence": { "type": "string", "minLength": 1 },
+          "notes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["what", "why"],
+              "properties": {
+                "label": { "type": "string" },
+                "what": { "type": "string", "minLength": 1 },
+                "why": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "source_audit": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "no",
+          "citation",
+          "doi",
+          "journal",
+          "year",
+          "quartile",
+          "role",
+          "limitation"
+        ],
+        "properties": {
+          "no": { "type": ["integer", "string"] },
+          "citation": { "type": "string", "minLength": 1 },
+          "doi": {
+            "type": "string",
+            "pattern": "^10\\.\\d{4,9}/\\S+$"
+          },
+          "journal": { "type": "string", "minLength": 1 },
+          "year": { "type": ["integer", "string"] },
+          "quartile": { "type": "string", "minLength": 1 },
+          "citations_crossref": { "type": ["integer", "string", "null"] },
+          "citations_openalex": { "type": ["integer", "string", "null"] },
+          "citations": { "type": ["integer", "string", "object", "null"] },
+          "open_access": { "type": ["boolean", "string", "null"] },
+          "retraction": { "type": "string" },
+          "role": { "type": "string", "minLength": 1 },
+          "limitation": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "claim_matrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["claim_id", "claim", "status", "evidence"],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "claim": { "type": "string", "minLength": 1 },
+          "citations": { "type": ["string", "array", "object", "null"] },
+          "status": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "full",
+              "partial",
+              "partially_supported",
+              "contradicted",
+              "contradicts",
+              "not_found",
+              "none",
+              "out_of_scope",
+              "scope",
+              "interpretation"
+            ]
+          },
+          "evidence": { "type": "string", "minLength": 1 },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "correction_summary": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["authors", "year", "title", "doi"],
+        "properties": {
+          "authors": { "type": "string", "minLength": 1 },
+          "year": { "type": ["integer", "string"] },
+          "title": { "type": "string", "minLength": 1 },
+          "journal": { "type": "string" },
+          "doi": {
+            "type": "string",
+            "pattern": "^10\\.\\d{4,9}/\\S+$"
+          }
+        }
+      }
+    }
+  }
+}

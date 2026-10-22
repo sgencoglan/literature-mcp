@@ -33,7 +33,8 @@ Bu dosya, bu projede çalışan yapay zekâ ajanları için **bağlayıcı** kur
 6. `compare_studies` ve `evidence_check` yalnızca **yardımcı** tarama içindir; nihai kanıt değildir.
 7. Her düzeltme için `schemas/change-card.schema.json` uyumlu kart üret.
 8. Ek 2 kaynak denetimi ve iddia–kanıt matrisini `schemas/claim-evidence.schema.json` uyumlu üret.
-9. `export_review` ile Markdown/CSV/JSON; ayrıca insan için HTML teslim üret.
+9. `export_review` ile Markdown/CSV/JSON; insan teslimi için `chapter-report build` ile `05_bolum_raporu.html` üret.
+10. Kalite kapısı 0 hata verene kadar düzelt; teslimden sonra kullanıcıya `--cleanup intermediate/all` seçeneğini sun.
 
 ## 2. Zorunlu kurallar
 
@@ -47,6 +48,8 @@ Bu dosya, bu projede çalışan yapay zekâ ajanları için **bağlayıcı** kur
 8. **Beş platform.** Yalnızca Ovid LWW, ScienceDirect, SpringerLink, Wiley ve Taylor & Francis linkleri önceliklidir. Başka bir dizin sağlayıcısına bağımlılık kurma.
 9. **Mevcut projelere dokunma.** Kayıtlı bir projenin PDF klasörü, manifesti, indeksi veya `analysis_json` dosyası, kullanıcı açıkça istemedikçe değiştirilmez. Yeni çalışma için yeni klasör/manifest/indeks kullan.
 10. **Çıktı sözleşmesi.** Dosya adları, sütunlar ve biçimler [`docs/output-spec.md`](docs/output-spec.md) dosyasına uyar. JSON çıktıları `schemas/` altındaki şemalara uyumlu olur.
+11. **Altın standart.** İnsan teslimi `05_bolum_raporu.html`'dir; `chapter-report` kalite kapısından 0 hatayla geçmeden teslim edilmez. `04_denetim_raporu.html` yalnızca denetim odaklı ara çıktıdır.
+12. **Güvenli temizlik.** Üretilmiş dosyalar yalnızca `chapter-report cleanup` ile ve yalnızca `05_bolum_raporu.manifest.json` içinde listelenen dosyalar için silinir. PDF, indeks, registry ve manifest dışı dosyalar silinmez.
 
 ## 3. Araç politikası
 
@@ -96,6 +99,7 @@ Bu dosya, bu projede çalışan yapay zekâ ajanları için **bağlayıcı** kur
 - İddia–kanıt matrisinde her iddia için kaynak, sayfa, kısa kanıt, destek düzeyi ve karar bulunmalı.
 - HTML'de düzeltilmiş cümleler kırmızı; kaynak cümlesi ve çevirisi normal renkte olmalı.
 - Son teslimde DOI linkleri `https://doi.org/...`; yerel PDF linki yok.
+- `05_bolum_raporu.html` `chapter-report` kalite kapısından 0 hatayla geçmeli; Ek 1 ve Ek 2 eksiksiz olmalı.
 
 ## 6. Durma ve kullanıcıya sorma koşulları
 
@@ -122,6 +126,8 @@ Proje `output_directory` altında:
 03_iddia_kanit_matrisi.csv
 04_denetim_raporu.html
 04_denetim_raporu.md
+05_bolum_raporu.html
+05_bolum_raporu.manifest.json
 ```
 
 Proje adı dosya adına eklenmek istenirse başta verilir: `<proje-adi>_01_fulltext_listesi.html`. Aynı ada sahip eski dosya varsa üzerine yazmadan önce kullanıcıya sor.
@@ -139,6 +145,8 @@ Teslimden önce:
 - [ ] DOI linkleri `https://doi.org/...`.
 - [ ] CSV UTF-8 (BOM'lu) ve başlık satırı doğru.
 - [ ] JSON şemaya uyuyor.
+- [ ] `05_bolum_raporu.html` kalite kapısından 0 hatayla geçti.
+- [ ] Temizlik yalnızca manifestteki dosyalara uygulandı.
 - [ ] Proje izolasyonu ihlal edilmedi; başka proje dosyası okunmadı.
 - [ ] Eski proje dosyaları değiştirilmedi.
 
@@ -146,6 +154,8 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
+- Depo public v2.0.0'dır; yayımlanmamış bölüm metni ve gerçek proje çıktıları
+  depoya konmaz.
 - Canlı MCP: `sciencedirect-meta` 19 araç, `paperqa-local` 7 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
   (varsayılan: `~/.literature-mcp/projects.json`). Depoda yalnızca
@@ -168,6 +178,12 @@ bash scripts/validate_all.sh
 
 # Fulltext HTML üretimi
 python3 scripts/build_fulltext_list.py input.json -o 01_fulltext_listesi.html
+
+# Altın standart rapor: doğrula + üret + temizlik seçeneği
+.venv/bin/chapter-report build rapor.json -o 05_bolum_raporu.html --check
+.venv/bin/chapter-report build rapor.json -o 05_bolum_raporu.html
+.venv/bin/chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
+  --scope intermediate --dry-run
 
 # Örnek
 python3 scripts/build_fulltext_list.py \

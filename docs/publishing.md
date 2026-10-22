@@ -1,7 +1,8 @@
-# Public repoya geçiş kontrolü
+# Public repo kontrolü
 
-Bu depo özel (private) çalışma için hazırlandı. Public yapmadan önce aşağıdaki
-adımları uygulayın.
+Bu depo **public v2.0.0** olarak yayımlanmıştır. Bu belge, yeni bir sürüm
+yayımlamadan veya public görünürlüğü değiştirmeden önce uygulanacak kontrol
+listesini korur.
 
 ## 1. Kişisel veri ve dosya kontrolü
 
@@ -9,6 +10,7 @@ adımları uygulayın.
 git status --short
 git ls-files
 git grep -nE '/home/[a-z]|file://|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY'
+git log -p --all -- . ':!LICENSE' | grep -nE '/home/[a-z]|Downloads/|ghp_|github_pat_|sk-[A-Za-z0-9]{20,}'
 ```
 
 Depoda **bulunmaması gerekenler**:
@@ -16,6 +18,7 @@ Depoda **bulunmaması gerekenler**:
 - PDF'ler ve tam metinler,
 - `indexes/`, `projects/`, `outputs/`,
 - kişisel `projects.json`, `manifest.csv`, `analysis_updates.json`,
+- yayımlanmamış bölüm metinleri ve düzeltilmiş HTML çıktıları,
 - `.venv/`, `.env`, API anahtarları, oturum belgeleri,
 - SCImago CSV'si (lisans nedeniyle; `scripts/fetch_scimago.sh` kullanılır).
 
@@ -23,13 +26,13 @@ Depoda **bulunmaması gerekenler**:
 
 ## 2. Yer tutucuları düzeltin
 
-- `README.md` içindeki `<private-repo-url>` ve `/path/to/...` örneklerini
-  gerçek kurulum yollarıyla değiştirin.
+- Public README'de gerçek repo URL'si (`https://github.com/sgencoglan/literature-mcp`)
+  bulunur; `<private-repo-url>` kalmamalıdır.
 - `config/opencode.example.json` yalnızca örnek kalmalı; gerçek `opencode.json`
   dosyasını commit etmeyin.
 - `LICENSE` telif sahibini proje sahibine göre güncelleyin.
-- `packages/sciencedirect-meta/pyproject.toml` içindeki paket adı/açıklaması
-  public kullanım için gözden geçirin.
+- Paket sürümleri (`pyproject.toml`) ile `CHANGELOG.md` ve git etiketi
+  birbiriyle uyumlu olmalıdır.
 
 ## 3. Üçüncü taraf adları ve lisanslar
 
@@ -45,6 +48,7 @@ Depoda **bulunmaması gerekenler**:
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e packages/sciencedirect-meta
+.venv/bin/pip install -e packages/report-kit
 .venv/bin/pip install jsonschema
 bash scripts/validate_all.sh
 ```
@@ -52,18 +56,18 @@ bash scripts/validate_all.sh
 GitHub Actions iş akışı `.github/workflows/ci.yml` içindedir. Public repoda
 branch protection ve zorunlu CI kontrolü açılmalıdır.
 
-## 5. Repo oluşturma sırası
+## 5. Sürüm yayını sırası
 
-1. Yerel depoyu hazırlayın: `git init`, `git add .`, `git commit`.
-2. GitHub'da **private** repo oluşturun; remote ekleyip push edin.
-3. Bir kez daha `git ls-files` ve `git grep` ile sızıntı kontrolü yapın.
-4. README, ekran görüntüsü ve örnek çıktıları gözden geçirin.
-5. Ancak bundan sonra public görünürlüğe geçin.
+1. Yerel depoyu hazırlayın: `git add .`, `git commit`.
+2. `git tag -a v2.0.0 -m "Altın standart rapor + güvenli temizlik"`.
+3. `git push origin main --tags`.
+4. `gh release create v2.0.0 --title "v2.0.0" --notes-file CHANGELOG.md`.
+5. Bir kez daha `git ls-files` ve `git grep` ile sızıntı kontrolü yapın.
+6. Public görünürlüğü yalnızca kontrol listesi tamamsa değiştirin.
 
 ## 6. Public sonrası eksikler
 
 - İngilizce README veya iki dilli dokümantasyon,
-- `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`,
-- sürüm etiketleri ve `CHANGELOG.md`,
 - `paperqa-local` için bağımlılıkları taklit eden birim testleri,
-- Docker/uv tabanlı tekrarlanabilir kurulum (isteğe bağlı).
+- Docker/uv tabanlı tekrarlanabilir kurulum (isteğe bağlı),
+- örnek raporun ekran görüntüsü veya statik demo.

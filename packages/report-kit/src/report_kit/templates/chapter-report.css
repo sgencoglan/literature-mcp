@@ -1,0 +1,68 @@
+:root {
+  --marker: rgba(255, 0, 0, 0.15);
+  --ink: #212529;
+  --muted: #6c757d;
+}
+* { box-sizing: border-box; }
+body {
+  max-width: 46rem;
+  margin: 3rem auto;
+  padding: 0 1.25rem;
+  font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  font-size: 1.06rem;
+  line-height: 1.8;
+  color: var(--ink);
+  background: #fff;
+}
+h1 {
+  font-size: 1.45rem;
+  margin: 0 0 .35rem;
+}
+.meta {
+  font-size: .85rem;
+  color: var(--muted);
+  margin: 0 0 1.6rem;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: .8rem;
+}
+p { margin: 0 0 1.15rem; text-align: justify; }
+.mark {
+  background-color: var(--marker);
+  border-radius: 3px;
+  padding: 0.08em 0.18em;
+  margin: 0 -0.18em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.appendix { margin-top: 2.8rem; border-top: 2px solid #ddd; padding-top: 1.4rem; }
+.appendix h2 { font-size: 1.18rem; margin: 0 0 .35rem; }
+.appendix .intro { font-size: .92rem; color: var(--muted); margin-bottom: 1.5rem; }
+.diffitem { background: #fafafa; border: 1px solid #ececec; border-radius: 8px; padding: 1.05rem 1.15rem; margin-bottom: 1.5rem; }
+.diffitem h3 { font-size: 1.02rem; margin: 0 0 .8rem; color: #8a1c1c; }
+.diffitem .row { margin: 0 0 .6rem; font-size: .97rem; }
+.diffitem .lbl { display: block; font-weight: 700; font-size: .78rem; letter-spacing: .03em; text-transform: uppercase; color: #666; margin-bottom: .15rem; }
+.diffitem blockquote { margin: .4rem 0 .75rem; padding: .1rem 0 .1rem .75rem; border-left: 3px solid #e3b8b8; }
+.diffitem blockquote .lbl { color: #8a1c1c; }
+.diffitem .en { font-style: italic; }
+.diffitem a { color: #8a1c1c; text-decoration: none; text-transform: none; border-bottom: 1px dotted currentColor; }
+.diffitem a:hover { text-decoration: underline; }
+.appendix-matrix .note { font-size: .84rem; color: var(--muted); margin-bottom: 1rem; }
+.appendix-matrix h3 { font-size: 1.05rem; margin: 1.9rem 0 .5rem; }
+.appendix-matrix table { width: 100%; border-collapse: collapse; font-size: .78rem; margin: .5rem 0 1rem; }
+.appendix-matrix th, .appendix-matrix td { border: 1px solid #ddd; padding: .35rem .5rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.appendix-matrix th { background: #f3f3f3; font-size: .76rem; }
+.appendix-matrix table a { color: #8a1c1c; text-decoration: none; }
+.appendix-matrix table a:hover { text-decoration: underline; }
+.table-wrap { width: 100%; overflow-x: auto; }
+.table-wrap table { margin: .5rem 0 1rem; }
+.report-footer { margin-top: 2.4rem; }
+.empty { color: var(--muted); font-style: italic; }
+@media (max-width: 600px) {
+  body { margin: 1.5rem auto; }
+  .appendix-matrix table { font-size: .72rem; }
+}
+@media print {
+  .mark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 1rem auto; }
+  .diffitem { break-inside: avoid; }
+}

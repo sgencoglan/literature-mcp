@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-10-20T06:23:41+00:00",
+  "generated_at": "2026-10-22T10:46:52+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
@@ -877,7 +877,7 @@
         },
         {
           "name": "paperqa_ask",
-          "description": "Proje indeksi üzerinde yerel Qwen modeline soru sorar (taslak cevap).\n\nCPU'da yavaştır ve 1.5B model atıf hatası yapabilir. Cevabı taslak kabul\nedip her iddiayı ``paperqa_search`` veya ``paperqa_read_pages`` ile\ndoğrulayın.\n",
+          "description": "Proje indeksi üzerinde yerel Qwen modeline soru sorar (taslak cevap).\n\nCPU'da yavaştır ve yerel model atıf hatası yapabilir. Cevabı taslak kabul\nedip her iddiayı ``paperqa_search`` veya ``paperqa_read_pages`` ile\ndoğrulayın.\n",
           "input_schema": {
             "properties": {
               "project": {

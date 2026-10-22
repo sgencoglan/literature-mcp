@@ -42,3 +42,9 @@ Thumbs.db
 03_kaynak_denetimi.*
 03_iddia_kanit_matrisi.*
 04_denetim_raporu.*
+05_bolum_raporu.*
+
+# Python packaging
+*.egg-info/
+build/
+dist/

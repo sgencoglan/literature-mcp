@@ -5,7 +5,7 @@
 Yeniden üretmek için:
 
 ```bash
-cd /path/to/literature-mcp
+cd <repo>
 bash scripts/dump_tool_catalog.sh
 ```
 
@@ -68,7 +68,7 @@ PaperQA2 indeksleri üzerinde çalışır. `paperqa_search` ve `paperqa_read_pag
 | `paperqa_search` parçası | Doğrulama sonrası evet | Aday cümle/DOI verir; sayfa `paperqa_read_pages` ile teyit edilir |
 | `paperqa_read_pages` | Evet | PDF sayfa metni |
 | `read_paper` | Evet | PDF metni |
-| `paperqa_ask` | Hayır | 1.5B model taslağı; atıf hatası yapabilir |
+| `paperqa_ask` | Hayır | Yerel 3B model taslağı; atıf hatası yapabilir |
 | `evidence_check` | Hayır (yardımcı) | Lexical benzerlik; entailment değil |
 | `compare_studies` | Hayır (yardımcı) | Özet tablo |
 | `get_article` abstract | Bağlam | Tam metin yoksa kanıt yerine geçmez |

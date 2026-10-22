@@ -28,6 +28,8 @@ Proje `output_directory` altında:
 | `04_denetim_raporu.html` | HTML | İnsan | Kartlar + denetim + matris + kaynakça |
 | `04_denetim_raporu.md` | Markdown | İnsan + ajan | Düzenlenebilir rapor |
 | `04_denetim_raporu.json` | JSON | Ajan | Tam yapılandırılmış rapor |
+| `05_bolum_raporu.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + Ek 1 + Ek 2 |
+| `05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
 Proje adı önek olarak eklenebilir: `<proje-adi>_01_fulltext_listesi.html`. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
 
@@ -209,6 +211,65 @@ Aynı bölümler; tablolar Markdown olarak. HTML'e özel renkler Markdown'da `**
 }
 ```
 
+## 05 — Altın standart bölüm raporu
+
+`05_bolum_raporu.html`, b1 pilot raporu için beğenilen tasarımın
+standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
+çıktıdır; teslimde tercih edilen rapor `05`'tir.
+
+### Bölümler
+
+1. Düzeltilmiş bölüm metni; yalnızca değişen cümleler kırmızı.
+2. Ek 1 — değişiklik kartları: yazar cümlesi, kaynak cümlesi (İngilizce),
+   Türkçe çeviri, yeniden yazılan cümle, “ne değişti / neden” notu.
+3. Ek 2 — kaynak envanteri, iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar.
+4. Opsiyonel kaynakça; yalnızca DOI linkleri.
+
+### JSON alanları
+
+Şema: [`../schemas/chapter-report.schema.json`](../schemas/chapter-report.schema.json).
+Üst düzey anahtarlar:
+
+```json
+{
+  "schema": 2,
+  "project": "...",
+  "title": "...",
+  "generated_at": "...",
+  "summary": {"change_cards": 3, "sources": 3, "claims": 4, "not_found": 1},
+  "intro": {"heading": "...", "paragraphs": [...]},
+  "change_cards": [...],
+  "source_audit": [...],
+  "claim_matrix": [...],
+  "correction_summary": [...],
+  "limitations": [...],
+  "references": [...]
+}
+```
+
+### Üretim ve kalite kapısı
+
+```bash
+chapter-report build rapor.json -o 05_bolum_raporu.html --check
+chapter-report build rapor.json -o 05_bolum_raporu.html
+```
+
+Zorunlu alanlar, DOI biçimi, sayfa/kanıt, yerel yol yasağı ve HTML dengesi
+denetlenir. Ayrıntılar: [`report-standard.md`](report-standard.md).
+
+### Temizlik
+
+`05_bolum_raporu.manifest.json` yalnızca üretilen dosyaları listeler. Analiz
+sonunda:
+
+```bash
+chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
+  --scope intermediate --yes
+```
+
+`intermediate` HTML'i korur; `all` HTML'i de siler; manifest kalır. PDF, indeks
+ve registry dosyaları manifest dışında olduğu için silinmez.
+
 ## Kalite kontrol
 
 - [ ] Tüm DOI'ler `https://doi.org/...` biçiminde.
@@ -220,3 +281,5 @@ Aynı bölümler; tablolar Markdown olarak. HTML'e özel renkler Markdown'da `**
 - [ ] JSON şemaya uyuyor.
 - [ ] Proje izolasyonu korundu.
 - [ ] Eski proje dosyaları değişmedi.
+- [ ] `05_bolum_raporu.html` kalite kapısından 0 hatayla geçti.
+- [ ] Temizlik yalnızca manifestteki dosyalara uygulandı.
