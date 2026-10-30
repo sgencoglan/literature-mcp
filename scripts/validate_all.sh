@@ -3,7 +3,11 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PY="${PYTHON:-python3}"
+if [[ -z "${PYTHON:-}" && -x "$ROOT/.venv/bin/python" ]]; then
+  PY="$ROOT/.venv/bin/python"
+else
+  PY="${PYTHON:-python3}"
+fi
 cd "$ROOT"
 
 fail=0
@@ -66,6 +70,12 @@ note "sciencedirect-meta birim testleri"
 if ! PYTHONPATH="$ROOT/packages/sciencedirect-meta/src${PYTHONPATH:+:$PYTHONPATH}" \
   "$PY" -m unittest discover -s packages/sciencedirect-meta/tests -v; then
   bad "birim testleri başarısız"
+fi
+
+note "paperqa-local birim testleri"
+if ! PYTHONPATH="$ROOT/packages/paperqa-local${PYTHONPATH:+:$PYTHONPATH}" \
+  "$PY" -m unittest discover -s packages/paperqa-local/tests -v; then
+  bad "paperqa-local testleri başarısız"
 fi
 
 note "report-kit birim testleri"

@@ -2,13 +2,17 @@
 
 `chapter-report`, kitap bölümü düzeltmelerini **tek dosyalık, baskıya uygun HTML**
 olarak üretir. Tasarım, b1 pilot raporu için beğenilen altın standart raporun
-birebir görsel dilini korur:
+görsel dilini korur:
 
-- düzeltilmiş bölüm metni ve yalnızca değişen cümlelerde kırmızı zemin,
+- geniş sayfa (980 px), sans-serif başlıklar, kart/kanıt/not düzeni,
+- düzeltilmiş bölüm metni ve yalnızca değişen cümlelerde kırmızı `<mark>`,
+- üst bilgi sayı rozetleri ve opsiyonel kaynak politikası kutusu (`notice`),
 - Ek 1: yazar cümlesi → kaynak cümlesi (İngilizce) → Türkçe çeviri → yeniden
-  yazılan cümle → “ne değişti / neden” notu,
-- Ek 2: kaynak envanteri, sayfa doğrulamalı iddia–kanıt matrisi, düzeltme
-  özeti ve sınırlılıklar.
+  yazılan cümle → “ne değişti / neden” notu; kart başlığında durum rozeti,
+- Ek 2: kaynak envanteri (rol ve sınırlılık sütunlarıyla), konum + kanıt türü +
+  not sütunlu iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar ve opsiyonel
+  sonraki adımlar,
+- baskıya uygun tablo sarmalayıcıları ve footer.
 
 ## Kurulum
 
@@ -55,10 +59,14 @@ dosyalara dokunulmaz. `--dry-run` yalnızca neyin silineceğini gösterir;
 - her değişiklik kartında en az bir DOI + sayfa + birebir alıntı + Türkçe çeviri;
   kart DOI'si kaynak envanterinde bulunmalı,
 - her destekli/kısmi iddiada sayfa içeren kanıt ve atıf,
+- iddia matrisinde `location`, `evidence_type` ve `note` için öneri uyarıları
+  (`--strict` ile hata),
+- `notice` metni ve `next_steps` maddeleri için bütünlük denetimi,
 - yalnızca `https://doi.org/...` linkleri,
 - `file://`, `/home/...`, `C:\...` ve yerel PDF dosya adı yasağı,
 - özet sayılarının veriyle uyuşması,
-- `<script>`, harici stil/JS ve yerel yol içermeyen dengeli HTML.
+- `<script>`, harici stil/JS ve yerel yol içermeyen dengeli HTML
+  (`<article>`, `<footer>`, `<mark>` dahil).
 
 `--strict` uyarıları da hata sayar. Örnek veri ve şema:
 

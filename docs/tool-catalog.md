@@ -1,6 +1,6 @@
 # Araç Kataloğu
 
-İki MCP sunucusunda toplam **26 araç** vardır. Makine okunabilir tam sürüm (JSON Schema dâhil): [`tool-catalog.json`](tool-catalog.json). Bu dosya, aynı katalogun insan okunabilir özetidir.
+İki MCP sunucusunda toplam **27 araç** vardır. Makine okunabilir tam sürüm (JSON Schema dâhil): [`tool-catalog.json`](tool-catalog.json). Bu dosya, aynı katalogun insan okunabilir özetidir.
 
 Yeniden üretmek için:
 
@@ -45,21 +45,22 @@ Açık metadata kaynaklarını kullanır; LLM çağırmaz. `project` parametresi
 | `evidence_check` | İddiaları cümlelerle lexical eşleştirir | `claims` | `identifier`, `pdf_path`, `text`, `top_k`, `project` | `strong`/`moderate`/`weak`/`not_found` + cümleler |
 | `library_status` | PDF envanteri ve algılanan DOI'ler | — | `project` | Dosya listesi + DOI eşleşmeleri |
 | `analysis_updates` | Kayıtlı denetim/matris verisini okur | — | `doi`, `entry_id`, `query`, `include_*`, `project` | Kayıtlı analiz (varsa) |
-| `export_review` | Markdown/CSV/JSON rapor yazar | `title` | `sections`, `content`, `references`, `claims`, `format`, `filename`, `output_path` | Diske yazılan rapor |
+| `export_review` | Markdown/CSV/JSON rapor yazar; `project` verilirse proje çıktı klasörüne | `title` | `project`, `sections`, `content`, `references`, `claims`, `format`, `filename`, `output_path` | Diske yazılan rapor |
 
-## paperqa-local (7 araç)
+## paperqa-local (8 araç)
 
-PaperQA2 indeksleri üzerinde çalışır. `paperqa_search` ve `paperqa_read_pages` LLM çağırmaz; `paperqa_ask` yerel Qwen modelini kullanır ve taslak üretir.
+PaperQA2 indeksleri üzerinde çalışır. `paperqa_search` ve `paperqa_read_pages` LLM çağırmaz; `paperqa_ask` yerel Qwen modelini kullanır, sunucu kapalıysa llama.cpp'yi otomatik başlatır ve taslak üretir.
 
 | Araç | Amaç | Zorunlu girdi | İsteğe bağlı | Çıktı | LLM |
 |---|---|---|---|---|---|
 | `paperqa_projects` | Kayıtlı projeleri listeler | — | — | Proje + indeks durumu | Hayır |
-| `paperqa_register_project` | PDF klasörünü proje yapar, manifest üretir | `name`, `paper_directory` | `title`, `description`, `include_subdirectories`, `include_files_without_doi`, `refresh_manifest`, `enrich_metadata`, `index_directory`, `index_name` | Proje kaydı + manifest | Hayır |
+| `paperqa_register_project` | PDF klasörünü proje yapar, manifest üretir; çıktı klasörünü belirler | `name`, `paper_directory` | `title`, `description`, `include_subdirectories`, `include_files_without_doi`, `refresh_manifest`, `enrich_metadata`, `index_directory`, `index_name`, `output_directory` | Proje kaydı + manifest + çıktı klasörü | Hayır |
 | `paperqa_build_index` | Manifest → PaperQA2 indeksi | `project` | `rebuild` | İndeks | Hayır (embedding) |
 | `paperqa_status` | İndeks durumu | `project` | — | Dosya/doküman/parça sayısı | Hayır |
 | `paperqa_search` | Proje içinde semantik arama | `project`, `query` | `k`, `max_chars` | Parçalar + DOI + sayfa adayları | Hayır |
 | `paperqa_read_pages` | PDF'ten sayfa metni | `project`, `doi` | `page_start`, `page_end`, `max_chars` | Sayfa metni | Hayır |
-| `paperqa_ask` | Yerel Qwen ile taslak cevap | `project`, `question` | `evidence_k`, `max_sources`, `timeout_seconds` | Taslak cevap + kaynaklar | Evet |
+| `paperqa_llm_status` | llama.cpp sunucu durumu (başlatmaz) | — | `timeout_seconds` | Erişim, model listesi, otomatik yönetim durumu | Hayır |
+| `paperqa_ask` | Yerel Qwen ile taslak cevap; sunucuyu gerektiğinde başlatır | `project`, `question` | `evidence_k`, `max_sources`, `timeout_seconds` | Taslak cevap + kaynaklar | Evet |
 
 ## Kanıt değeri
 

@@ -24,6 +24,7 @@ DEFAULT_HEADINGS = {
     "claim_matrix": "2) İddia–Kanıt Matrisi",
     "corrections": "3) Düzeltme Önerileri (özet)",
     "limitations": "4) Notlar ve Sınırlılıklar",
+    "next_steps": "5) Sonraki Adımlar",
     "references": "Kaynakça",
 }
 
@@ -48,6 +49,20 @@ STATUS_LABELS = {
     "out_of_scope": "➖ Kapsam dışı",
     "scope": "➖ Kapsam dışı",
     "interpretation": "🟡 Yorum",
+}
+
+STATUS_CLASSES = {
+    "supported": "ok",
+    "full": "ok",
+    "partial": "warn",
+    "partially_supported": "warn",
+    "interpretation": "warn",
+    "contradicted": "bad",
+    "contradicts": "bad",
+    "not_found": "bad",
+    "none": "bad",
+    "out_of_scope": "muted",
+    "scope": "muted",
 }
 
 
@@ -134,6 +149,10 @@ def _status(value: Any) -> str:
     return escape(text)
 
 
+def _status_class(value: Any) -> str:
+    return STATUS_CLASSES.get(str(value or "").strip().lower(), "muted")
+
+
 def _headings(data: dict[str, Any]) -> dict[str, str]:
     merged = dict(DEFAULT_HEADINGS)
     override = data.get("headings")
@@ -142,6 +161,57 @@ def _headings(data: dict[str, Any]) -> dict[str, str]:
             if key in merged and value:
                 merged[key] = str(value)
     return merged
+
+
+def render_notice(notice: Any) -> str:
+    """Render the optional source-policy / method notice box."""
+    if notice is None or notice == "":
+        return ""
+    if isinstance(notice, dict):
+        title = str(notice.get("title") or "").strip()
+        text = notice.get("text")
+        if text in (None, ""):
+            text = notice.get("body", "")
+        parts: list[str] = []
+        if title:
+            title_html = escape(title)
+            if not title_html.endswith((".", ":", "!", "?")):
+                title_html += "."
+            parts.append(f"<strong>{title_html}</strong>")
+        body = rich(text).strip()
+        if body:
+            parts.append(body)
+        if not parts:
+            return ""
+        return f'<div class="notice">{" ".join(parts)}</div>'
+    if isinstance(notice, str):
+        text = rich(notice).strip()
+        return f'<div class="notice">{text}</div>' if text else ""
+    return ""
+
+
+def render_summary_strip(summary: Any) -> str:
+    """Render report counts as compact pills, b1-style."""
+    if not isinstance(summary, dict):
+        return ""
+    labels = [
+        ("change_cards", "değişiklik kartı"),
+        ("sources", "kaynak"),
+        ("claims", "iddia"),
+        ("not_found", "kanıtlanamayan iddia"),
+    ]
+    items: list[str] = []
+    for key, label in labels:
+        value = summary.get(key)
+        if value is None or isinstance(value, bool):
+            continue
+        text = str(value).strip()
+        if not text.isdigit():
+            continue
+        items.append(f"<span><b>{escape(text)}</b> {escape(label)}</span>")
+    if not items:
+        return ""
+    return '<p class="summary-strip">' + "".join(items) + "</p>"
 
 
 def render_intro(intro: dict[str, Any]) -> str:
@@ -158,17 +228,13 @@ def render_intro(intro: dict[str, Any]) -> str:
             parts: list[str] = []
             for segment in segments:
                 if not isinstance(segment, dict):
-                    parts.append(rich(segment))
+                    parts.append(rich(segment).strip())
                     continue
-                text = rich(segment.get("text", ""))
+                text = rich(segment.get("text", "")).strip()
+                if not text:
+                    continue
                 if segment.get("changed"):
-                    leading = text[: len(text) - len(text.lstrip())]
-                    trailing = text[len(text.rstrip()) :]
-                    core = text.strip()
-                    if core:
-                        parts.append(f'{leading}<span class="mark">{core}</span>{trailing}')
-                    else:
-                        parts.append(text)
+                    parts.append(f"<mark>{text}</mark>")
                 else:
                     parts.append(text)
             out.append("<p>\n  " + "\n  ".join(parts) + "\n</p>")
@@ -189,14 +255,21 @@ def render_change_cards(cards: list[dict[str, Any]]) -> str:
             heading += f" — {escape(title)}"
         if location:
             heading += f" ({escape(location)})"
-        out.append('<div class="diffitem">')
-        out.append(f"  <h3>{heading}</h3>")
+        status = card.get("evidence_status")
+        badge = ""
+        if status:
+            badge = (
+                f' <span class="badge {_status_class(status)}">'
+                f"{escape(_status(status))}</span>"
+            )
+        out.append(f'<article class="card" id="degisiklik-{index}">')
+        out.append(f"  <h3>{heading}{badge}</h3>")
 
         author_sentence = card.get("author_sentence")
         if author_sentence:
             out.append(
                 '  <div class="row"><span class="lbl">Yazarın yazdığı</span>'
-                f"{quote(author_sentence)}</div>"
+                f"<p>{quote(author_sentence)}</p></div>"
             )
 
         for source in card.get("sources") or []:
@@ -210,36 +283,46 @@ def render_change_cards(cards: list[dict[str, Any]]) -> str:
             if source.get("doi"):
                 label += f" · DOI: {doi_link(source['doi'])}"
             lang = str(source.get("quote_language") or "en")
-            out.append("  <blockquote>")
+            out.append('  <div class="ev">')
+            out.append(f'    <div class="ev-head">{label}</div>')
             out.append(
-                f'    <div class="row"><span class="lbl">{label}</span>'
-                f'<span class="en" lang="{escape_attr(lang)}">{quote(source.get("quote", ""))}</span></div>'
+                f'    <p class="en" lang="{escape_attr(lang)}">'
+                f'{quote(source.get("quote", ""))}</p>'
             )
             out.append(
-                '    <div class="row"><span class="lbl">Türkçesi</span>'
-                f'{quote(source.get("translation", ""))}</div>'
+                '    <p class="tr"><span class="lbl">Türkçesi</span>'
+                f'{quote(source.get("translation", ""))}</p>'
             )
-            out.append("  </blockquote>")
+            out.append("  </div>")
 
         rewritten = card.get("rewritten_sentence")
         if rewritten:
             out.append(
                 '  <div class="row"><span class="lbl">Yeniden yazılan cümle</span>'
-                f'<span class="mark">{quote(rewritten)}</span></div>'
+                f'<p class="rewritten"><mark>{quote(rewritten)}</mark></p></div>'
             )
 
-        for note in card.get("notes") or []:
-            if not isinstance(note, dict):
-                continue
-            label = escape(note.get("label") or "Düzeltme notu")
-            what = rich(note.get("what", ""))
-            why = rich(note.get("why", ""))
+        notes = [note for note in (card.get("notes") or []) if isinstance(note, dict)]
+        if notes:
+            out.append('  <div class="notes">')
             out.append(
-                f'  <div class="row"><span class="lbl">{label}</span>'
-                f"<b>Ne değişti:</b> {what}<br><b>Neden:</b> {why}</div>"
+                f'    <h4>{"Düzeltme notları" if len(notes) > 1 else "Düzeltme notu"}</h4>'
             )
+            out.append("    <ol>")
+            for note in notes:
+                label = escape(note.get("label") or "Düzeltme notu")
+                if not label.endswith((".", ":", "!", "?")):
+                    label += ":"
+                what = rich(note.get("what", ""))
+                why = rich(note.get("why", ""))
+                out.append(
+                    f'      <li><strong>{label}</strong> '
+                    f"<b>Ne değişti:</b> {what}<br><b>Neden:</b> {why}</li>"
+                )
+            out.append("    </ol>")
+            out.append("  </div>")
 
-        out.append("</div>")
+        out.append("</article>")
     return "\n".join(out)
 
 
@@ -265,11 +348,14 @@ def render_source_table(source_audit: list[dict[str, Any]]) -> str:
         )
         open_access = _format_bool(item.get("open_access"))
         retraction = escape(item.get("retraction") or "yok")
+        role = escape(item.get("role") or "-")
+        limitation = escape(item.get("limitation") or "-")
         rows.append(
             "<tr>"
             f"<td>{number}</td><td>{citation}</td><td>{doi}</td>"
             f"<td>{journal_year}</td><td>{quartile}</td><td>{citations}</td>"
             f"<td>{open_access}</td><td>{retraction}</td>"
+            f"<td>{role}</td><td>{limitation}</td>"
             "</tr>"
         )
     return "\n".join(rows)
@@ -281,14 +367,19 @@ def render_claim_table(claims: list[dict[str, Any]]) -> str:
         if not isinstance(item, dict):
             continue
         claim_id = escape(item.get("claim_id", ""))
+        location = escape(item.get("location") or "-")
         claim = rich(item.get("claim", ""))
         citations = _format_citations(item.get("citations"))
+        evidence_type = escape(item.get("evidence_type") or "-")
         status = _status(item.get("status"))
+        status_html = f'<span class="status {_status_class(item.get("status"))}">{escape(status)}</span>'
         evidence = rich(item.get("evidence", ""))
+        note = rich(item.get("note") or "-")
         rows.append(
             "<tr>"
-            f"<td>{claim_id}</td><td>{claim}</td><td>{citations}</td>"
-            f"<td>{status}</td><td>{evidence}</td>"
+            f"<td>{claim_id}</td><td>{location}</td><td>{claim}</td>"
+            f"<td>{citations}</td><td>{evidence_type}</td><td>{status_html}</td>"
+            f"<td>{evidence}</td><td>{note}</td>"
             "</tr>"
         )
     return "\n".join(rows)
@@ -343,19 +434,29 @@ def render_report(data: dict[str, Any]) -> str:
 
     body: list[str] = [f"<h1>{title}</h1>", f'<p class="meta">{meta_html}</p>']
 
+    summary_html = render_summary_strip(data.get("summary"))
+    if summary_html:
+        body.append(summary_html)
+
+    notice_html = render_notice(data.get("notice"))
+    if notice_html:
+        body.append(notice_html)
+
     intro = data.get("intro")
     if isinstance(intro, dict):
+        body.append('<section id="metin">')
         intro_heading = intro.get("heading")
         if intro_heading and str(intro_heading).strip() and str(intro_heading).strip() != data.get("title"):
             body.append(f"<h2>{escape(intro_heading)}</h2>")
         body.append(render_intro(intro))
+        body.append("</section>")
 
     cards = data.get("change_cards") or []
     if cards:
-        body.append('<section class="appendix">')
+        body.append('<section class="appendix appendix-cards">')
         body.append(f"  <h2>{escape(headings['appendix_1'])}</h2>")
         appendix_intro = data.get("appendix_intro") or DEFAULT_APPENDIX_INTRO
-        body.append(f'  <p class="intro">{rich(appendix_intro)}</p>')
+        body.append(f'  <p class="legend">{rich(appendix_intro)}</p>')
         body.append(render_change_cards(cards))
         body.append("</section>")
 
@@ -370,31 +471,40 @@ def render_report(data: dict[str, Any]) -> str:
         if data.get("generated_at"):
             note_parts.append(f"Tarih: {escape(data['generated_at'])}")
         note_parts.append(f"Proje: {project}")
-        body.append(f'  <p class="note">{" · ".join(note_parts)}</p>')
+        body.append(f'  <p class="legend">{" · ".join(note_parts)}</p>')
 
         if source_audit:
             body.append(f"  <h3>{escape(headings['source_inventory'])}</h3>")
             body.append('  <div class="table-wrap"><table>')
             body.append(
-                "    <thead><tr><th>#</th><th>Kaynak</th><th>DOI</th><th>Dergi (yıl)</th>"
-                "<th>Q (2024)</th><th>Atıf (Crossref/OpenAlex)</th><th>OA</th><th>Retraction</th></tr></thead>"
+                "    <thead><tr>"
+                "<th scope=\"col\">#</th><th scope=\"col\">Kaynak</th>"
+                "<th scope=\"col\">DOI</th><th scope=\"col\">Dergi (yıl)</th>"
+                "<th scope=\"col\">Q (2024)</th><th scope=\"col\">Atıf (Crossref/OpenAlex)</th>"
+                "<th scope=\"col\">OA</th><th scope=\"col\">Retraction</th>"
+                "<th scope=\"col\">Rol</th><th scope=\"col\">Sınırlılık</th>"
+                "</tr></thead>"
             )
             body.append(f"    <tbody>\n{render_source_table(source_audit)}\n    </tbody>")
             body.append("  </table></div>")
             if data.get("source_note"):
-                body.append(f'  <p class="note">{rich(data["source_note"])}</p>')
+                body.append(f'  <p class="legend">{rich(data["source_note"])}</p>')
 
         if claims:
             body.append(f"  <h3>{escape(headings['claim_matrix'])}</h3>")
             body.append('  <div class="table-wrap"><table>')
             body.append(
-                "    <thead><tr><th>#</th><th>İddia (özet)</th><th>Atıf(lar)</th>"
-                "<th>Durum</th><th>Kanıt / gerekçe (PDF sayfası)</th></tr></thead>"
+                "    <thead><tr>"
+                "<th scope=\"col\">#</th><th scope=\"col\">Konum</th>"
+                "<th scope=\"col\">İddia (özet)</th><th scope=\"col\">Atıf(lar)</th>"
+                "<th scope=\"col\">Kanıt türü</th><th scope=\"col\">Destek</th>"
+                "<th scope=\"col\">Kanıt / gerekçe (PDF sayfası)</th><th scope=\"col\">Not</th>"
+                "</tr></thead>"
             )
             body.append(f"    <tbody>\n{render_claim_table(claims)}\n    </tbody>")
             body.append("  </table></div>")
             body.append(
-                '  <p class="note">Durum işaretleri: ✅ destekliyor · 🟡 kısmi/nüanslı · '
+                '  <p class="legend">Durum işaretleri: ✅ destekliyor · 🟡 kısmi/nüanslı · '
                 "🔴 atıf–iddia uyumsuz · ➖ kapsam dışı (amaç beyanı)</p>"
             )
 
@@ -408,6 +518,11 @@ def render_report(data: dict[str, Any]) -> str:
             body.append(f"  <h3>{escape(headings['limitations'])}</h3>")
             body.append(render_list(limitations, ordered=False))
 
+        next_steps = data.get("next_steps") or []
+        if next_steps:
+            body.append(f"  <h3>{escape(headings['next_steps'])}</h3>")
+            body.append(render_list(next_steps, ordered=True))
+
         references = data.get("references") or []
         if references:
             body.append(f"  <h3>{escape(headings['references'])}</h3>")
@@ -416,7 +531,7 @@ def render_report(data: dict[str, Any]) -> str:
         body.append("</section>")
 
     if data.get("footer"):
-        body.append(f'<p class="meta report-footer">{rich(data["footer"])}</p>')
+        body.append(f'<footer class="report-footer"><p>{rich(data["footer"])}</p></footer>')
 
     css = files("report_kit").joinpath("templates/chapter-report.css").read_text(encoding="utf-8")
     shell = files("report_kit").joinpath("templates/chapter-report.html").read_text(encoding="utf-8")

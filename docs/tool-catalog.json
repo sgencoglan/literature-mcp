@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-10-22T10:46:52+00:00",
+  "generated_at": "2026-10-30T04:51:10+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
@@ -516,12 +516,16 @@
         },
         {
           "name": "export_review",
-          "description": "Save a cited review as Markdown, CSV, or JSON inside REVIEW_OUTPUT_DIR. Accepts sections, references, and evidence-check claims.",
+          "description": "Save a cited review as Markdown, CSV, or JSON. With project, the file is written inside that project's output_directory (defaults to the project folder); otherwise inside REVIEW_OUTPUT_DIR. Accepts sections, references, and evidence-check claims.",
           "input_schema": {
             "type": "object",
             "properties": {
               "title": {
                 "type": "string"
+              },
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
               },
               "sections": {
                 "type": "array",
@@ -659,7 +663,7 @@
       ]
     },
     "paperqa-local": {
-      "tool_count": 7,
+      "tool_count": 8,
       "tools": [
         {
           "name": "paperqa_projects",
@@ -672,7 +676,7 @@
         },
         {
           "name": "paperqa_register_project",
-          "description": "Bir PDF klasörünü izole proje olarak kaydeder ve manifest CSV üretir.\n\n- DOI, dosya adından (``10.1007s...pdf`` gibi) veya ilk iki sayfadan algılanır.\n- Metadata Crossref (yedek: OpenAlex) ile zenginleştirilir; API anahtarı gerekmez.\n- Mevcut manifest ``refresh_manifest=True`` verilmedikçe korunur.\n- DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz\n  (``include_files_without_doi=True`` ile dahil edilir).\n- İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.\n",
+          "description": "Bir PDF klasörünü izole proje olarak kaydeder ve manifest CSV üretir.\n\n- DOI, dosya adından (``10.1007s...pdf`` gibi) veya ilk iki sayfadan algılanır.\n- Metadata Crossref (yedek: OpenAlex) ile zenginleştirilir; API anahtarı gerekmez.\n- Mevcut manifest ``refresh_manifest=True`` verilmedikçe korunur.\n- Kayıtlı bir projenin klasörü veya alt klasör taraması değiştirilecekse\n  ``refresh_manifest=True`` zorunludur; aksi hâlde eski manifest yeni\n  klasörle karışır.\n- DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz\n  (``include_files_without_doi=True`` ile dahil edilir).\n- Aynı DOI'ye çözülen ikinci dosya manifeste alınmaz; ``skipped_duplicate_doi``\n  alanında raporlanır.\n- ``output_directory`` verilmezse çıktılar proje klasörüne (``paper_directory``)\n  yazılır; böylece raporlar baştan kullanıcının verdiği klasörde kalır.\n- İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.\n",
           "input_schema": {
             "properties": {
               "name": {
@@ -750,6 +754,18 @@
                 ],
                 "default": null,
                 "title": "Index Name"
+              },
+              "output_directory": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Output Directory"
               }
             },
             "required": [
@@ -762,7 +778,7 @@
         },
         {
           "name": "paperqa_build_index",
-          "description": "Projenin indeksini manifest üyeliğine göre kurar/günceller.\n\n- İndekse yalnızca manifestteki dosyalar girer (klasör taraması değil).\n- ``rebuild=True`` proje indeks klasörünü silip sıfırdan kurar.\n- Diğer projelerin indekslerine dokunulmaz.\n",
+          "description": "Projenin indeksini manifest üyeliğine göre kurar/günceller.\n\n- İndekse yalnızca manifestteki dosyalar girer (klasör taraması değil).\n- ``rebuild=True`` proje indeks klasörünü önce yedeğe taşır; kurulum\n  başarısız olursa eski indeks geri getirilir.\n- Diğer projelerin indekslerine dokunulmaz.\n",
           "input_schema": {
             "properties": {
               "project": {
@@ -784,7 +800,7 @@
         },
         {
           "name": "paperqa_status",
-          "description": "Bir projenin indeks durumunu (dosya, doküman, metin parçası) döndürür.",
+          "description": "Bir projenin indeks durumunu (dosya, doküman, metin parçası) döndürür.\n\nManifest ile indeks arasındaki uyuşmazlıkları da raporlar: indekste eksik\ndosyalar ve manifestte olmayan indeks kayıtları.\n",
           "input_schema": {
             "properties": {
               "project": {
@@ -796,6 +812,21 @@
               "project"
             ],
             "title": "paperqa_statusArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_llm_status",
+          "description": "Yerel llama.cpp sunucusunun erişilebilirliğini ve yüklü modelleri döndürür.\n\nSunucuyu **başlatmaz**; yalnızca durumu raporlar. ``paperqa_ask`` çağrısı\nsunucu kapalıysa otomatik başlatır. llama.cpp'nin ``/v1/models`` uç noktası\nsorgulanır.\n",
+          "input_schema": {
+            "properties": {
+              "timeout_seconds": {
+                "default": 5.0,
+                "title": "Timeout Seconds",
+                "type": "number"
+              }
+            },
+            "title": "paperqa_llm_statusArguments",
             "type": "object"
           }
         },
@@ -833,7 +864,7 @@
         },
         {
           "name": "paperqa_read_pages",
-          "description": "Projedeki bir PDF'ten sayfa metni okur (DOI → manifest eşlemesi).\n\nSayfa numaraları 1 tabanlıdır. ``paperqa_search`` sonucundaki alıntıları\nbu araçla doğrulayın. DOI başka bir projede olsa bile burada bulunmaz.\n",
+          "description": "Projedeki bir PDF'ten sayfa metni okur (DOI → manifest eşlemesi).\n\nSayfa numaraları 1 tabanlıdır. ``paperqa_search`` sonucundaki alıntıları\nbu araçla doğrulayın. DOI başka bir projede olsa bile burada bulunmaz.\nTek çağrıda en fazla 50 sayfa okunur.\n",
           "input_schema": {
             "properties": {
               "project": {
@@ -877,7 +908,7 @@
         },
         {
           "name": "paperqa_ask",
-          "description": "Proje indeksi üzerinde yerel Qwen modeline soru sorar (taslak cevap).\n\nCPU'da yavaştır ve yerel model atıf hatası yapabilir. Cevabı taslak kabul\nedip her iddiayı ``paperqa_search`` veya ``paperqa_read_pages`` ile\ndoğrulayın.\n",
+          "description": "Proje indeksi üzerinde yerel LLM'e soru sorar (taslak cevap).\n\nYerel llama.cpp sunucusunu kullanır. Sunucu kapalıysa MCP onu otomatik\nbaşlatır ve yalnızca kendisi başlattıysa boşta kalınca durdurur\n(``PAPERQA_AUTO_START`` / ``PAPERQA_AUTO_STOP_IDLE``). CPU'da yavaştır ve\nküçük modeller atıf hatası yapabilir. Cevabı taslak kabul edip her iddiayı\n``paperqa_search`` veya ``paperqa_read_pages`` ile doğrulayın.\n",
           "input_schema": {
             "properties": {
               "project": {
@@ -899,7 +930,7 @@
                 "type": "integer"
               },
               "timeout_seconds": {
-                "default": 300,
+                "default": 600,
                 "title": "Timeout Seconds",
                 "type": "integer"
               }
@@ -915,5 +946,5 @@
       ]
     }
   },
-  "total_tools": 26
+  "total_tools": 27
 }

@@ -1071,7 +1071,7 @@ def _project_analysis_path(config: Dict[str, Any]) -> Optional[Path]:
     configured = config.get("analysis_json")
     if configured:
         return Path(configured).expanduser()
-    output = config.get("output_directory")
+    output = config.get("output_directory") or config.get("paper_directory")
     if output:
         return Path(output).expanduser() / "analysis_updates.json"
     return None
@@ -2384,6 +2384,7 @@ async def export_review(
     format: str = "markdown",
     filename: Optional[str] = None,
     output_path: Optional[str] = None,
+    project: Optional[str] = None,
 ) -> Dict[str, Any]:
     if not title.strip():
         return _error("title is required")
@@ -2419,7 +2420,14 @@ async def export_review(
     else:
         payload = json.dumps(review, ensure_ascii=False, indent=2) + "\n"
 
-    REVIEW_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    if project:
+        config = _project_config(project)
+        base_dir = Path(
+            config.get("output_directory") or config["paper_directory"]
+        ).expanduser().resolve()
+    else:
+        base_dir = REVIEW_OUTPUT_DIR
+    base_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def _stem(value: str) -> str:
@@ -2427,29 +2435,36 @@ async def export_review(
         return value[: -len(extension)] if value.lower().endswith(extension) else value
 
     if output_path:
-        path = Path(output_path).expanduser().resolve()
+        path = Path(output_path).expanduser()
+        if not path.is_absolute():
+            path = base_dir / path
+        path = path.resolve()
         if path.is_dir():
             path = path / (_safe_slug(_stem(filename or title)) + extension)
         try:
-            path.relative_to(REVIEW_OUTPUT_DIR)
+            path.relative_to(base_dir)
         except ValueError:
             return _error(
-                "output_path must be inside REVIEW_OUTPUT_DIR",
-                output_dir=str(REVIEW_OUTPUT_DIR),
+                (
+                    "output_path must be inside the project output directory"
+                    if project
+                    else "output_path must be inside REVIEW_OUTPUT_DIR"
+                ),
+                output_dir=str(base_dir),
                 output_path=str(path),
             )
     elif filename:
         name = _safe_slug(_stem(filename)) + extension
-        path = REVIEW_OUTPUT_DIR / name
+        path = base_dir / name
     else:
-        path = REVIEW_OUTPUT_DIR / f"{_safe_slug(title)}-{timestamp}{extension}"
+        path = base_dir / f"{_safe_slug(title)}-{timestamp}{extension}"
 
     if path.suffix.lower() != extension:
         path = path.with_suffix(extension)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(payload, encoding=encoding)
 
-    return {
+    result = {
         "path": str(path),
         "format": fmt,
         "bytes": len(payload.encode(encoding)),
@@ -2457,6 +2472,10 @@ async def export_review(
         "claims_count": len(review["claims"]),
         "title": review["title"],
     }
+    if project:
+        result["project"] = project
+        result["output_directory"] = str(base_dir)
+    return result
 
 
 # --------------------------------------------------------------------------- #
@@ -2652,13 +2671,16 @@ async def handle_list_tools() -> List[types.Tool]:
         types.Tool(
             name="export_review",
             description=(
-                "Save a cited review as Markdown, CSV, or JSON inside REVIEW_OUTPUT_DIR. "
+                "Save a cited review as Markdown, CSV, or JSON. With project, "
+                "the file is written inside that project's output_directory "
+                "(defaults to the project folder); otherwise inside REVIEW_OUTPUT_DIR. "
                 "Accepts sections, references, and evidence-check claims."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "title": {"type": "string"},
+                    "project": project_schema,
                     "sections": {
                         "type": "array",
                         "items": {
@@ -2902,6 +2924,7 @@ async def handle_call_tool(
                     format=str(args.get("format", "markdown")),
                     filename=args.get("filename"),
                     output_path=args.get("output_path"),
+                    project=args.get("project"),
                 )
             )
 

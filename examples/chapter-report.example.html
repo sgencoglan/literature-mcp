@@ -3,152 +3,303 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>1. Giriş — ornek-uzaktan-calisma</title>
+<title>1. Giriş — Düzeltilmiş Taslak ve Kaynak Denetimi — ornek-uzaktan-calisma</title>
 <style>
 :root {
-  --marker: rgba(255, 0, 0, 0.15);
-  --ink: #212529;
-  --muted: #6c757d;
+  --ink: #1f2328;
+  --muted: #5b6570;
+  --line: #e3e6ea;
+  --accent: #8a1c1c;
+  --marker: rgba(255, 0, 0, 0.13);
 }
 * { box-sizing: border-box; }
 body {
-  max-width: 46rem;
-  margin: 3rem auto;
-  padding: 0 1.25rem;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2.2rem 1.4rem 4rem;
   font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
   font-size: 1.06rem;
-  line-height: 1.8;
+  line-height: 1.65;
   color: var(--ink);
   background: #fff;
 }
-h1 {
-  font-size: 1.45rem;
-  margin: 0 0 .35rem;
+h1, h2, h3, h4 {
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  line-height: 1.25;
 }
+h1 { font-size: 1.8rem; margin: 0 0 .4rem; }
+h2 {
+  font-size: 1.25rem;
+  margin: 2.6rem 0 1rem;
+  padding-bottom: .35rem;
+  border-bottom: 2px solid var(--line);
+}
+h3 { font-size: 1.02rem; margin: 1.6rem 0 .6rem; }
+h4 { font-size: .86rem; margin: .2rem 0 .4rem; }
 .meta {
-  font-size: .85rem;
   color: var(--muted);
-  margin: 0 0 1.6rem;
-  border-bottom: 1px solid #e5e5e5;
-  padding-bottom: .8rem;
+  font-size: .9rem;
+  margin: 0 0 1rem;
 }
-p { margin: 0 0 1.15rem; text-align: justify; }
-.mark {
-  background-color: var(--marker);
-  border-radius: 3px;
-  padding: 0.08em 0.18em;
-  margin: 0 -0.18em;
+.summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: 0 0 1.2rem;
+}
+.summary-strip span {
+  background: #f4f5f6;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: .15rem .55rem;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: .76rem;
+  color: var(--muted);
+}
+.summary-strip b { color: var(--ink); }
+.notice {
+  background: #f7f7f5;
+  border-left: 4px solid #b9b9b2;
+  padding: .8rem 1rem;
+  font-size: .9rem;
+  color: #3d444b;
+  margin: 1rem 0 0;
+}
+mark, .mark {
+  background: var(--marker);
+  padding: 0 .08em;
+  border-radius: 2px;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-.appendix { margin-top: 2.8rem; border-top: 2px solid #ddd; padding-top: 1.4rem; }
-.appendix h2 { font-size: 1.18rem; margin: 0 0 .35rem; }
-.appendix .intro { font-size: .92rem; color: var(--muted); margin-bottom: 1.5rem; }
-.diffitem { background: #fafafa; border: 1px solid #ececec; border-radius: 8px; padding: 1.05rem 1.15rem; margin-bottom: 1.5rem; }
-.diffitem h3 { font-size: 1.02rem; margin: 0 0 .8rem; color: #8a1c1c; }
-.diffitem .row { margin: 0 0 .6rem; font-size: .97rem; }
-.diffitem .lbl { display: block; font-weight: 700; font-size: .78rem; letter-spacing: .03em; text-transform: uppercase; color: #666; margin-bottom: .15rem; }
-.diffitem blockquote { margin: .4rem 0 .75rem; padding: .1rem 0 .1rem .75rem; border-left: 3px solid #e3b8b8; }
-.diffitem blockquote .lbl { color: #8a1c1c; }
-.diffitem .en { font-style: italic; }
-.diffitem a { color: #8a1c1c; text-decoration: none; text-transform: none; border-bottom: 1px dotted currentColor; }
-.diffitem a:hover { text-decoration: underline; }
-.appendix-matrix .note { font-size: .84rem; color: var(--muted); margin-bottom: 1rem; }
-.appendix-matrix h3 { font-size: 1.05rem; margin: 1.9rem 0 .5rem; }
-.appendix-matrix table { width: 100%; border-collapse: collapse; font-size: .78rem; margin: .5rem 0 1rem; }
-.appendix-matrix th, .appendix-matrix td { border: 1px solid #ddd; padding: .35rem .5rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
-.appendix-matrix th { background: #f3f3f3; font-size: .76rem; }
-.appendix-matrix table a { color: #8a1c1c; text-decoration: none; }
-.appendix-matrix table a:hover { text-decoration: underline; }
+p { margin: .8rem 0; text-align: justify; }
+.appendix {
+  margin-top: 2.8rem;
+  border-top: 2px solid var(--line);
+  padding-top: 1.4rem;
+}
+.legend {
+  font-size: .82rem;
+  color: var(--muted);
+  margin: .2rem 0 .8rem;
+  text-align: left;
+}
+.card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  margin: 1.1rem 0;
+  break-inside: avoid;
+}
+.card h3 { margin-top: 0; }
+.card .row { margin: .6rem 0; }
+.card .row p { margin: .25rem 0; }
+.card .lbl,
+.lbl {
+  display: block;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .15rem;
+}
+.ev {
+  border-left: 3px solid #e6c9c9;
+  padding: .15rem 0 .15rem .8rem;
+  margin: .65rem 0;
+}
+.ev-head {
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: .8rem;
+  color: var(--accent);
+  margin-bottom: .2rem;
+}
+.ev .en { font-style: italic; }
+.ev .tr { color: #333; }
+.ev a,
+.card a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+}
+.ev a:hover,
+.card a:hover { text-decoration: underline; }
+.notes {
+  background: #fafafa;
+  border: 1px dashed #d9d9d4;
+  border-radius: 6px;
+  padding: .6rem .9rem;
+  margin-top: .7rem;
+}
+.notes ol { margin: .25rem 0 0; padding-left: 1.25rem; font-size: .9rem; }
+.notes li { margin: .3rem 0; }
+.badge {
+  display: inline-block;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  vertical-align: .12em;
+  margin-left: .35rem;
+  background: #f1f3f5;
+  color: var(--muted);
+}
+.badge.ok { background: #e7f4ea; color: #1e6b33; }
+.badge.warn { background: #fff6dd; color: #7a5a00; }
+.badge.bad { background: #fdeaea; color: var(--accent); }
+.badge.muted { background: #f1f3f5; color: var(--muted); }
+.status { white-space: nowrap; }
+.status.ok { color: #1e6b33; }
+.status.warn { color: #7a5a00; }
+.status.bad { color: var(--accent); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .84rem;
+  margin: .6rem 0 1.2rem;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: .45rem .5rem;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #f4f5f6;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: .78rem;
+}
 .table-wrap { width: 100%; overflow-x: auto; }
 .table-wrap table { margin: .5rem 0 1rem; }
-.report-footer { margin-top: 2.4rem; }
+.report-footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .8rem;
+}
+.report-footer p { margin: 0; text-align: left; }
+ul, ol { margin: .5rem 0; padding-left: 1.3rem; }
+li { margin: .3rem 0; }
 .empty { color: var(--muted); font-style: italic; }
 @media (max-width: 600px) {
-  body { margin: 1.5rem auto; }
-  .appendix-matrix table { font-size: .72rem; }
+  body { padding: 1.4rem 1rem 3rem; }
+  table { font-size: .76rem; }
 }
 @media print {
-  .mark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { margin: 1rem auto; }
-  .diffitem { break-inside: avoid; }
+  body { max-width: none; padding: 0; }
+  .card { break-inside: avoid; }
+  mark, .mark {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  thead { display: table-header-group; }
+  a { color: inherit; }
 }
 
 </style>
 </head>
 <body>
-<h1>1. Giriş</h1>
+<h1>1. Giriş — Düzeltilmiş Taslak ve Kaynak Denetimi</h1>
 <p class="meta">Düzeltilmiş taslak — <strong>ornek-uzaktan-calisma</strong> · Kırmızı zemin: önceki taslağa göre değiştirilen veya eklenen cümleler · Tarih: 2026-10-22</p>
+<p class="summary-strip"><span><b>3</b> değişiklik kartı</span><span><b>3</b> kaynak</span><span><b>4</b> iddia</span><span><b>1</b> kanıtlanamayan iddia</span></p>
+<div class="notice"><strong>Kaynak politikası.</strong> Önce tam metin; tam metinde karşılığı yoksa ve açıkça “özet” olarak etiketlenirse özet kullanıldı. Alıntılar sayfa numarasıyla doğrulandı. Bu örnekteki kaynaklar ve DOI’ler sentetiktir; gerçek teslimde kullanılamaz.</div>
+<section id="metin">
+<h2>Düzeltilmiş metin</h2>
 <p>
-  Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir. 
-  <span class="mark">Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).</span>
+  Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir.
+  <mark>Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).</mark>
 </p>
 <p>
-  <span class="mark">Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.</span> 
-  <span class="mark">Bununla birlikte sınır yönetimi becerileri, iş–aile çatışması ve tükenme arasındaki ilişkiyi anlamak için daha güvenilir bir çerçeve sunar (Kaya &amp; Yılmaz, 2023).</span>
+  <mark>Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.</mark>
+  <mark>Bununla birlikte sınır yönetimi becerileri, iş–aile çatışması ve tükenme arasındaki ilişkiyi anlamak için daha güvenilir bir çerçeve sunar (Kaya &amp; Yılmaz, 2023).</mark>
 </p>
 <p>
-  Bu bölümün amacı, uzaktan çalışma düzenlerinde çalışan refahını destekleyen koşulları tartışmak ve yöneticilere uygulanabilir bir çerçeve sunmaktır. 
-  <span class="mark">Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).</span>
+  Bu bölümün amacı, uzaktan çalışma düzenlerinde çalışan refahını destekleyen koşulları tartışmak ve yöneticilere uygulanabilir bir çerçeve sunmaktır.
+  <mark>Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).</mark>
 </p>
-<section class="appendix">
+</section>
+<section class="appendix appendix-cards">
   <h2>Ek 1 — Değişikliklerin Kaynak Cümleleriyle Karşılaştırması</h2>
-  <p class="intro">Kırmızı ile işaretlenen her değişiklik için sırasıyla yazarın taslakta yazdığı cümle, kaynaktaki orijinal cümle, bu cümlenin Türkçesi, yeniden yazılan cümle ve düzeltme notu verilmiştir. Bu dosyadaki kaynaklar ve DOI’ler yalnızca biçim gösterimi için üretilmiş sentetik örneklerdir.</p>
-<div class="diffitem">
-  <h3>Değişiklik 1 — Uzaktan çalışmanın refah etkisini tek yönlü sunmak (1. paragraf, 2. cümle)</h3>
-  <div class="row"><span class="lbl">Yazarın yazdığı</span>“Uzaktan çalışma çalışan refahını azaltır; esneklik bu olumsuz etkiyi telafi edemez.”</div>
-  <blockquote>
-    <div class="row"><span class="lbl">Makaledeki orijinal cümle — Demir (2024), s. 4 · DOI: <a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></span><span class="en" lang="en">“Remote work had heterogeneous associations with well-being: autonomy was linked to higher satisfaction, whereas after-hours connectivity was linked to exhaustion.”</span></div>
-    <div class="row"><span class="lbl">Türkçesi</span>“Uzaktan çalışma refahla heterojen ilişkiler göstermiştir: özerklik daha yüksek memnuniyetle, mesai dışı erişilebilirlik ise tükenmeyle ilişkilendirilmiştir.”</div>
-  </blockquote>
-  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><span class="mark">“Uzaktan çalışmanın refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).”</span></div>
-  <div class="row"><span class="lbl">Düzeltme notu — 1. cümle</span><b>Ne değişti:</b> “Refahı azaltır” kesinliği yerine heterojen ilişki vurgusu getirildi; özerklik ve mesai dışı erişilebilirlik ayrı ayrı anıldı.<br><b>Neden:</b> Kaynak, tek yönlü bir azalma değil, koşullara bağlı farklı yönler bildiriyor. Kanıtın kapsamı genişletilmeden aktarıldı.</div>
-</div>
-<div class="diffitem">
-  <h3>Değişiklik 2 — İşten ayrılma niyeti için doğrudan kanıt varmış gibi yazmak (2. paragraf, 1. cümle)</h3>
-  <div class="row"><span class="lbl">Yazarın yazdığı</span>“Uzaktan çalışma işten ayrılma niyetini doğrudan artırır.”</div>
-  <blockquote>
-    <div class="row"><span class="lbl">Makaledeki orijinal cümle — Kaya &amp; Yılmaz (2023), s. 7 · DOI: <a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a></span><span class="en" lang="en">“Boundary management explained additional variance in work–family conflict, but turnover intention was not included as an outcome in the model.”</span></div>
-    <div class="row"><span class="lbl">Türkçesi</span>“Sınır yönetimi, iş–aile çatışmasındaki ek varyansı açıklamış; ancak işten ayrılma niyeti modelde sonuç değişkeni olarak yer almamıştır.”</div>
-  </blockquote>
-  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><span class="mark">“Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.”</span></div>
-  <div class="row"><span class="lbl">Düzeltme notu — 1. cümle</span><b>Ne değişti:</b> Doğrudan nedensellik iddiası kaldırıldı; kaynağın ölçmediği sonuç için temkinli bir ifade kullanıldı.<br><b>Neden:</b> Kaynakta işten ayrılma niyeti ölçülmemiş. Sınır yönetimi bulgusu farklı bir sonuç değişkenine ait.</div>
-</div>
-<div class="diffitem">
-  <h3>Değişiklik 3 — Yönetici desteğini bireysel dayanıklılığa indirgemek (3. paragraf, 2. cümle)</h3>
-  <div class="row"><span class="lbl">Yazarın yazdığı</span>“Tükenmeyi önlemenin tek yolu çalışanların bireysel dayanıklılığını artırmaktır.”</div>
-  <blockquote>
-    <div class="row"><span class="lbl">Makaledeki orijinal cümle — Arslan vd. (2025), s. 11 · DOI: <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></span><span class="en" lang="en">“Leader support was negatively associated with exhaustion after controlling for individual resilience, suggesting that organizational factors also matter.”</span></div>
-    <div class="row"><span class="lbl">Türkçesi</span>“Yönetici desteği, bireysel dayanıklılık kontrol edildikten sonra da tükenmeyle negatif ilişkiliydi; bu, örgütsel etkenlerin de önemli olduğunu göstermektedir.”</div>
-  </blockquote>
-  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><span class="mark">“Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).”</span></div>
-  <div class="row"><span class="lbl">Düzeltme notu — 1. cümle</span><b>Ne değişti:</b> “Tek yol” ifadesi kaldırıldı; yönetici desteği ve örgütsel tasarım birlikte vurgulandı.<br><b>Neden:</b> Kaynak, bireysel dayanıklılık kontrol edildiğinde bile yönetici desteğinin anlamlı kaldığını gösteriyor; tek faktörlü açıklama kanıtla uyuşmuyor.</div>
-</div>
+  <p class="legend">Kırmızı ile işaretlenen her değişiklik için sırasıyla yazarın taslakta yazdığı cümle, kaynaktaki orijinal cümle, bu cümlenin Türkçesi, yeniden yazılan cümle ve düzeltme notu verilmiştir. Bu dosyadaki kaynaklar ve DOI’ler yalnızca biçim gösterimi için üretilmiş sentetik örneklerdir.</p>
+<article class="card" id="degisiklik-1">
+  <h3>Değişiklik 1 — Uzaktan çalışmanın refah etkisini tek yönlü sunmak (1. paragraf, 2. cümle) <span class="badge warn">🟡 Kısmi</span></h3>
+  <div class="row"><span class="lbl">Yazarın yazdığı</span><p>“Uzaktan çalışma çalışan refahını azaltır; esneklik bu olumsuz etkiyi telafi edemez.”</p></div>
+  <div class="ev">
+    <div class="ev-head">Makaledeki orijinal cümle — Demir (2024), s. 4 · DOI: <a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></div>
+    <p class="en" lang="en">“Remote work had heterogeneous associations with well-being: autonomy was linked to higher satisfaction, whereas after-hours connectivity was linked to exhaustion.”</p>
+    <p class="tr"><span class="lbl">Türkçesi</span>“Uzaktan çalışma refahla heterojen ilişkiler göstermiştir: özerklik daha yüksek memnuniyetle, mesai dışı erişilebilirlik ise tükenmeyle ilişkilendirilmiştir.”</p>
+  </div>
+  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark>“Uzaktan çalışmanın refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).”</mark></p></div>
+  <div class="notes">
+    <h4>Düzeltme notu</h4>
+    <ol>
+      <li><strong>Düzeltme notu — 1. cümle:</strong> <b>Ne değişti:</b> “Refahı azaltır” kesinliği yerine heterojen ilişki vurgusu getirildi; özerklik ve mesai dışı erişilebilirlik ayrı ayrı anıldı.<br><b>Neden:</b> Kaynak, tek yönlü bir azalma değil, koşullara bağlı farklı yönler bildiriyor. Kanıtın kapsamı genişletilmeden aktarıldı.</li>
+    </ol>
+  </div>
+</article>
+<article class="card" id="degisiklik-2">
+  <h3>Değişiklik 2 — İşten ayrılma niyeti için doğrudan kanıt varmış gibi yazmak (2. paragraf, 1. cümle) <span class="badge bad">🔴 Kaynakta yok</span></h3>
+  <div class="row"><span class="lbl">Yazarın yazdığı</span><p>“Uzaktan çalışma işten ayrılma niyetini doğrudan artırır.”</p></div>
+  <div class="ev">
+    <div class="ev-head">Makaledeki orijinal cümle — Kaya &amp; Yılmaz (2023), s. 7 · DOI: <a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a></div>
+    <p class="en" lang="en">“Boundary management explained additional variance in work–family conflict, but turnover intention was not included as an outcome in the model.”</p>
+    <p class="tr"><span class="lbl">Türkçesi</span>“Sınır yönetimi, iş–aile çatışmasındaki ek varyansı açıklamış; ancak işten ayrılma niyeti modelde sonuç değişkeni olarak yer almamıştır.”</p>
+  </div>
+  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark>“Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.”</mark></p></div>
+  <div class="notes">
+    <h4>Düzeltme notu</h4>
+    <ol>
+      <li><strong>Düzeltme notu — 1. cümle:</strong> <b>Ne değişti:</b> Doğrudan nedensellik iddiası kaldırıldı; kaynağın ölçmediği sonuç için temkinli bir ifade kullanıldı.<br><b>Neden:</b> Kaynakta işten ayrılma niyeti ölçülmemiş. Sınır yönetimi bulgusu farklı bir sonuç değişkenine ait.</li>
+    </ol>
+  </div>
+</article>
+<article class="card" id="degisiklik-3">
+  <h3>Değişiklik 3 — Yönetici desteğini bireysel dayanıklılığa indirgemek (3. paragraf, 2. cümle) <span class="badge ok">✅ Destekli</span></h3>
+  <div class="row"><span class="lbl">Yazarın yazdığı</span><p>“Tükenmeyi önlemenin tek yolu çalışanların bireysel dayanıklılığını artırmaktır.”</p></div>
+  <div class="ev">
+    <div class="ev-head">Makaledeki orijinal cümle — Arslan vd. (2025), s. 11 · DOI: <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></div>
+    <p class="en" lang="en">“Leader support was negatively associated with exhaustion after controlling for individual resilience, suggesting that organizational factors also matter.”</p>
+    <p class="tr"><span class="lbl">Türkçesi</span>“Yönetici desteği, bireysel dayanıklılık kontrol edildikten sonra da tükenmeyle negatif ilişkiliydi; bu, örgütsel etkenlerin de önemli olduğunu göstermektedir.”</p>
+  </div>
+  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark>“Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).”</mark></p></div>
+  <div class="notes">
+    <h4>Düzeltme notu</h4>
+    <ol>
+      <li><strong>Düzeltme notu — 1. cümle:</strong> <b>Ne değişti:</b> “Tek yol” ifadesi kaldırıldı; yönetici desteği ve örgütsel tasarım birlikte vurgulandı.<br><b>Neden:</b> Kaynak, bireysel dayanıklılık kontrol edildiğinde bile yönetici desteğinin anlamlı kaldığını gösteriyor; tek faktörlü açıklama kanıtla uyuşmuyor.</li>
+    </ol>
+  </div>
+</article>
 </section>
 <section class="appendix appendix-matrix">
   <h2>Ek 2 — Kaynak Denetimi ve İddia–Kanıt Matrisi</h2>
-  <p class="note">Sentetik örnek; project_audit ve sayfa doğrulamalı paperqa_search akışıyla üretildi. paperqa_ask kanıt olarak kullanılmadı. · Tarih: 2026-10-22 · Proje: ornek-uzaktan-calisma</p>
+  <p class="legend">Sentetik örnek; project_audit ve sayfa doğrulamalı paperqa_search akışıyla üretildi. paperqa_ask kanıt olarak kullanılmadı. · Tarih: 2026-10-22 · Proje: ornek-uzaktan-calisma</p>
   <h3>1) Kaynak Envanteri</h3>
   <div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>Kaynak</th><th>DOI</th><th>Dergi (yıl)</th><th>Q (2024)</th><th>Atıf (Crossref/OpenAlex)</th><th>OA</th><th>Retraction</th></tr></thead>
+    <thead><tr><th scope="col">#</th><th scope="col">Kaynak</th><th scope="col">DOI</th><th scope="col">Dergi (yıl)</th><th scope="col">Q (2024)</th><th scope="col">Atıf (Crossref/OpenAlex)</th><th scope="col">OA</th><th scope="col">Retraction</th><th scope="col">Rol</th><th scope="col">Sınırlılık</th></tr></thead>
     <tbody>
-<tr><td>1</td><td>Demir — Uzaktan çalışma ve refah</td><td><a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></td><td>Örnek İş ve Örgüt Psikolojisi Dergisi (2024)</td><td>Q1</td><td>12 / 14</td><td>✓</td><td>yok</td></tr>
-<tr><td>2</td><td>Kaya &amp; Yılmaz — Sınır yönetimi</td><td><a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a></td><td>Örnek Çalışma Yaşamı Dergisi (2023)</td><td>Q2</td><td>8 / 9</td><td>✗</td><td>yok</td></tr>
-<tr><td>3</td><td>Arslan vd. — Yönetici desteği ve tükenme</td><td><a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></td><td>Örnek Örgütsel Davranış Dergisi (2025)</td><td>Q1</td><td>3 / 4</td><td>✓</td><td>yok</td></tr>
+<tr><td>1</td><td>Demir — Uzaktan çalışma ve refah</td><td><a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></td><td>Örnek İş ve Örgüt Psikolojisi Dergisi (2024)</td><td>Q1</td><td>12 / 14</td><td>✓</td><td>yok</td><td>çekirdek</td><td>Kesitsel veri; nedensellik kurulamaz.</td></tr>
+<tr><td>2</td><td>Kaya &amp; Yılmaz — Sınır yönetimi</td><td><a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a></td><td>Örnek Çalışma Yaşamı Dergisi (2023)</td><td>Q2</td><td>8 / 9</td><td>✗</td><td>yok</td><td>destek</td><td>İşten ayrılma niyeti ölçülmemiş; örneklem tek sektör.</td></tr>
+<tr><td>3</td><td>Arslan vd. — Yönetici desteği ve tükenme</td><td><a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></td><td>Örnek Örgütsel Davranış Dergisi (2025)</td><td>Q1</td><td>3 / 4</td><td>✓</td><td>yok</td><td>çekirdek</td><td>Yalnızca beyaz yakalı örneklem; kültürel genelleme sınırlı.</td></tr>
     </tbody>
   </table></div>
-  <p class="note">Not: Bu örnekteki kaynaklar, yazarlar ve DOI’ler sentetiktir; gerçek bir literatür taramasına atıf olarak kullanılamaz.</p>
+  <p class="legend">Not: Bu örnekteki kaynaklar, yazarlar ve DOI’ler sentetiktir; gerçek bir literatür taramasına atıf olarak kullanılamaz.</p>
   <h3>2) İddia–Kanıt Matrisi</h3>
   <div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>İddia (özet)</th><th>Atıf(lar)</th><th>Durum</th><th>Kanıt / gerekçe (PDF sayfası)</th></tr></thead>
+    <thead><tr><th scope="col">#</th><th scope="col">Konum</th><th scope="col">İddia (özet)</th><th scope="col">Atıf(lar)</th><th scope="col">Kanıt türü</th><th scope="col">Destek</th><th scope="col">Kanıt / gerekçe (PDF sayfası)</th><th scope="col">Not</th></tr></thead>
     <tbody>
-<tr><td>C1</td><td>Uzaktan çalışma refahı tek yönlü azaltır.</td><td>Demir (2024)</td><td>🟡 Kısmi</td><td>Demir s. 4: özerklik memnuniyetle, mesai dışı erişilebilirlik tükenmeyle ilişkili; tek yönlü azalma yok.</td></tr>
-<tr><td>C2</td><td>Uzaktan çalışma işten ayrılma niyetini doğrudan artırır.</td><td>Kaya &amp; Yılmaz (2023)</td><td>🔴 Kaynakta yok</td><td>Kaya &amp; Yılmaz s. 7: işten ayrılma niyeti modelde sonuç değişkeni değil.</td></tr>
-<tr><td>C3</td><td>Yönetici desteği tükenmeyle negatif ilişkilidir.</td><td>Arslan vd. (2025)</td><td>✅ Destekli</td><td>Arslan vd. s. 11: bireysel dayanıklılık kontrol edildikten sonra da negatif ilişki sürüyor.</td></tr>
-<tr><td>C4</td><td>Bu bölüm yöneticilere uygulanabilir bir çerçeve sunar.</td><td>—</td><td>➖ Kapsam dışı</td><td>Amaç beyanı; ampirik iddia değil.</td></tr>
+<tr><td>C1</td><td>P1 · c2</td><td>Uzaktan çalışma refahı tek yönlü azaltır.</td><td>Demir (2024)</td><td>Kesitsel anket</td><td><span class="status warn">🟡 Kısmi</span></td><td>Demir s. 4: özerklik memnuniyetle, mesai dışı erişilebilirlik tükenmeyle ilişkili; tek yönlü azalma yok.</td><td>İfade heterojen ilişkiye göre yumuşatıldı.</td></tr>
+<tr><td>C2</td><td>P2 · c1</td><td>Uzaktan çalışma işten ayrılma niyetini doğrudan artırır.</td><td>Kaya &amp; Yılmaz (2023)</td><td>Kesitsel; sonuç değişkeni yok</td><td><span class="status bad">🔴 Kaynakta yok</span></td><td>Kaya &amp; Yılmaz s. 7: işten ayrılma niyeti modelde sonuç değişkeni değil.</td><td>Doğrudan kanıt yok; iddia kaldırıldı.</td></tr>
+<tr><td>C3</td><td>P3 · c2</td><td>Yönetici desteği tükenmeyle negatif ilişkilidir.</td><td>Arslan vd. (2025)</td><td>Kesitsel, çok düzeyli</td><td><span class="status ok">✅ Destekli</span></td><td>Arslan vd. s. 11: bireysel dayanıklılık kontrol edildikten sonra da negatif ilişki sürüyor.</td><td>Kanıt doğrudan; örgütsel tasarım vurgusu eklendi.</td></tr>
+<tr><td>C4</td><td>P3 · c1</td><td>Bu bölüm yöneticilere uygulanabilir bir çerçeve sunar.</td><td>—</td><td>Amaç beyanı</td><td><span class="status muted">➖ Kapsam dışı</span></td><td>Amaç beyanı; ampirik iddia değil.</td><td>Kanıt gerektirmez; bölümün kendi katkısı olarak konumlandırıldı.</td></tr>
     </tbody>
   </table></div>
-  <p class="note">Durum işaretleri: ✅ destekliyor · 🟡 kısmi/nüanslı · 🔴 atıf–iddia uyumsuz · ➖ kapsam dışı (amaç beyanı)</p>
+  <p class="legend">Durum işaretleri: ✅ destekliyor · 🟡 kısmi/nüanslı · 🔴 atıf–iddia uyumsuz · ➖ kapsam dışı (amaç beyanı)</p>
   <h3>3) Düzeltme Önerileri (özet)</h3>
 <ol>
   <li><b>C1 — nüans:</b> Tek yönlü refah azalması yerine özerklik ve mesai dışı erişilebilirlik ayrımı getirildi.</li>
@@ -162,6 +313,13 @@ p { margin: 0 0 1.15rem; text-align: justify; }
   <li><b>Örneklem sınırı:</b> Kaynaklar farklı sektör ve kültürlerden; genelleme öncesi bağlam kontrol edilmelidir.</li>
   <li><b>Tam metin:</b> Örnekte yalnızca kısa alıntılar ve sayfa numaraları gösterilmiştir; gerçek teslimde tam metin sayfası doğrulanmalıdır.</li>
 </ul>
+  <h3>5) Sonraki Adımlar</h3>
+<ol>
+  <li>C2 için işten ayrılma niyetini doğrudan ölçen bir kaynak ekleyin veya iddiayı bölümden çıkarın.</li>
+  <li>C1 ve C3 için nedensellik ima eden fiilleri tutarlı biçimde ilişki diliyle değiştirin.</li>
+  <li>Sentetik DOI’leri gerçek teslimde doğrulanmış DOI’lerle değiştirin; DOI’lerin kaynak envanterinde olduğunu kontrol edin.</li>
+  <li>Tam metin sayfası doğrulamasını `paperqa_read_pages` ile yeniden çalıştırın.</li>
+</ol>
   <h3>Kaynakça</h3>
 <ol>
   <li>Demir, A. (2024). <i>Uzaktan çalışma ve refah: Heterojen ilişkiler</i>. Örnek İş ve Örgüt Psikolojisi Dergisi. <a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></li>
@@ -169,6 +327,6 @@ p { margin: 0 0 1.15rem; text-align: justify; }
   <li>Arslan, D.; Öz, E.; Tan, F. (2025). <i>Yönetici desteği, dayanıklılık ve tükenme</i>. Örnek Örgütsel Davranış Dergisi. <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></li>
 </ol>
 </section>
-<p class="meta report-footer">literature-mcp · chapter-report v2.2.0 · Sentetik örnek; gerçek kaynak değildir.</p>
+<footer class="report-footer"><p>literature-mcp · chapter-report v2.3.0 · Sentetik örnek; gerçek kaynak değildir.</p></footer>
 </body>
 </html>

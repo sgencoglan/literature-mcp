@@ -25,12 +25,19 @@ def example_data() -> dict:
 class RenderTests(unittest.TestCase):
     def test_example_renders_golden_sections(self) -> None:
         html = render_report(example_data())
-        self.assertIn('<span class="mark">', html)
+        self.assertIn("<mark>", html)
+        self.assertIn('class="notice"', html)
         self.assertIn("Ek 1 — Değişikliklerin Kaynak Cümleleriyle Karşılaştırması", html)
         self.assertIn("Ek 2 — Kaynak Denetimi ve İddia–Kanıt Matrisi", html)
         self.assertIn("https://doi.org/10.5555/ornek.2024.001", html)
         self.assertIn("Örnek İş ve Örgüt Psikolojisi Dergisi (2024)", html)
         self.assertIn("✅ Destekli", html)
+        self.assertIn("Konum", html)
+        self.assertIn("Kanıt türü", html)
+        self.assertIn("Rol", html)
+        self.assertIn("Sınırlılık", html)
+        self.assertIn("5) Sonraki Adımlar", html)
+        self.assertIn('<footer class="report-footer">', html)
         self.assertNotIn("file://", html)
         self.assertNotIn("/home/", html)
 
@@ -57,6 +64,9 @@ class RenderTests(unittest.TestCase):
         self.assertIn("## Ek 1 — Değişikliklerin Kaynak Cümleleriyle Karşılaştırması", markdown)
         self.assertIn("## Ek 2 — Kaynak Denetimi ve İddia–Kanıt Matrisi", markdown)
         self.assertIn("| # | Kaynak | DOI |", markdown)
+        self.assertIn("| Rol | Sınırlılık |", markdown)
+        self.assertIn("| # | Konum | İddia (özet) |", markdown)
+        self.assertIn("### 5) Sonraki Adımlar", markdown)
         self.assertIn("https://doi.org/10.5555/ornek.2024.001", markdown)
         self.assertNotIn("file://", markdown)
         self.assertNotIn("/home/", markdown)
@@ -101,6 +111,31 @@ class ValidationTests(unittest.TestCase):
         result = validate_data(data)
         self.assertFalse(result.ok)
         self.assertTrue(any("kaynak envanterinde yok" in error for error in result.errors))
+
+    def test_claim_context_fields_are_recommended(self) -> None:
+        data = copy.deepcopy(example_data())
+        del data["claim_matrix"][0]["location"]
+        del data["claim_matrix"][0]["evidence_type"]
+        result = validate_data(data)
+        self.assertTrue(result.ok, result.errors)
+        self.assertTrue(any("location" in warning for warning in result.warnings))
+        self.assertTrue(any("evidence_type" in warning for warning in result.warnings))
+        strict = validate_data(data, strict=True)
+        self.assertFalse(strict.ok)
+
+    def test_notice_requires_text(self) -> None:
+        data = copy.deepcopy(example_data())
+        data["notice"] = {"title": "Kaynak politikası"}
+        result = validate_data(data)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("notice.text" in error for error in result.errors))
+
+    def test_empty_next_step_fails(self) -> None:
+        data = copy.deepcopy(example_data())
+        data["next_steps"] = ["Geçerli adım", "  "]
+        result = validate_data(data)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("next_steps" in error for error in result.errors))
 
 
 class CleanupTests(unittest.TestCase):

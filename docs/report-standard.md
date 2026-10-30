@@ -10,6 +10,8 @@ bir teslim üretmektir.
 1. **Düzeltilmiş bölüm metni**
    - Yalnızca değişen/eklenen cümleler kırmızı zeminle işaretlenir.
    - Paragrafın tamamı, başlık, kaynakça veya tablo kırmızıya boyanmaz.
+   - Metnin üstünde opsiyonel **kaynak politikası / yöntem notu** kutusu
+     (`notice`) yer alabilir.
 2. **Ek 1 — Değişikliklerin kaynak cümleleriyle karşılaştırması**
    - Her değişiklik için:
      - yazarın taslakta yazdığı cümle,
@@ -18,15 +20,20 @@ bir teslim üretmektir.
      - yeniden yazılan cümle (kırmızı),
      - “Ne değişti?” ve “Neden?” notu.
    - Her kartta en az bir DOI + sayfa + alıntı bulunur.
+   - Kart başlığında `evidence_status` rozeti gösterilir.
 3. **Ek 2 — Kaynak denetimi ve iddia–kanıt matrisi**
    - Kaynak envanteri: DOI, dergi/yıl, Q, atıf, OA, retraction, kullanım rolü,
-     sınırlılık.
-   - İddia–kanıt matrisi: iddia, atıf(lar), durum, sayfa içeren kanıt/gerekçe.
+     sınırlılık. `role` ve `limitation` tabloda ayrı sütun olarak görünür.
+   - İddia–kanıt matrisi: iddia, atıf(lar), durum, sayfa içeren kanıt/gerekçe;
+     ayrıca **konum** (`P1 · c2`), **kanıt türü** (kesitsel, meta-analiz,
+     amaç beyanı vb.) ve **not** sütunları.
    - Düzeltme özeti.
    - Notlar ve sınırlılıklar.
+   - **Sonraki adımlar** (`next_steps`, opsiyonel): yapılacak somut işler.
 4. **Kaynakça (opsiyonel)** — yalnızca `https://doi.org/...` linkleri.
 5. **Markdown eşlik dosyası (opsiyonel)** — aynı veriden üretilen düzenleme
    katmanı; HTML'deki kırmızı vurgu `**değişen cümle**` olarak temsil edilir.
+6. **Footer (opsiyonel)** — proje, sürüm ve üretim tarihi; yerel yol içermez.
 
 ## Kanıt kuralları
 
@@ -59,25 +66,38 @@ Komut şunları denetler:
 - DOI biçimi ve tekrarı,
 - her kartta kaynak + sayfa + alıntı + çeviri + not,
 - her destekli iddiada sayfa ve atıf,
+- iddia matrisinde `location`, `evidence_type` ve `note` için öneri uyarıları,
+- `notice` varsa başlık/metin bütünlüğü, `next_steps` varsa boş madde yasağı,
 - her değişiklik kartındaki DOI'nin kaynak envanterinde bulunması,
 - yerel yol/PDF dosya adı sızıntısı,
-- HTML etiket dengesi ve `<script>` yasağı.
+- HTML etiket dengesi (`<article>`, `<footer>`, `<mark>` dahil) ve `<script>` yasağı.
 
-`--strict` uyarıları da hata sayar. Teslimden önce **0 hata** ve uyarıların
-gözden geçirilmiş olması gerekir.
+`--strict` uyarıları da hata sayar; iddia konumu ve kanıt türü eksikse teslim
+geçmez. Teslimden önce **0 hata** ve uyarıların gözden geçirilmiş olması
+gerekir.
 
 ## Tasarım sözleşmesi
 
-- Gövde genişliği `46rem`, Georgia serif, 1.8 satır aralığı.
-- Kırmızı: `rgba(255, 0, 0, 0.15)`, yalnızca değişen cümlede.
-- Ek 1 kartları: `#fafafa` zemin, ince kenar, koyu kırmızı başlık.
-- Ek 2 tabloları: 0.78rem, ince gri kenar, yatay taşma güvenli sarmalayıcı.
-- Yazdırma: kırmızı zemin korunur, kartlar sayfa ortasında bölünmez.
+- Gövde genişliği `980px`, Georgia serif, 1.65 satır aralığı; başlıklar
+  sistem sans-serif fontuyla.
+- Kırmızı: `rgba(255, 0, 0, 0.13)`, yalnızca değişen cümlede; HTML'de semantik
+  `<mark>` etiketi kullanılır.
+- Üst bilgi: proje/tarih meta satırı, ardından sayı rozetleri
+  (`summary-strip`) ve opsiyonel kaynak politikası kutusu (`notice`).
+- Ek 1 kartları: `.card` sınıfı, ince kenar, `break-inside: avoid`; kaynak
+  alıntıları `.ev` bloğunda, düzeltme notları `.notes` kutusunda.
+- Ek 2 tabloları: 0.84rem, ince gri kenar, `scope="col"` başlıkları ve yatay
+  taşma güvenli `.table-wrap` sarmalayıcısı.
+- Footer: ince üst çizgi, küçük gri metin; yerel PDF yolu veya `file://`
+  içermez.
+- Yazdırma: kırmızı zemin korunur, kartlar sayfa ortasında bölünmez, tablo
+  başlıkları her sayfada yinelenir.
 
 Tasarım [`packages/report-kit/src/report_kit/templates/chapter-report.css`](../packages/report-kit/src/report_kit/templates/chapter-report.css)
-içinde tek kaynaktır. Rapor üreticisi bu dosyayı gömülü CSS olarak yazar. b1
-raporunun mevcut CSS kuralları birebir korunur; yalnızca tablo sarmalayıcı,
-footer, dar ekran ve yazdırma için ek kurallar eklenmiştir.
+içinde tek kaynaktır. Rapor üreticisi bu dosyayı gömülü CSS olarak yazar.
+b1 raporunun görsel dili (geniş sayfa, sans-serif başlık, kart/kanıt/not
+düzeni) korunur; b1'deki yerel yol içeren footer bilinçli olarak dışarıda
+bırakılır.
 
 ## Temizlik
 

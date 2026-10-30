@@ -11,12 +11,12 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ MCP                           │ MCP
 ┌───────────────▼───────────────┐   ┌───────────▼─────────────────────┐
-│ sciencedirect-meta (19 araç)  │   │ paperqa-local (7 araç)          │
+│ sciencedirect-meta (19 araç)  │   │ paperqa-local (8 araç)          │
 │ • DOI/metadata arama          │   │ • proje kaydı + manifest        │
 │ • DOI doğrulama, provenance   │   │ • PaperQA2 indeksi              │
 │ • journal quartile (SCImago)  │   │ • semantik arama (LLM'siz)      │
 │ • yerel PDF okuma/denetim     │   │ • sayfa okuma (LLM'siz)         │
-│ • rapor dışa aktarma (MD/CSV) │   │ • yerel Qwen taslağı            │
+│ • rapor dışa aktarma (MD/CSV) │   │ • yerel LLM taslağı + durum     │
 └───────────────┬───────────────┘   └───────────┬─────────────────────┘
                 │ ortak registry                 │ ortak registry
         ┌───────▼────────────────────────────────▼───────┐
@@ -49,10 +49,15 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 
 ### paperqa-local
 
-- **7 araç:** `paperqa_projects`, `paperqa_register_project`, `paperqa_build_index`, `paperqa_status`, `paperqa_search`, `paperqa_read_pages`, `paperqa_ask`.
+- **8 araç:** `paperqa_projects`, `paperqa_register_project`, `paperqa_build_index`, `paperqa_status`, `paperqa_search`, `paperqa_read_pages`, `paperqa_llm_status`, `paperqa_ask`.
 - `paperqa_search` ve `paperqa_read_pages` LLM çağırmaz; embedding tabanlı arama ve PyMuPDF sayfa çıkarımı yapar.
-- `paperqa_ask` yerel `ollama/qwen2.5:3b-instruct` modelini kullanabilir. CPU'da yavaştır ve 3B model bile atıf hatası yapabilir; çıktısı **taslaktır**, kanıt değildir. 7B model bu donanım sınıfında önerilmez.
+- `paperqa_ask` yerel llama.cpp sunucusunu kullanır. Varsayılan model Qwen2.5-3B-Instruct Q4_K_M'dir. CPU'da yavaştır ve 3B model bile atıf hatası yapabilir; çıktısı **taslaktır**, kanıt değildir. 7B model bu donanım sınıfında önerilmez.
+- `paperqa_ask`, sunucu kapalıysa llama.cpp'yi otomatik başlatır (`PAPERQA_AUTO_START=1`), model hazır olana kadar bekler ve yalnızca kendi başlattığı sunucuyu `PAPERQA_AUTO_STOP_IDLE` saniye sonra durdurur. Elle başlatılan sunucuya dokunmaz; çökme sonrası kalan sunucu pid dosyasından sahiplenilir.
+- `paperqa_llm_status` arka ucun erişilebilirliğini, yüklü modelleri ve otomatik yaşam döngüsü durumunu (`auto_start`, `auto_stop_idle_seconds`, `managed`, `managed_pid`) raporlar; sunucuyu başlatmaz.
+- `paperqa_register_project`, `output_directory` verilmezse çıktıları başta verilen proje klasörüne (`paper_directory`) yönlendirir. `export_review(project=...)` ve rapor üretimi bu klasörü kullanır.
 - İndeks üyeliği manifest ile sabittir. Klasöre sonradan bırakılan PDF, manifeste eklenmedikçe indekse girmez.
+- Manifest yolları proje klasörüne göre doğrulanır; mutlak yol, `..` kaçışı ve çift kayıt reddedilir. `paperqa_status` manifest–indeks uyuşmazlıklarını ve `healthy` durumunu raporlar. Aynı veya iç içe indeks yolu kullanan projeler reddedilir.
+- `paperqa_build_index(rebuild=True)` eski indeksi `.bak-*` klasörüne taşır; çökme durumunda geri getirir, kısmi başarısızlıkta yedeği korur.
 
 ### report-kit
 
@@ -73,7 +78,7 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 | `include_subdirectories` | Alt klasörler taranacak mı? |
 | `manifest` | Manifest CSV yolu |
 | `index_directory`, `index_name` | PaperQA2 indeks konumu |
-| `output_directory` | Çıktı klasörü |
+| `output_directory` | Çıktı klasörü; kayıtta verilmezse `paper_directory` |
 | `analysis_json` | Varsa kayıtlı analiz dosyası; yoksa `null` |
 
 İki MCP sunucusu da aynı registry'yi okur (`LIT_PROJECTS_REGISTRY` ile değiştirilebilir). Böylece `project_audit` ile `paperqa_status` aynı projeyi görür.

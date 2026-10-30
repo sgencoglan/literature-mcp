@@ -15,7 +15,8 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 
 ## Dosya adları
 
-Proje `output_directory` altında:
+Proje `output_directory` altında. Kayıt sırasında `output_directory` verilmezse
+başta verilen proje klasörü (`paper_directory`) kullanılır:
 
 | Dosya | Biçim | Kime | İçerik |
 |---|---|---|---|
@@ -222,9 +223,13 @@ standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
 
 1. Düzeltilmiş bölüm metni; yalnızca değişen cümleler kırmızı.
 2. Ek 1 — değişiklik kartları: yazar cümlesi, kaynak cümlesi (İngilizce),
-   Türkçe çeviri, yeniden yazılan cümle, “ne değişti / neden” notu.
-3. Ek 2 — kaynak envanteri, iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar.
+   Türkçe çeviri, yeniden yazılan cümle, “ne değişti / neden” notu ve durum
+   rozeti.
+3. Ek 2 — kaynak envanteri (rol + sınırlılık sütunları), konum + kanıt türü +
+   not sütunlu iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar ve opsiyonel
+   sonraki adımlar.
 4. Opsiyonel kaynakça; yalnızca DOI linkleri.
+5. Opsiyonel kaynak politikası kutusu (`notice`) ve footer.
 
 ### JSON alanları
 
@@ -238,15 +243,21 @@ standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
   "title": "...",
   "generated_at": "...",
   "summary": {"change_cards": 3, "sources": 3, "claims": 4, "not_found": 1},
+  "notice": {"title": "Kaynak politikası", "text": "..."},
   "intro": {"heading": "...", "paragraphs": [...]},
   "change_cards": [...],
   "source_audit": [...],
   "claim_matrix": [...],
   "correction_summary": [...],
   "limitations": [...],
+  "next_steps": [...],
   "references": [...]
 }
 ```
+
+`claim_matrix` kayıtları `location` (`P1 · c2`), `evidence_type` (kesitsel,
+meta-analiz, amaç beyanı vb.) ve `note` alanlarını taşır. Bu alanlar kalite
+kapısında öneri olarak denetlenir; `--strict` ile zorunlu olur.
 
 ### Üretim ve kalite kapısı
 

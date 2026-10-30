@@ -5,8 +5,8 @@
 Kaynaklı literatür taraması ve kitap bölümü denetimi için iki yerel MCP
 sunucusu, şemalar, dokümantasyon ve tek dosyalık HTML üreticileri.
 
-> **Durum:** public v2.2.0. Depoda PDF, indeks, kişisel proje kaydı veya
-> yayımlanmamış bölüm metni tutulmaz.
+> **Durum:** v2.3.0 yayın öncesi. Son public sürüm v2.2.0. Depoda PDF, indeks,
+> kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
 
@@ -78,13 +78,13 @@ yalnızca listeler; `--yes` onay sormaz.
 | Bileşen | Konum | Görev |
 |---|---|---|
 | `sciencedirect-meta` MCP | [`packages/sciencedirect-meta`](packages/sciencedirect-meta) | 19 araç: metadata/DOI arama, DOI doğrulama, dergi quartile, yerel PDF okuma, kanıt denetimi, rapor dışa aktarma |
-| `paperqa-local` MCP | [`packages/paperqa-local`](packages/paperqa-local) | 7 araç: proje kaydı, manifest, PaperQA2 indeksi, semantik arama, sayfa okuma, yerel Qwen taslağı |
+| `paperqa-local` MCP | [`packages/paperqa-local`](packages/paperqa-local) | 8 araç: proje kaydı, manifest, PaperQA2 indeksi, semantik arama, sayfa okuma, LLM durumu, yerel taslak |
 | `report-kit` | [`packages/report-kit`](packages/report-kit) | Altın standart HTML raporu, kalite kapısı ve manifest tabanlı temizlik |
 | Ortak proje kaydı | `projects.json` (varsayılan: `~/.literature-mcp/projects.json`) | Her projenin PDF klasörü, manifesti ve indeksi; projeler izoledir |
 | Fulltext üreticisi | [`scripts/build_fulltext_list.py`](scripts/build_fulltext_list.py) | DOI adaylarını tek dosyalık, yazdırılabilir HTML'e çevirir |
 | Şemalar | [`schemas/`](schemas) | Fulltext listesi, düzeltme kartı, iddia–kanıt matrisi, bölüm raporu |
 | Ajan sözleşmesi | [`AGENTS.md`](AGENTS.md) | Bağlayıcı kurallar, araç politikası, kabul kriterleri |
-| Araç kataloğu | [`docs/tool-catalog.json`](docs/tool-catalog.json) | 26 aracın makine okunabilir girdi/çıktı şeması |
+| Araç kataloğu | [`docs/tool-catalog.json`](docs/tool-catalog.json) | 27 aracın makine okunabilir girdi/çıktı şeması |
 
 ## Kurulum
 
@@ -105,14 +105,25 @@ python3 -m venv .venv
 .venv/bin/pip install "paperqa" mcp pymupdf
 ```
 
-Yerel `paperqa_ask` kullanılacaksa Ollama ve bir model gerekir. Bu makine
-sınıfı için güvenli üst sınır **3B/4B quantized** modeldir; 7B model 8 GB
-RAM'li, GPU'suz bir sistemde swap'a düşer. Ayrıntılı öneri:
-[`docs/ollama.md`](docs/ollama.md).
+Yerel `paperqa_ask` için tek desteklenen arka uç **llama.cpp**'dir. Bu makine sınıfı
+için güvenli üst sınır **3B/4B quantized** modeldir; 7B model 8 GB RAM'li,
+GPU'suz bir sistemde swap'a düşer. Ayrıntılı kurulum:
+[`docs/local-llm.md`](docs/local-llm.md).
 
 ```bash
-ollama pull qwen2.5:3b-instruct
+# llama.cpp + Qwen2.5-3B-Instruct Q4_K_M (sudo gerekmez)
+bash scripts/setup_llamacpp.sh
+
+# paperqa-local varsayılan olarak llama.cpp'yi kullanır
+export PAPERQA_LOCAL_LLM=qwen2.5-3b-instruct
+export PAPERQA_LOCAL_API_BASE=http://127.0.0.1:8080/v1
 ```
+
+Sunucuyu elle başlatmak gerekmez: `paperqa_ask` çağrıldığında MCP llama.cpp'yi
+otomatik başlatır ve yalnızca kendi başlattığı sunucuyu
+`PAPERQA_AUTO_STOP_IDLE` (varsayılan 300 sn) sonra durdurur. Elle başlatmak
+isterseniz `bash scripts/start_llamacpp.sh qwen` kullanın; MCP bu sunucuya
+dokunmaz.
 
 Yerel model yalnızca taslak/özet içindir; nihai raporun kanıtı
 `paperqa_search` + `paperqa_read_pages` ile sayfa düzeyinde doğrulanır.
@@ -156,7 +167,9 @@ düzenleyin.
         "type": "local",
         "command": ["<repo>/.venv/bin/python", "<repo>/packages/paperqa-local/paperqa_mcp.py"],
         "environment": {
-          "LIT_PROJECTS_REGISTRY": "<home>/.literature-mcp/projects.json"
+          "LIT_PROJECTS_REGISTRY": "<home>/.literature-mcp/projects.json",
+          "PAPERQA_LOCAL_LLM": "qwen2.5-3b-instruct",
+          "PAPERQA_LOCAL_API_BASE": "http://127.0.0.1:8080/v1"
         }
       }
     }
@@ -164,8 +177,9 @@ düzenleyin.
 }
 ```
 
-`<repo>` ve `<home>` alanlarını kendi mutlak yollarınızla değiştirin; bu
-dosyayı public depoya commit etmeyin.
+Örnek dosyada ayrıca OpenCode `/models` altında görünen `providers.llamacpp`
+bölümü vardır. `<repo>` ve `<home>` alanlarını kendi mutlak yollarınızla
+değiştirin; bu dosyayı public depoya commit etmeyin.
 
 ## Hızlı başlangıç
 
@@ -219,7 +233,8 @@ Proje + taslak
 
 ## Çıktılar
 
-Her projenin `output_directory` klasöründe:
+Her projenin `output_directory` klasöründe. Kayıt sırasında ayrı bir çıktı
+klasörü verilmezse başta verilen proje klasörü (`paper_directory`) kullanılır:
 
 ```text
 01_fulltext_listesi.html
@@ -273,8 +288,8 @@ Bu betik JSON şemalarını, Python sözdizimini, fulltext üreticisini,
 - [`docs/workflows.md`](docs/workflows.md) — adım adım iş akışları
 - [`docs/output-spec.md`](docs/output-spec.md) — dosya adları ve biçimler
 - [`docs/report-standard.md`](docs/report-standard.md) — altın standart ve kalite kapısı
-- [`docs/ollama.md`](docs/ollama.md) — yerel model seçimi ve donanım sınırı
-- [`docs/tool-catalog.md`](docs/tool-catalog.md) — 26 aracın özeti
+- [`docs/local-llm.md`](docs/local-llm.md) — llama.cpp kurulumu, model ve donanım sınırı
+- [`docs/tool-catalog.md`](docs/tool-catalog.md) — 27 aracın özeti
 - [`docs/publishing.md`](docs/publishing.md) — public repo kontrolü
 
 ## Lisans

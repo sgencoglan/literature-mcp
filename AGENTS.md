@@ -8,7 +8,7 @@ Bu dosya, bu projede çalışan yapay zekâ ajanları için **bağlayıcı** kur
 
 ### Görev 1 — Yeni bölüm için kaynak hattı
 
-1. Konu, kapsam, hedef kaynak sayısı, yıl aralığı ve dil kriterlerini netleştir.
+1. Konu, kapsam, hedef kaynak sayısı, yıl aralığı, dil kriterleri ve çıktıların yazılacağı proje klasörünü netleştir.
 2. `deep_research` veya `search_literature` ile aday DOI'leri topla.
 3. Gerekirse `search_all`, `search_sciencedirect`, `search_pubmed`, `search_europepmc` ile genişlet.
 4. Her aday için `get_article` ve `get_links` ile metadata ve linkleri al.
@@ -97,6 +97,7 @@ Bu dosya, bu projede çalışan yapay zekâ ajanları için **bağlayıcı** kur
 - `evidence_status`: `supported`, `partially_supported`, `contradicted`, `not_found`.
 - Ek 2 kaynak denetiminde her kaynak için DOI, yayıncı, Q, atıf, erişim ve kullanım kararı bulunmalı.
 - İddia–kanıt matrisinde her iddia için kaynak, sayfa, kısa kanıt, destek düzeyi ve karar bulunmalı.
+- İddia–kanıt matrisinde konum (`P1 · c2`), kanıt türü ve kısa not sütunları bulunmalı.
 - HTML'de düzeltilmiş cümleler kırmızı; kaynak cümlesi ve çevirisi normal renkte olmalı.
 - Son teslimde DOI linkleri `https://doi.org/...`; yerel PDF linki yok.
 - `05_bolum_raporu.html` `chapter-report` kalite kapısından 0 hatayla geçmeli; Ek 1 ve Ek 2 eksiksiz olmalı.
@@ -115,6 +116,9 @@ Aşağıdaki durumlarda tahmin yürütme; kullanıcıya sor:
 
 ## 7. Çıktı yolları ve adlandırma
 
+Çıktılar, en başta kullanıcının verdiği proje klasörüne yazılır. Kayıt
+sırasında `output_directory` verilmezse `paper_directory` kullanılır;
+`chapter-report build -o ...` ve `export_review(project=...)` bu yolu izler.
 Proje `output_directory` altında:
 
 ```text
@@ -155,9 +159,9 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo public v2.2.0'dır; yayımlanmamış bölüm metni ve gerçek proje çıktıları
-  depoya konmaz.
-- Canlı MCP: `sciencedirect-meta` 19 araç, `paperqa-local` 7 araç.
+- Depo v2.3.0 sürümüne hazırlanmaktadır; son public sürüm v2.2.0'dır.
+  Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
+- Canlı MCP: `sciencedirect-meta` 19 araç, `paperqa-local` 8 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
   (varsayılan: `~/.literature-mcp/projects.json`). Depoda yalnızca
   `examples/projects.example.json` örneği bulunur.

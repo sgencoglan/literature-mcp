@@ -1,4 +1,36 @@
 {
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "llamacpp": {
+      "name": "llama.cpp (yerel)",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:8080/v1"
+      },
+      "models": {
+        "qwen2.5-3b-instruct": {
+          "name": "Qwen2.5 3B Instruct (Q4_K_M, CPU)",
+          "modelID": "qwen2.5-3b-instruct",
+          "capabilities": {
+            "tools": false,
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ],
+            "reasoning": {
+              "supported": false
+            }
+          },
+          "limit": {
+            "context": 8192,
+            "output": 512
+          }
+        }
+      }
+    }
+  },
   "mcp": {
     "servers": {
       "sciencedirect-meta": {
@@ -24,6 +56,15 @@
           "LIT_PROJECTS_REGISTRY": "<home>/.literature-mcp/projects.json",
           "PAPERQA_INDEX_ROOT": "<home>/.literature-mcp/indexes",
           "PAPERQA_PROJECTS_ROOT": "<home>/.literature-mcp/projects",
+          "PAPERQA_LOCAL_LLM": "qwen2.5-3b-instruct",
+          "PAPERQA_LOCAL_API_BASE": "http://127.0.0.1:8080/v1",
+          "PAPERQA_LOCAL_MAX_TOKENS": "400",
+          "PAPERQA_LOCAL_TEMPERATURE": "0.1",
+          "PAPERQA_LOCAL_TIMEOUT": "600",
+          "PAPERQA_AUTO_START": "1",
+          "PAPERQA_AUTO_STOP_IDLE": "300",
+          "PAPERQA_LLAMA_START_TIMEOUT": "120",
+          "PAPERQA_LLAMA_MIN_FREE_MB": "1200",
           "CROSSREF_MAILTO": "<email>"
         }
       }

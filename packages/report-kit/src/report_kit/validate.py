@@ -30,9 +30,10 @@ VOID_TAGS = {
     "meta", "param", "source", "track", "wbr",
 }
 BALANCE_TAGS = {
-    "html", "head", "body", "div", "section", "table", "thead", "tbody",
-    "tr", "th", "td", "blockquote", "ul", "ol", "li", "h1", "h2", "h3",
-    "h4", "h5", "h6", "p", "span", "a", "b", "i", "strong", "em", "style",
+    "html", "head", "body", "div", "section", "article", "footer", "header",
+    "main", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "ul",
+    "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "b",
+    "i", "strong", "em", "mark", "style",
 }
 
 
@@ -207,11 +208,21 @@ def _validate_claims(items: Any, result: ValidationResult) -> None:
         status = str(item.get("status") or "").strip().lower()
         evidence = str(item.get("evidence") or "")
         citations = item.get("citations")
+        if not str(item.get("location") or "").strip():
+            result.add_warning(
+                f"{path}.location: iddianın metindeki konumu önerilir (örn. P1 · c2)"
+            )
+        if not str(item.get("evidence_type") or "").strip():
+            result.add_warning(
+                f"{path}.evidence_type: kanıt türü önerilir (örn. kesitsel, meta-analiz)"
+            )
         if status in {"supported", "full", "partial", "partially_supported", "contradicted", "contradicts"}:
             if not citations:
                 result.add_error(f"{path}.citations: destekli/kısmi iddiada atıf zorunlu")
             if not PAGE_RE.search(evidence):
                 result.add_error(f"{path}.evidence: sayfa numarası (s. / sayfa / p.) zorunlu")
+            if not str(item.get("note") or "").strip():
+                result.add_warning(f"{path}.note: kısa değerlendirme notu önerilir")
         elif status in {"not_found", "none"}:
             if not str(item.get("note") or "").strip() and "yok" not in evidence.lower():
                 result.add_warning(f"{path}: kaynakta bulunamayan iddia için kısa gerekçe/not ekleyin")
@@ -219,6 +230,34 @@ def _validate_claims(items: Any, result: ValidationResult) -> None:
             pass
         else:
             result.add_warning(f"{path}.status: bilinmeyen durum {status!r}")
+
+
+def _validate_notice(notice: Any, result: ValidationResult) -> None:
+    if notice is None:
+        return
+    if isinstance(notice, str):
+        if not notice.strip():
+            result.add_error("$.notice: boş olamaz")
+        return
+    if not isinstance(notice, dict):
+        result.add_error("$.notice: metin veya nesne olmalı")
+        return
+    if not str(notice.get("text") or notice.get("body") or "").strip():
+        result.add_error("$.notice.text: zorunlu alan boş")
+    title = notice.get("title")
+    if title is not None and not str(title).strip():
+        result.add_warning("$.notice.title: boş; başlık kullanılmayacaksa alanı kaldırın")
+
+
+def _validate_next_steps(items: Any, result: ValidationResult) -> None:
+    if items is None:
+        return
+    if not isinstance(items, list):
+        result.add_error("$.next_steps: dizi olmalı")
+        return
+    for index, item in enumerate(items):
+        if not isinstance(item, str) or not item.strip():
+            result.add_error(f"$.next_steps[{index}]: boş olmayan metin olmalı")
 
 
 def _validate_references(items: Any, result: ValidationResult) -> None:
@@ -252,6 +291,8 @@ def validate_data(data: Any, strict: bool = False) -> ValidationResult:
     _validate_cards(data.get("change_cards"), result)
     _validate_sources(data.get("source_audit"), result)
     _validate_claims(data.get("claim_matrix"), result)
+    _validate_notice(data.get("notice"), result)
+    _validate_next_steps(data.get("next_steps"), result)
     _validate_references(data.get("references"), result)
     _check_local_paths(data, result)
 

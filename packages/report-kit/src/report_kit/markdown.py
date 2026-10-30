@@ -57,6 +57,40 @@ def _headings(data: dict[str, Any]) -> dict[str, str]:
     return merged
 
 
+def _notice(value: Any) -> str:
+    if isinstance(value, dict):
+        title = _text(value.get("title")).strip()
+        text = _text(value.get("text") or value.get("body")).strip()
+        if title and not title.endswith((".", ":", "!", "?")):
+            title += "."
+        parts = [f"**{_inline(title)}**"] if title else []
+        if text:
+            parts.append(_inline(text))
+        return "> " + " ".join(parts) if parts else ""
+    text = _text(value).strip()
+    return "> " + _inline(text) if text else ""
+
+
+def _summary_strip(summary: Any) -> str:
+    if not isinstance(summary, dict):
+        return ""
+    labels = [
+        ("change_cards", "değişiklik kartı"),
+        ("sources", "kaynak"),
+        ("claims", "iddia"),
+        ("not_found", "kanıtlanamayan iddia"),
+    ]
+    items: list[str] = []
+    for key, label in labels:
+        value = summary.get(key)
+        if value is None or isinstance(value, bool):
+            continue
+        text = str(value).strip()
+        if text.isdigit():
+            items.append(f"**{text}** {label}")
+    return " · ".join(items)
+
+
 def _intro(data: dict[str, Any]) -> str:
     intro = data.get("intro") or {}
     paragraphs = intro.get("paragraphs") or []
@@ -145,8 +179,8 @@ def _change_cards(cards: list[dict[str, Any]], headings: dict[str, str]) -> str:
 
 def _source_table(items: list[dict[str, Any]]) -> str:
     out = [
-        "| # | Kaynak | DOI | Dergi (yıl) | Q (2024) | Atıf (Crossref/OpenAlex) | OA | Retraction |",
-        "|---:|---|---|---|---|---|---|---|",
+        "| # | Kaynak | DOI | Dergi (yıl) | Q (2024) | Atıf (Crossref/OpenAlex) | OA | Retraction | Rol | Sınırlılık |",
+        "|---:|---|---|---|---|---|---|---|---|---|",
     ]
     for item in items:
         if not isinstance(item, dict):
@@ -167,7 +201,7 @@ def _source_table(items: list[dict[str, Any]]) -> str:
         year = _text(item.get("year"))
         journal_year = f"{journal} ({year})" if journal and year else (journal or year or "-")
         out.append(
-            "| {no} | {citation} | {doi} | {journal_year} | {q} | {citations} | {oa} | {retraction} |".format(
+            "| {no} | {citation} | {doi} | {journal_year} | {q} | {citations} | {oa} | {retraction} | {role} | {limitation} |".format(
                 no=_cell(item.get("no", "")),
                 citation=_cell(item.get("citation", "")),
                 doi=doi_cell,
@@ -176,6 +210,8 @@ def _source_table(items: list[dict[str, Any]]) -> str:
                 citations=_cell(citations),
                 oa=_cell(oa_text),
                 retraction=_cell(item.get("retraction") or "yok"),
+                role=_cell(item.get("role") or "-"),
+                limitation=_cell(item.get("limitation") or "-"),
             )
         )
     return "\n".join(out)
@@ -183,8 +219,8 @@ def _source_table(items: list[dict[str, Any]]) -> str:
 
 def _claim_table(items: list[dict[str, Any]]) -> str:
     out = [
-        "| # | İddia (özet) | Atıf(lar) | Durum | Kanıt / gerekçe (PDF sayfası) |",
-        "|---|---|---|---|---|",
+        "| # | Konum | İddia (özet) | Atıf(lar) | Kanıt türü | Destek | Kanıt / gerekçe (PDF sayfası) | Not |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for item in items:
         if not isinstance(item, dict):
@@ -193,12 +229,15 @@ def _claim_table(items: list[dict[str, Any]]) -> str:
         if isinstance(citations, (list, tuple)):
             citations = ", ".join(str(v) for v in citations)
         out.append(
-            "| {cid} | {claim} | {citations} | {status} | {evidence} |".format(
+            "| {cid} | {location} | {claim} | {citations} | {evidence_type} | {status} | {evidence} | {note} |".format(
                 cid=_cell(item.get("claim_id", "")),
+                location=_cell(item.get("location") or "-"),
                 claim=_cell(item.get("claim", "")),
                 citations=_cell(citations if citations not in (None, "") else "-"),
+                evidence_type=_cell(item.get("evidence_type") or "-"),
                 status=_cell(_status(item.get("status"))),
                 evidence=_cell(item.get("evidence", "")),
+                note=_cell(item.get("note") or "-"),
             )
         )
     return "\n".join(out)
@@ -220,6 +259,16 @@ def render_markdown(data: dict[str, Any]) -> str:
         meta += f" · Tarih: {_text(data['generated_at'])}"
 
     body: list[str] = [f"# {_inline(title)}", "", f"_{meta}_", ""]
+    summary = _summary_strip(data.get("summary"))
+    if summary:
+        body.extend([summary, ""])
+    notice = _notice(data.get("notice"))
+    if notice:
+        body.extend([notice, ""])
+    intro_data = data.get("intro") or {}
+    intro_heading = intro_data.get("heading") if isinstance(intro_data, dict) else None
+    if intro_heading and str(intro_heading).strip() and str(intro_heading).strip() != data.get("title"):
+        body.extend([f"## {_inline(intro_heading)}", ""])
     intro = _intro(data)
     if intro:
         body.extend([intro, ""])
@@ -263,6 +312,12 @@ def render_markdown(data: dict[str, Any]) -> str:
             body.extend([f"### {headings['limitations']}", ""])
             for item in limitations:
                 body.append(f"- {_inline(item)}")
+            body.append("")
+        next_steps = data.get("next_steps") or []
+        if next_steps:
+            body.extend([f"### {headings['next_steps']}", ""])
+            for index, item in enumerate(next_steps, 1):
+                body.append(f"{index}. {_inline(item)}")
             body.append("")
         references = data.get("references") or []
         if references:

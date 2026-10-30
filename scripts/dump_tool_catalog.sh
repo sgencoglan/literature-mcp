@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 26 MCP aracının ad + açıklama + JSON girdi şemasını docs/tool-catalog.json'a yazar.
+# 27 MCP aracının ad + açıklama + JSON girdi şemasını docs/tool-catalog.json'a yazar.
 # İki paketin bağımlılıkları kurulu olmalıdır.
 #
 # Kullanım:

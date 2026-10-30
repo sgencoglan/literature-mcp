@@ -1,5 +1,93 @@
 # Değişiklik Günlüğü
 
+## v2.3.0 — 2026-10-28
+
+### Eklendi
+
+- `report-kit`: b1 pilot raporundan uyarlanan sayfa tasarımı — 980 px gövde,
+  sans-serif başlıklar, `<mark>` vurgusu, kart/kanıt/not düzeni ve baskı
+  kuralları.
+- `report-kit`: opsiyonel `notice` kaynak politikası kutusu, sayı rozetleri
+  (`summary-strip`), değişiklik kartlarında durum rozeti ve footer.
+- `report-kit`: kaynak envanterinde `role` ve `limitation` sütunları; iddia
+  matrisinde `location`, `evidence_type` ve `note` sütunları.
+- `report-kit`: opsiyonel `next_steps` (Sonraki Adımlar) bölümü.
+- `paperqa-local`: tek yerel arka uç olarak llama.cpp, OpenAI uyumlu uç nokta,
+  model/bağlam/zaman aşımı ortam değişkenleri ve `paperqa_llm_status` aracı
+  (toplam 8 araç).
+- `paperqa-local`: `paperqa_ask` için otomatik llama.cpp yaşam döngüsü.
+  Sunucu kapalıysa başlatılır, model hazır olana kadar beklenir ve yalnızca
+  MCP'nin başlattığı sunucu boşta kalınca durdurulur. Elle başlatılan sunucuya
+  dokunulmaz; çökme sonrası kalan sunucu pid dosyasından sahiplenilir.
+  `PAPERQA_AUTO_START`, `PAPERQA_AUTO_STOP_IDLE`,
+  `PAPERQA_LLAMA_START_TIMEOUT`, `PAPERQA_LLAMA_MIN_FREE_MB`,
+  `PAPERQA_LLAMACPP_MODEL`, `PAPERQA_LLAMACPP_SCRIPT`,
+  `PAPERQA_LLAMACPP_LOG` ve `PAPERQA_LLAMACPP_PIDFILE` ile ayarlanır.
+- `scripts/setup_llamacpp.sh`, `scripts/start_llamacpp.sh`,
+  `scripts/benchmark_local_llm.py`.
+- `docs/local-llm.md`: llama.cpp kurulumu, model seçimi, benchmark ve OpenCode
+  `/models` entegrasyonu.
+
+### Değişti
+
+- Yerel LLM varsayılanları hafifletildi: `-t 2` (2 fiziksel çekirdek),
+  `-c 8192`, `-ngl 0`; tek Qwen2.5-3B-Instruct Q4_K_M modeli tutuldu.
+- `paperqa-local` MCP sunucusu PyMuPDF ve PaperQA2'yi tembel yükler; açılış
+  süresi ~35 sn'den ~5 sn'ye indi ve OpenCode bağlantı zaman aşımına takılmaz.
+- `paperqa-local`: aynı proje adı farklı bir klasör veya alt klasör taramasıyla
+  yeniden kaydedilirse `refresh_manifest=True` zorunlu; eski manifestin yeni
+  klasörle karışması engellenir. Aynı veya iç içe `index_directory`/`index_name`
+  yolu kullanan ikinci proje reddedilir.
+- `paperqa-local`: manifest okunurken mutlak yol, proje klasörü dışına çıkan
+  `..` yolları ve çift kayıtlar reddedilir. Kayıt sırasında aynı DOI'ye çözülen
+  yinelenen dosyalar manifeste alınmaz ve raporlanır.
+- `paperqa_build_index(rebuild=True)` eski indeksi silmek yerine `.bak-*`
+  klasörüne taşır; kurulum çökerse eski indeks geri getirilir, bazı dosyalar
+  başarısız olursa yedek korunur.
+- Proje yeniden kaydedilince veya indeks kurulunca proje ayarları, doküman
+  önbelleği ve bellek içi meta veriler temizlenir.
+- `paperqa_status`, manifest–indeks uyuşmazlıklarını (`missing_from_index`,
+  `index_only_files`) ve `healthy` durumunu raporlar.
+- `paperqa_search`, `paperqa_read_pages`, `paperqa_ask` ve `paperqa_llm_status`
+  sayısal girdileri doğrular ve sınırlar; `paperqa_ask` her çağrıda ayarların
+  kopyasını kullanır. `paperqa_read_pages` tek çağrıda en fazla 50 sayfa okur.
+- `paperqa_register_project` artık `output_directory` parametresi alır;
+  verilmezse çıktılar başta verilen proje klasörüne (`paper_directory`) yazılır.
+  `export_review(project=...)` de aynı klasöre yazar; `output_path` bu klasörün
+  dışına çıkamaz.
+- `paperqa-local` için 31 bağımlılıksız birim testi eklendi (registry, manifest,
+  yol güvenliği, DOI adayları, proje izolasyonu, indeks çakışması, yedekleme,
+  önbellek temizliği, yinelenen DOI, otomatik başlatma/durdurma, atexit
+  temizliği, çıktı klasörü ve giriş doğrulama).
+- `paperqa_ask`, sunucu başlatılamazsa ağır doküman/embedding yüklemesi
+  yapmadan açık bir hata, durum ayrıntısı ve başlatma ipucu döndürür. Girdiler
+  sunucu başlatılmadan önce doğrulanır.
+- `report-kit` HTML üreticisi semantik `<article>`, `<mark>` ve `<footer>`
+  etiketleri kullanır; kalite kapısı bu etiketleri de denetler.
+- Kalite kapısı, iddia `location`/`evidence_type`/`note` alanları için uyarı
+  üretir; `--strict` bu uyarıları hata sayar.
+- `examples/chapter-report.example.json`, HTML ve Markdown örnekleri yeni
+  alanlarla güncellendi.
+- `docs/report-standard.md`, `docs/output-spec.md`, `packages/report-kit/README.md`
+  ve `AGENTS.md` yeni rapor standardına göre güncellendi.
+- OpenCode örnek yapılandırması `providers.llamacpp` ve 8192 bağlamla
+  güncellendi; `paperqa-local` 8 araç olarak belgelendi.
+
+### Kaldırıldı
+
+- Ollama arka ucu, `PAPERQA_LOCAL_BACKEND` değişkeni, Ollama model listesi ve
+  `docs/ollama.md`; sistemde tek yerel arka uç llama.cpp'dir.
+- LFM3-1.7B modeli ve tüm betik/belge referansları (Türkçe çıktı ve düşünme
+  bloğu davranışı yetersizdi).
+
+### Korundu
+
+- Proje izolasyonu, DOI/sayfa doğrulaması, `paperqa_ask` yasağı ve yerel yol
+  yasağı.
+- Public depoda PDF, indeks, kişisel `projects.json`, manifest veya analiz
+  verisi bulunmaması.
+- `sciencedirect-meta` 19 araç.
+
 ## v2.2.0 — 2026-10-22
 
 ### Eklendi

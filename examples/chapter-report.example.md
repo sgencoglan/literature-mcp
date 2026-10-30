@@ -1,6 +1,12 @@
-# 1. Giriş
+# 1. Giriş — Düzeltilmiş Taslak ve Kaynak Denetimi
 
 _Düzeltilmiş taslak — **ornek-uzaktan-calisma** · Kırmızı zemin: önceki taslağa göre değiştirilen veya eklenen cümleler · Tarih: 2026-10-22_
+
+**3** değişiklik kartı · **3** kaynak · **4** iddia · **1** kanıtlanamayan iddia
+
+> **Kaynak politikası.** Önce tam metin; tam metinde karşılığı yoksa ve açıkça “özet” olarak etiketlenirse özet kullanıldı. Alıntılar sayfa numarasıyla doğrulandı. Bu örnekteki kaynaklar ve DOI’ler sentetiktir; gerçek teslimde kullanılamaz.
+
+## Düzeltilmiş metin
 
 Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir. **Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).**
 
@@ -79,22 +85,22 @@ _Sentetik örnek; project_audit ve sayfa doğrulamalı paperqa_search akışıyl
 
 ### 1) Kaynak Envanteri
 
-| # | Kaynak | DOI | Dergi (yıl) | Q (2024) | Atıf (Crossref/OpenAlex) | OA | Retraction |
-|---:|---|---|---|---|---|---|---|
-| 1 | Demir — Uzaktan çalışma ve refah | [10.5555/ornek.2024.001](https://doi.org/10.5555/ornek.2024.001) | Örnek İş ve Örgüt Psikolojisi Dergisi (2024) | Q1 | 12 / 14 | ✓ | yok |
-| 2 | Kaya & Yılmaz — Sınır yönetimi | [10.5555/ornek.2023.002](https://doi.org/10.5555/ornek.2023.002) | Örnek Çalışma Yaşamı Dergisi (2023) | Q2 | 8 / 9 | ✗ | yok |
-| 3 | Arslan vd. — Yönetici desteği ve tükenme | [10.5555/ornek.2025.003](https://doi.org/10.5555/ornek.2025.003) | Örnek Örgütsel Davranış Dergisi (2025) | Q1 | 3 / 4 | ✓ | yok |
+| # | Kaynak | DOI | Dergi (yıl) | Q (2024) | Atıf (Crossref/OpenAlex) | OA | Retraction | Rol | Sınırlılık |
+|---:|---|---|---|---|---|---|---|---|---|
+| 1 | Demir — Uzaktan çalışma ve refah | [10.5555/ornek.2024.001](https://doi.org/10.5555/ornek.2024.001) | Örnek İş ve Örgüt Psikolojisi Dergisi (2024) | Q1 | 12 / 14 | ✓ | yok | çekirdek | Kesitsel veri; nedensellik kurulamaz. |
+| 2 | Kaya & Yılmaz — Sınır yönetimi | [10.5555/ornek.2023.002](https://doi.org/10.5555/ornek.2023.002) | Örnek Çalışma Yaşamı Dergisi (2023) | Q2 | 8 / 9 | ✗ | yok | destek | İşten ayrılma niyeti ölçülmemiş; örneklem tek sektör. |
+| 3 | Arslan vd. — Yönetici desteği ve tükenme | [10.5555/ornek.2025.003](https://doi.org/10.5555/ornek.2025.003) | Örnek Örgütsel Davranış Dergisi (2025) | Q1 | 3 / 4 | ✓ | yok | çekirdek | Yalnızca beyaz yakalı örneklem; kültürel genelleme sınırlı. |
 
 _Not: Bu örnekteki kaynaklar, yazarlar ve DOI’ler sentetiktir; gerçek bir literatür taramasına atıf olarak kullanılamaz._
 
 ### 2) İddia–Kanıt Matrisi
 
-| # | İddia (özet) | Atıf(lar) | Durum | Kanıt / gerekçe (PDF sayfası) |
-|---|---|---|---|---|
-| C1 | Uzaktan çalışma refahı tek yönlü azaltır. | Demir (2024) | 🟡 Kısmi | Demir s. 4: özerklik memnuniyetle, mesai dışı erişilebilirlik tükenmeyle ilişkili; tek yönlü azalma yok. |
-| C2 | Uzaktan çalışma işten ayrılma niyetini doğrudan artırır. | Kaya & Yılmaz (2023) | 🔴 Kaynakta yok | Kaya & Yılmaz s. 7: işten ayrılma niyeti modelde sonuç değişkeni değil. |
-| C3 | Yönetici desteği tükenmeyle negatif ilişkilidir. | Arslan vd. (2025) | ✅ Destekli | Arslan vd. s. 11: bireysel dayanıklılık kontrol edildikten sonra da negatif ilişki sürüyor. |
-| C4 | Bu bölüm yöneticilere uygulanabilir bir çerçeve sunar. | — | ➖ Kapsam dışı | Amaç beyanı; ampirik iddia değil. |
+| # | Konum | İddia (özet) | Atıf(lar) | Kanıt türü | Destek | Kanıt / gerekçe (PDF sayfası) | Not |
+|---|---|---|---|---|---|---|---|
+| C1 | P1 · c2 | Uzaktan çalışma refahı tek yönlü azaltır. | Demir (2024) | Kesitsel anket | 🟡 Kısmi | Demir s. 4: özerklik memnuniyetle, mesai dışı erişilebilirlik tükenmeyle ilişkili; tek yönlü azalma yok. | İfade heterojen ilişkiye göre yumuşatıldı. |
+| C2 | P2 · c1 | Uzaktan çalışma işten ayrılma niyetini doğrudan artırır. | Kaya & Yılmaz (2023) | Kesitsel; sonuç değişkeni yok | 🔴 Kaynakta yok | Kaya & Yılmaz s. 7: işten ayrılma niyeti modelde sonuç değişkeni değil. | Doğrudan kanıt yok; iddia kaldırıldı. |
+| C3 | P3 · c2 | Yönetici desteği tükenmeyle negatif ilişkilidir. | Arslan vd. (2025) | Kesitsel, çok düzeyli | ✅ Destekli | Arslan vd. s. 11: bireysel dayanıklılık kontrol edildikten sonra da negatif ilişki sürüyor. | Kanıt doğrudan; örgütsel tasarım vurgusu eklendi. |
+| C4 | P3 · c1 | Bu bölüm yöneticilere uygulanabilir bir çerçeve sunar. | — | Amaç beyanı | ➖ Kapsam dışı | Amaç beyanı; ampirik iddia değil. | Kanıt gerektirmez; bölümün kendi katkısı olarak konumlandırıldı. |
 
 _Durum işaretleri: ✅ destekliyor · 🟡 kısmi/nüanslı · 🔴 atıf–iddia uyumsuz · ➖ kapsam dışı (amaç beyanı)_
 
@@ -111,10 +117,17 @@ _Durum işaretleri: ✅ destekliyor · 🟡 kısmi/nüanslı · 🔴 atıf–idd
 - **Örneklem sınırı:** Kaynaklar farklı sektör ve kültürlerden; genelleme öncesi bağlam kontrol edilmelidir.
 - **Tam metin:** Örnekte yalnızca kısa alıntılar ve sayfa numaraları gösterilmiştir; gerçek teslimde tam metin sayfası doğrulanmalıdır.
 
+### 5) Sonraki Adımlar
+
+1. C2 için işten ayrılma niyetini doğrudan ölçen bir kaynak ekleyin veya iddiayı bölümden çıkarın.
+2. C1 ve C3 için nedensellik ima eden fiilleri tutarlı biçimde ilişki diliyle değiştirin.
+3. Sentetik DOI’leri gerçek teslimde doğrulanmış DOI’lerle değiştirin; DOI’lerin kaynak envanterinde olduğunu kontrol edin.
+4. Tam metin sayfası doğrulamasını `paperqa_read_pages` ile yeniden çalıştırın.
+
 ### Kaynakça
 
 1. Demir, A. (2024). *Uzaktan çalışma ve refah: Heterojen ilişkiler*. Örnek İş ve Örgüt Psikolojisi Dergisi. [10.5555/ornek.2024.001](https://doi.org/10.5555/ornek.2024.001)
 2. Kaya, B.; Yılmaz, C. (2023). *Sınır yönetimi ve iş–aile çatışması*. Örnek Çalışma Yaşamı Dergisi. [10.5555/ornek.2023.002](https://doi.org/10.5555/ornek.2023.002)
 3. Arslan, D.; Öz, E.; Tan, F. (2025). *Yönetici desteği, dayanıklılık ve tükenme*. Örnek Örgütsel Davranış Dergisi. [10.5555/ornek.2025.003](https://doi.org/10.5555/ornek.2025.003)
 
-_literature-mcp · chapter-report v2.2.0 · Sentetik örnek; gerçek kaynak değildir._
+_literature-mcp · chapter-report v2.3.0 · Sentetik örnek; gerçek kaynak değildir._

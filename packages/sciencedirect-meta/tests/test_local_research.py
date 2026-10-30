@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import gzip
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -145,6 +146,85 @@ class LocalResearchTests(unittest.TestCase):
         self.assertTrue(path.exists())
         self.assertEqual(path.name, "test-review.md")
         self.assertIn("# Test Review", path.read_text(encoding="utf-8"))
+
+    def test_export_review_uses_project_output_directory(self) -> None:
+        registry = self.root / "projects.json"
+        output = self.root / "project-output"
+        registry.write_text(
+            json.dumps(
+                {
+                    "projects": {
+                        "p1": {
+                            "paper_directory": str(self.root / "papers"),
+                            "output_directory": str(output),
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        with mock.patch.object(
+            local_research, "LIT_PROJECTS_REGISTRY", registry
+        ):
+            local_research._PROJECTS_CACHE.update(
+                {"mtime": None, "data": {}}
+            )
+            try:
+                result = asyncio.run(
+                    local_research.export_review(
+                        title="Project Review",
+                        content="A project-scoped review.",
+                        project="p1",
+                        filename="project-review.md",
+                    )
+                )
+            finally:
+                local_research._PROJECTS_CACHE.update(
+                    {"mtime": None, "data": {}}
+                )
+        path = Path(result["path"])
+        self.assertEqual(path, output / "project-review.md")
+        self.assertTrue(path.exists())
+        self.assertEqual(result["project"], "p1")
+        self.assertEqual(result["output_directory"], str(output))
+
+    def test_export_review_rejects_path_outside_project(self) -> None:
+        registry = self.root / "projects.json"
+        output = self.root / "project-output"
+        registry.write_text(
+            json.dumps(
+                {
+                    "projects": {
+                        "p1": {
+                            "paper_directory": str(self.root / "papers"),
+                            "output_directory": str(output),
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        with mock.patch.object(
+            local_research, "LIT_PROJECTS_REGISTRY", registry
+        ):
+            local_research._PROJECTS_CACHE.update(
+                {"mtime": None, "data": {}}
+            )
+            try:
+                result = asyncio.run(
+                    local_research.export_review(
+                        title="Project Review",
+                        content="A project-scoped review.",
+                        project="p1",
+                        output_path=str(self.root / "outside.md"),
+                    )
+                )
+            finally:
+                local_research._PROJECTS_CACHE.update(
+                    {"mtime": None, "data": {}}
+                )
+        self.assertIn("error", result)
+        self.assertIn("project output", result["error"])
 
     def test_publisher_allowlist(self) -> None:
         from sciencedirect_meta.server import _paper, _publisher_allowed
