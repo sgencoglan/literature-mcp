@@ -6,12 +6,13 @@ ayrı manifest CSV'si ve ayrı Tantivy indeksi kullanır.
 > Bu paket bir kütüphane değil, tek dosyalık bir MCP sunucusudur. PaperQA2 ve
 > bağımlılıkları ayrıca kurulmalıdır.
 
-## Araçlar (8)
+## Araçlar (9)
 
 | Araç | Görev |
 |---|---|
+| `paperqa_create_workspace` | Seçilen proje kökünde üç iş akışı klasörünü ve 2/3 için ayrı PDF klasörlerini açar; kayıt veya seçim yapmaz |
 | `paperqa_projects` | Kayıtlı projeleri ve durumlarını listeler |
-| `paperqa_register_project` | PDF klasörünü proje olarak kaydeder, manifest üretir; çıktı klasörünü belirler |
+| `paperqa_register_project` | PDF klasörünü kaydeder; kullanıcı proje klasörü olan `output_directory` zorunludur |
 | `paperqa_build_index` | Manifestteki dosyalardan proje indeksini kurar/günceller; `rebuild` öncesi yedek alır |
 | `paperqa_status` | İndeks durumunu ve manifest–indeks uyuşmazlıklarını döndürür |
 | `paperqa_search` | Proje içinde semantik arama yapar (LLM çağırmaz) |
@@ -20,8 +21,10 @@ ayrı manifest CSV'si ve ayrı Tantivy indeksi kullanır.
 | `paperqa_ask` | Yerel LLM ile taslak cevap üretir (kanıt değildir) |
 
 `paperqa_search` embedding tabanlıdır; `paperqa_read_pages` PyMuPDF ile sayfa
-çıkarır. `paperqa_ask` yalnızca taslak/özet içindir; her cümle PDF sayfasıyla
-doğrulanmalıdır. `paperqa_llm_status` arka ucun durumunu raporlar; sunucu
+çıkarır. Taslakta bulgular paragraf bağlamına uygun özgün cümlelerle aktarılır;
+kaynak cümleleri aynen kopyalanmaz. `paperqa_ask` yalnızca taslak/özet içindir
+ve bu yazım biçimini garanti etmez; her iddia PDF sayfasıyla doğrulanmalıdır.
+`paperqa_llm_status` arka ucun durumunu raporlar; sunucu
 kapalıysa `paperqa_ask` llama.cpp'yi otomatik başlatır ve yalnızca kendisi
 başlattıysa boşta kalınca durdurur.
 
@@ -33,6 +36,28 @@ python3 -m pip install "paperqa" mcp pymupdf httpx
 ```
 
 Python 3.10+ gerekir.
+
+## Proje klasörünü başlatma
+
+Kullanıcıdan proje kökünün tam yolunu alın ve iş akışlarına başlamadan önce
+MCP aracını çağırın:
+
+```text
+paperqa_create_workspace(
+  project_directory="~/Documents/literature/example-project"
+)
+```
+
+Proje adı klasör adından alınır; gerekirse `name="example-project"` ile
+verilebilir.
+
+Araç `01_kaynak_kesfi/`, `02_bolum_taslagi/` ve `03_taslak_denetimi/`
+klasörlerini; PDF'ler için `02_bolum_taslagi/fulltext/` ve
+`03_taslak_denetimi/fulltext/` klasörlerini oluşturur. Var olan dosyaları silmez
+veya taşımaz, PaperQA projesi kaydetmez. Her iş akışında PDF'ler `fulltext/`,
+taslak dosyaları ve raporlar `taslak/` altında tutulur. Araçtan sonra kullanıcıya 1, 2 veya
+3. iş akışından hangisini yapmak istediğini sorun. Akış 2 veya 3 seçilince
+yalnızca o akışın PDF klasörünü aracın döndürdüğü ayrı proje adıyla kaydedin.
 
 ### llama.cpp (önerilen)
 
@@ -93,22 +118,23 @@ Yeni proje için tercih edilen yol `paperqa_register_project` aracıdır:
 ```text
 paperqa_register_project(
   name="example-project",
-  paper_directory="~/Documents/papers/example",
-  output_directory="~/Documents/papers/example",
+  paper_directory="~/Documents/literature/example-project/pdf",
+  output_directory="~/Documents/literature/example-project",
   title="Example literature project"
 )
 ```
 
-`output_directory` verilmezse çıktılar `paper_directory` altına yazılır; yani
-başta verilen proje klasörü kullanılır. Bu araç manifesti üretir; DOI'si olmayan
-dosyalar varsayılan olarak manifeste alınmaz. Ardından
+`output_directory` zorunludur ve kullanıcının seçtiği proje klasörünü belirtir.
+Manifest ve indeks bu klasörün `.literature-mcp/` altına yazılır. Bu araç
+manifesti üretir; DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz. Ardından
 `paperqa_build_index(project="example-project")` çalıştırılır.
 
 ## Proje izolasyonu
 
 - Her projenin kendi `paper_directory`, `manifest`, `index_directory`,
-  `index_name` ve `output_directory` değeri vardır. `output_directory`
-  verilmezse çıktılar `paper_directory` altına yazılır.
+  `index_name` ve `output_directory` değeri vardır. Yeni proje kaydında
+  `output_directory` zorunludur; ana çıktılar burada, manifest ve indeks
+  `.literature-mcp/` altında tutulur.
 - İndeks üyeliği **manifest** tarafından belirlenir; klasöre sonradan bırakılan
   bir PDF, manifeste eklenmedikçe indekse girmez.
 - `paperqa_search`, `paperqa_read_pages`, `paperqa_build_index`,

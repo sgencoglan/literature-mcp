@@ -1,6 +1,29 @@
 # Değişiklik Günlüğü
 
-## Geliştirme aşamasında
+## v2.4.0 — 2026-10-31
+
+### Eklendi
+
+- Üç aşamalı çalışma akışı: kaynak keşfi, PDF kanıtlarıyla bölüm taslağı ve
+  mevcut taslağın cümle cümle denetimi.
+- `paperqa_create_workspace`, kullanıcı proje kökünde iş akışı klasörlerini
+  başlatır ve 1/2/3 akış seçimini sunar; akış seçilmeden PDF kaydı veya analiz
+  yapılmaz.
+- Akış 2 ve 3 için ayrı `fulltext/` ve `taslak/` alt klasörleri; ayrı PaperQA
+  proje adları, manifestler ve indeksler.
+- Akış 2 taslağını HTML ve Markdown olarak üretme; HTML'e Ek 1 kaynak–taslak
+  kartları ile sayfa doğrulamalı iddia–kanıt matrisi ekleme.
+- Taslak cümlelerini kaynak metnini kopyalamadan, paragraf bağlamına uygun
+  özgün ifadelerle yazma yönergeleri.
+- `chapter-report` kart etiketlerini Türkçe taslak raporlarına göre özelleştirme.
+- `paperqa_register_project` için zorunlu `output_directory`; manifest ve indeks
+  kullanıcı proje kökü altında, akıştan izole tutulur.
+
+### Değişti
+
+- README, ajan yönergeleri, iş akışı/mimari belgeleri, araç kataloğu ve örnek
+  proje yapılandırması üç akışlı işleyişle eşleştirildi.
+- Fulltext listesi şemasında kaynak keşfi çıktıları için yeni alanlar eklendi.
 
 ### Düzeltildi
 
@@ -8,6 +31,9 @@
   mevcut olduğunda diğer çıktı dosyalarını yazmadan önce durur. Çıktı yolları
   çakışıyorsa ya da manifeste eklenecek dosya manifest klasörünün dışındaysa
   da üretim başlamadan hata verir.
+
+## Geliştirme aşamasında
+
 
 ## v2.3.0 — 2026-10-28
 

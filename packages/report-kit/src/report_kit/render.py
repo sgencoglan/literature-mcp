@@ -250,7 +250,7 @@ def render_change_cards(cards: list[dict[str, Any]]) -> str:
             continue
         title = str(card.get("title") or card.get("id") or "").strip()
         location = str(card.get("location") or "").strip()
-        heading = f"Değişiklik {index}"
+        heading = f"{escape(card.get('card_label') or 'Değişiklik')} {index}"
         if title:
             heading += f" — {escape(title)}"
         if location:
@@ -267,8 +267,9 @@ def render_change_cards(cards: list[dict[str, Any]]) -> str:
 
         author_sentence = card.get("author_sentence")
         if author_sentence:
+            author_label = escape(card.get("author_label") or "Yazarın yazdığı")
             out.append(
-                '  <div class="row"><span class="lbl">Yazarın yazdığı</span>'
+                f'  <div class="row"><span class="lbl">{author_label}</span>'
                 f"<p>{quote(author_sentence)}</p></div>"
             )
 
@@ -297,16 +298,20 @@ def render_change_cards(cards: list[dict[str, Any]]) -> str:
 
         rewritten = card.get("rewritten_sentence")
         if rewritten:
+            rewritten_label = escape(card.get("rewritten_label") or "Yeniden yazılan cümle")
             out.append(
-                '  <div class="row"><span class="lbl">Yeniden yazılan cümle</span>'
+                f'  <div class="row"><span class="lbl">{rewritten_label}</span>'
                 f'<p class="rewritten"><mark>{quote(rewritten)}</mark></p></div>'
             )
 
         notes = [note for note in (card.get("notes") or []) if isinstance(note, dict)]
         if notes:
             out.append('  <div class="notes">')
+            notes_heading = card.get("notes_heading")
+            if not notes_heading:
+                notes_heading = "Düzeltme notları" if len(notes) > 1 else "Düzeltme notu"
             out.append(
-                f'    <h4>{"Düzeltme notları" if len(notes) > 1 else "Düzeltme notu"}</h4>'
+                f"    <h4>{escape(notes_heading)}</h4>"
             )
             out.append("    <ol>")
             for note in notes:

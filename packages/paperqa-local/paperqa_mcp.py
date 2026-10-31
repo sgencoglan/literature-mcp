@@ -1227,6 +1227,80 @@ def _looks_like_backmatter(text: str) -> bool:
 # --------------------------------------------------------------------------- #
 
 @mcp.tool()
+async def paperqa_create_workspace(
+    project_directory: str,
+    name: str | None = None,
+) -> dict[str, Any]:
+    """Proje kökünde üç iş akışı klasörünü açar; henüz akış/proje kaydı seçmez.
+
+    Var olan dosyaları silmez veya taşımaz. Akış 2 ve 3 için PDF klasörlerini,
+    workflow'a göre ayrılmış manifestler ve indeksler için iç klasörleri açar.
+    """
+    root = Path(project_directory).expanduser().resolve()
+    name = (name or "").strip()
+    if not name:
+        name = re.sub(r"[^A-Za-z0-9._-]+", "-", root.name).strip("._-")[:61]
+        if len(name) < 2:
+            name = "literature-project"
+    if not PROJECT_NAME_RE.match(name):
+        raise ValueError(
+            "Proje adı 2-61 karakter olmalı ve yalnızca harf, rakam, '.', '_', '-' içermelidir."
+        )
+    paths = {
+        "source_discovery": root / "01_kaynak_kesfi",
+        "draft": root / "02_bolum_taslagi",
+        "draft_fulltext": root / "02_bolum_taslagi" / "fulltext",
+        "draft_text": root / "02_bolum_taslagi" / "taslak",
+        "draft_audit": root / "03_taslak_denetimi",
+        "audit_fulltext": root / "03_taslak_denetimi" / "fulltext",
+        "audit_text": root / "03_taslak_denetimi" / "taslak",
+        "internal": root / ".literature-mcp",
+        "indexes": root / ".literature-mcp" / "indexes",
+        "manifests": root / ".literature-mcp" / "projects",
+    }
+    created: dict[str, bool] = {}
+    root.mkdir(parents=True, exist_ok=True)
+    for key, path in paths.items():
+        created[key] = not path.exists()
+        path.mkdir(parents=True, exist_ok=True)
+
+    def scoped_name(suffix: str) -> str:
+        tail = f"-{suffix}"
+        return f"{name[:61 - len(tail)].rstrip('._-')}{tail}"
+
+    return {
+        "project_name": name,
+        "project_directory": str(root),
+        "next_step": "Kullanıcıya hangi iş akışını istediğini sor; seçim gelmeden devam etme.",
+        "workflow_choices": [
+            "1 — Kaynak keşfi ve PDF listesi",
+            "2 — PDF'lerden sayfa doğrulamalı bölüm taslağı",
+            "3 — Mevcut taslağı PDF kanıtlarıyla denetleme",
+        ],
+        "workflow_directories": {
+            "1_source_discovery": str(paths["source_discovery"]),
+            "2_draft": str(paths["draft"]),
+            "3_draft_audit": str(paths["draft_audit"]),
+        },
+        "fulltext_directories": {
+            "draft": str(paths["draft_fulltext"]),
+            "audit": str(paths["audit_fulltext"]),
+        },
+        "draft_directories": {
+            "draft": str(paths["draft_text"]),
+            "audit": str(paths["audit_text"]),
+        },
+        "workflow_project_names": {
+            "draft": scoped_name("draft"),
+            "audit": scoped_name("audit"),
+        },
+        "internal_directory": str(paths["internal"]),
+        "created": created,
+        "registered": False,
+    }
+
+
+@mcp.tool()
 async def paperqa_projects() -> dict[str, Any]:
     """Kayıtlı projeleri durumlarıyla listeler (izole PDF klasörü + manifest + indeks)."""
     registry = _load_registry()
@@ -1249,6 +1323,7 @@ async def paperqa_projects() -> dict[str, Any]:
 async def paperqa_register_project(
     name: str,
     paper_directory: str,
+    output_directory: str,
     title: str | None = None,
     description: str | None = None,
     include_subdirectories: bool = False,
@@ -1257,7 +1332,6 @@ async def paperqa_register_project(
     enrich_metadata: bool = True,
     index_directory: str | None = None,
     index_name: str | None = None,
-    output_directory: str | None = None,
 ) -> dict[str, Any]:
     """Bir PDF klasörünü izole proje olarak kaydeder ve manifest CSV üretir.
 
@@ -1271,8 +1345,9 @@ async def paperqa_register_project(
       (``include_files_without_doi=True`` ile dahil edilir).
     - Aynı DOI'ye çözülen ikinci dosya manifeste alınmaz; ``skipped_duplicate_doi``
       alanında raporlanır.
-    - ``output_directory`` verilmezse çıktılar proje klasörüne (``paper_directory``)
-      yazılır; böylece raporlar baştan kullanıcının verdiği klasörde kalır.
+    - Kullanıcının proje klasörü ``output_directory`` olarak zorunludur.
+      Ana çıktılar burada, yeni manifest ve indeks ise buradaki
+      ``.literature-mcp/`` alt klasöründe tutulur.
     - İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.
     """
     name = (name or "").strip()
@@ -1283,13 +1358,21 @@ async def paperqa_register_project(
     directory = Path(paper_directory).expanduser().resolve()
     if not directory.is_dir():
         raise ValueError(f"Klasör bulunamadı: {directory}")
-    pdfs = _scan_pdfs(directory, include_subdirectories)
-    if not pdfs:
-        raise ValueError(f"Klasörde PDF yok: {directory}")
-
     registry = _load_registry(force=True)
     projects = registry.setdefault("projects", {})
     existing = projects.get(name) or {}
+    project_root = Path(output_directory).expanduser().resolve()
+    registered_output = existing.get("output_directory")
+    if registered_output and Path(registered_output).expanduser().resolve() != project_root:
+        raise ValueError(
+            f"{name!r} projesi farklı bir output_directory ile kayıtlı. "
+            "Kayıtlı proje klasörünü kullanın; başka bir klasör için yeni proje adı açın."
+        )
+    project_root.mkdir(parents=True, exist_ok=True)
+
+    pdfs = _scan_pdfs(directory, include_subdirectories)
+    if not pdfs:
+        raise ValueError(f"Klasörde PDF yok: {directory}")
     existing_directory = (
         Path(existing["paper_directory"]).expanduser().resolve()
         if existing.get("paper_directory")
@@ -1312,7 +1395,7 @@ async def paperqa_register_project(
     manifest = (
         Path(existing["manifest"]).expanduser()
         if existing.get("manifest")
-        else DEFAULT_PROJECTS_ROOT / name / "manifest.csv"
+        else project_root / ".literature-mcp" / "projects" / name / "manifest.csv"
     )
     build_manifest = refresh_manifest or not existing.get("manifest") or not manifest.exists()
 
@@ -1367,16 +1450,14 @@ async def paperqa_register_project(
         "index_directory": str(
             Path(index_directory).expanduser()
             if index_directory
-            else existing.get("index_directory") or DEFAULT_INDEX_ROOT
+            else existing.get("index_directory")
+            or project_root / ".literature-mcp" / "indexes"
         ),
         "index_name": _validate_index_name(
             index_name or existing.get("index_name") or name
         ),
         "output_directory": str(
-            Path(output_directory).expanduser().resolve()
-            if output_directory
-            else existing.get("output_directory")
-            or directory
+            project_root
         ),
         "analysis_json": existing.get("analysis_json"),
         "created_at": existing.get("created_at") or _now(),
@@ -1839,8 +1920,10 @@ async def paperqa_ask(
     Yerel llama.cpp sunucusunu kullanır. Sunucu kapalıysa MCP onu otomatik
     başlatır ve yalnızca kendisi başlattıysa boşta kalınca durdurur
     (``PAPERQA_AUTO_START`` / ``PAPERQA_AUTO_STOP_IDLE``). CPU'da yavaştır ve
-    küçük modeller atıf hatası yapabilir. Cevabı taslak kabul edip her iddiayı
-    ``paperqa_search`` veya ``paperqa_read_pages`` ile doğrulayın.
+    küçük modeller atıf hatası yapabilir. Cevabı taslak kabul edin; kaynak
+    cümlelerini aynen kopyalamak yerine bulguları paragraf bağlamına uygun
+    özgün ifadelerle yazın. Her iddiayı ``paperqa_search`` veya
+    ``paperqa_read_pages`` ile doğrulayın. Araç, bu yazım biçimini garanti etmez.
     """
     global _llama_active_asks
     name = (project or "").strip()

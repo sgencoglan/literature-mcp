@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.org/literature-mcp/schemas/claim-evidence.schema.json",
   "title": "İddia–kanıt matrisi satırı",
-  "description": "Görev 2 Ek 2: her iddia için kaynak, sayfa, kısa kanıt ve karar.",
+  "description": "İş akışı 3 Ek 2: her iddia için kaynak, sayfa, kısa kanıt ve karar.",
   "type": "object",
   "required": [
     "claim_id",

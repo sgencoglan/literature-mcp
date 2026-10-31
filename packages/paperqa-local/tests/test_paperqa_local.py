@@ -160,6 +160,8 @@ class ProjectRegistryTests(unittest.TestCase):
     def _register(self, name: str, directory: Path, **kwargs):
         pdf = directory / "10.1234test.pdf"
         pdf.write_bytes(b"%PDF-1.4\n")
+        registered = paperqa_mcp._load_registry(force=True).get("projects", {}).get(name, {})
+        kwargs.setdefault("output_directory", registered.get("output_directory", str(directory)))
 
         async def fake_resolve(path, probe):
             return "10.1234/test", True
@@ -189,7 +191,7 @@ class ProjectRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "p1"):
             paperqa_mcp._project_config("missing")
 
-    def test_output_directory_defaults_to_project_folder(self) -> None:
+    def test_explicit_project_root_is_stored_as_output_directory(self) -> None:
         directory = self.root / "p1"
         directory.mkdir()
         result = self._register("p1", directory)
@@ -286,6 +288,7 @@ class ProjectRegistryTests(unittest.TestCase):
                 paperqa_mcp.paperqa_register_project(
                     name="p1",
                     paper_directory=str(directory),
+                    output_directory=str(directory),
                     enrich_metadata=False,
                 )
             )

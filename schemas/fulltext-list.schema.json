@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.org/literature-mcp/schemas/fulltext-list.schema.json",
   "title": "Fulltext indirme listesi",
-  "description": "Görev 1 adım 5 çıktısı. scripts/build_fulltext_list.py bu dosyayı HTML'e çevirir.",
+  "description": "İş akışı 1 çıktısı. scripts/build_fulltext_list.py bu dosyayı HTML'e çevirir.",
   "type": "object",
   "required": ["project", "title", "query", "candidates"],
   "properties": {

@@ -131,7 +131,7 @@ def _change_cards(cards: list[dict[str, Any]], headings: dict[str, str]) -> str:
             continue
         title = _text(card.get("title")).strip()
         location = _text(card.get("location")).strip()
-        heading = f"### Değişiklik {index}"
+        heading = f"### {_text(card.get('card_label') or 'Değişiklik')} {index}"
         if title:
             heading += f" — {title}"
         if location:
@@ -139,7 +139,8 @@ def _change_cards(cards: list[dict[str, Any]], headings: dict[str, str]) -> str:
         out.append(heading)
         out.append("")
         if card.get("author_sentence"):
-            out.extend([f"**Yazarın yazdığı:** {_quote(card['author_sentence'])}", ""])
+            author_label = _text(card.get("author_label") or "Yazarın yazdığı")
+            out.extend([f"**{_inline(author_label)}:** {_quote(card['author_sentence'])}", ""])
         for source in card.get("sources") or []:
             if not isinstance(source, dict):
                 continue
@@ -158,9 +159,10 @@ def _change_cards(cards: list[dict[str, Any]], headings: dict[str, str]) -> str:
             out.append("")
             out.extend([f"**Türkçesi:** {_quote(source.get('translation', ''))}", ""])
         if card.get("rewritten_sentence"):
+            rewritten_label = _text(card.get("rewritten_label") or "Yeniden yazılan cümle")
             out.extend(
                 [
-                    f"**Yeniden yazılan cümle:** **{_quote(card['rewritten_sentence'])}**",
+                    f"**{_inline(rewritten_label)}:** **{_quote(card['rewritten_sentence'])}**",
                     "",
                 ]
             )

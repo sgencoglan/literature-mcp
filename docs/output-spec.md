@@ -4,6 +4,12 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 
 ## Genel kurallar
 
+- **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile üç iş akışı klasörü açın.
+- **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 1, 2 veya 3 seçmesini isteyin; seçimden önce arama veya dosya işleme yapmayın.
+- **Akış klasörleri:** `01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/`. Her çıktıyı ilgili klasöre yazın. PDF'ler akış 2 ve 3 için ilgili klasörün `fulltext/` altına konur.
+- **Ana dosyalar:** İş akışı 1 `01_kaynak_kesfi/01_fulltext_listesi.html`; iş akışı 2 aynı chapter-report tasarımında bölüm metni + Ek 1 + Ek 2 matrisi içeren `02_bolum_taslagi/taslak/02_bolum_taslagi.html` ve eş Markdown'ı; iş akışı 3 `03_taslak_denetimi/taslak/05_bolum_raporu.html` üretir.
+- **PaperQA kaynakları:** `output_directory` proje köküdür. Akış 2 PDF'leri `02_bolum_taslagi/fulltext/`, akış 3 PDF'leri `03_taslak_denetimi/fulltext/` altındadır. Her akış ayrı proje adı, manifest ve indeks kullanır; bunlar `<proje-kökü>/.literature-mcp/` altında tutulur.
+
 - **Dil:** Teslim Türkçedir. İngilizce kaynak cümlesi özgün hâliyle verilir; Türkçesi ayrı alanda bulunur.
 - **DOI:** Yalnızca `https://doi.org/<doi>` biçimi. DOI metni ayrıca `doi` alanında saklanır.
 - **Yerel yol yasağı:** HTML/Markdown/CSV/JSON teslimlerinde `file://`, `/home/...`, `C:\...` veya PDF dosya adı linki bulunmaz. PDF'ler yalnızca kaynak kimliği (DOI) ile anılır.
@@ -15,23 +21,31 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 
 ## Dosya adları
 
-Proje `output_directory` altında. Kayıt sırasında `output_directory` verilmezse
-başta verilen proje klasörü (`paper_directory`) kullanılır:
+Proje kökü `paperqa_create_workspace` tarafından başlatılır. İş akışları
+`01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/` altına yazılır;
+PDF'ler ilgili akışın `fulltext/`, taslaklar ve raporlar `taslak/` altındadır. Akış 2 ve 3'ün manifesti ve
+indeksi `.literature-mcp/` altında birbirinden ayrı tutulur.
+
+Her akışın ana ve ek çıktıları ilgili alt klasörde tutulur. Yeni proje
+kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 
 | Dosya | Biçim | Kime | İçerik |
 |---|---|---|---|
-| `01_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları |
-| `01_fulltext_listesi.json` | JSON | Ajan | Aynı verinin şemalı hâli |
-| `02_degisiklik_kartlari.csv` | CSV | İnsan + ajan | Cümle bazlı düzeltme kartları |
-| `02_degisiklik_kartlari.json` | JSON | Ajan | Kartların şemalı hâli |
-| `03_kaynak_denetimi.csv` | CSV | İnsan + ajan | Ek 2 kaynak denetimi |
-| `03_iddia_kanit_matrisi.csv` | CSV | İnsan + ajan | İddia–kanıt matrisi |
-| `04_denetim_raporu.html` | HTML | İnsan | Kartlar + denetim + matris + kaynakça |
-| `04_denetim_raporu.md` | Markdown | İnsan + ajan | Düzenlenebilir rapor |
-| `04_denetim_raporu.json` | JSON | Ajan | Tam yapılandırılmış rapor |
-| `05_bolum_raporu.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + Ek 1 + Ek 2 |
-| `05_bolum_raporu.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
-| `05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
+| `01_kaynak_kesfi/01_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları |
+| `01_kaynak_kesfi/01_fulltext_listesi.json` | JSON | Ajan | Aynı verinin şemalı hâli |
+| `02_bolum_taslagi/taslak/02_bolum_taslagi.json` | JSON | Ajan | Bölüm metni, Ek 1 ve Ek 2 için chapter-report girdisi |
+| `02_bolum_taslagi/taslak/02_bolum_taslagi.md` | Markdown | İnsan + ajan | Taslak + kanıt eklerinin düzenlenebilir sürümü |
+| `02_bolum_taslagi/taslak/02_bolum_taslagi.html` | HTML | İnsan | Bölüm metni + Ek 1 + iddia–kanıt matrisi |
+| `03_taslak_denetimi/taslak/02_degisiklik_kartlari.csv` | CSV | İnsan + ajan | Cümle bazlı düzeltme kartları |
+| `03_taslak_denetimi/taslak/02_degisiklik_kartlari.json` | JSON | Ajan | Kartların şemalı hâli |
+| `03_taslak_denetimi/taslak/03_kaynak_denetimi.csv` | CSV | İnsan + ajan | Kaynak denetimi |
+| `03_taslak_denetimi/taslak/03_iddia_kanit_matrisi.csv` | CSV | İnsan + ajan | İddia–kanıt matrisi |
+| `03_taslak_denetimi/taslak/04_denetim_raporu.html` | HTML | İnsan | Kartlar + denetim + matris + kaynakça |
+| `03_taslak_denetimi/taslak/04_denetim_raporu.md` | Markdown | İnsan + ajan | Düzenlenebilir rapor |
+| `03_taslak_denetimi/taslak/04_denetim_raporu.json` | JSON | Ajan | Tam yapılandırılmış rapor |
+| `03_taslak_denetimi/taslak/05_bolum_raporu.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + Ek 1 + Ek 2 |
+| `03_taslak_denetimi/taslak/05_bolum_raporu.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
+| `03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
 Proje adı önek olarak eklenebilir: `<proje-adi>_01_fulltext_listesi.html`. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
 

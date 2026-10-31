@@ -5,12 +5,12 @@
     "example-project": {
       "title": "Example literature project",
       "description": "Replace with your own project. Keep every project isolated.",
-      "paper_directory": "~/Documents/papers/example",
+      "paper_directory": "~/Documents/literature/example-project/02_bolum_taslagi/fulltext",
       "include_subdirectories": false,
-      "manifest": "~/.literature-mcp/projects/example-project/manifest.csv",
-      "index_directory": "~/.literature-mcp/indexes",
+      "manifest": "~/Documents/literature/example-project/.literature-mcp/manifest.csv",
+      "index_directory": "~/Documents/literature/example-project/.literature-mcp/indexes",
       "index_name": "example-project",
-      "output_directory": "~/.literature-mcp/outputs/example-project",
+      "output_directory": "~/Documents/literature/example-project",
       "analysis_json": null
     }
   }

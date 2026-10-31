@@ -8,6 +8,8 @@ açıklar.
 > **Temel kural değişmedi:** Yerel model yalnızca **taslak/özet** üretir.
 > Kanıt; `paperqa_search` + `paperqa_read_pages` ile sayfa düzeyinde doğrulanır.
 > Model seçimi rapor kalitesinin tek belirleyicisi değildir.
+> Yeni bölüm taslağında doğrulanmış bulgular paragraf bağlamına uygun özgün
+> cümlelerle aktarılır; `paperqa_ask` bunu kendiliğinden garanti etmez.
 
 ## Kısa karar
 

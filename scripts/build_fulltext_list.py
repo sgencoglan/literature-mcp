@@ -7,7 +7,9 @@ Girdi: schemas/fulltext-list.schema.json biçiminde JSON.
 Standart kütüphane dışında bağımlılık yoktur.
 
 Kullanım:
-    python3 scripts/build_fulltext_list.py adaylar.json -o 01_fulltext_listesi.html
+    python3 scripts/build_fulltext_list.py \
+        <project-root>/01_kaynak_kesfi/01_fulltext_listesi.json \
+        -o <project-root>/01_kaynak_kesfi/01_fulltext_listesi.html
     python3 scripts/build_fulltext_list.py adaylar.json --check
 """
 

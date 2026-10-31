@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.org/literature-mcp/schemas/change-card.schema.json",
   "title": "Düzeltme kartı",
-  "description": "Görev 2 çıktısı: yazar cümlesi → kaynak cümlesi → Türkçesi → yeniden yazılan cümle → not.",
+  "description": "İş akışı 3 çıktısı: yazar cümlesi → kaynak cümlesi → Türkçesi → yeniden yazılan cümle → not.",
   "type": "object",
   "required": [
     "id",

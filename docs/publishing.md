@@ -1,7 +1,7 @@
 # Public repo kontrolü
 
-Son public sürüm **v2.2.0**'dır. Bu belge, v2.3.0 sürümünü yayımlamadan veya
-public görünürlüğü değiştirmeden önce uygulanacak kontrol listesini korur.
+Son public sürüm **v2.3.0**'dır. Bu belge v2.4.0 ve sonraki sürümleri
+yayımlarken uygulanacak kontrol listesini korur.
 
 ## 1. Kişisel veri ve dosya kontrolü
 
@@ -57,12 +57,13 @@ branch protection ve zorunlu CI kontrolü açılmalıdır.
 
 ## 5. Sürüm yayını sırası
 
-1. Yerel depoyu hazırlayın: `git add .`, `git commit`.
-2. `git tag -a v2.3.0 -m "Hafif yerel LLM ve b1 rapor tasarımı"`.
-3. `git push origin main --tags`.
-4. `gh release create v2.3.0 --title "v2.3.0" --notes-file CHANGELOG.md`.
-5. Bir kez daha `git ls-files` ve `git grep` ile sızıntı kontrolü yapın.
-6. Public görünürlüğü yalnızca kontrol listesi tamamsa değiştirin.
+1. Sürüm metadatası (`VERSION`, `pyproject.toml`, `__version__`), changelog ve README sürümünü eşleştirin.
+2. Yerel depoyu hazırlayın: `git add .`, `git commit`.
+3. `git tag -a v2.4.0 -m "Üç iş akışı ve proje çalışma alanları"`.
+4. `git push origin main --tags`.
+5. `gh release create v2.4.0 --title "v2.4.0" --notes-file <sürüm-notları>`.
+6. Bir kez daha `git ls-files` ve `git grep` ile sızıntı kontrolü yapın.
+7. Public görünürlüğü yalnızca kontrol listesi tamamsa değiştirin.
 
 ## 6. Public sonrası eksikler
 

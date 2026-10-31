@@ -1,8 +1,16 @@
 # İş Akışları
 
-Bu belge, iki ana görevin adım adım yürütülmesini tanımlar. Araç adları MCP araç adlarıdır; insanlar için parantez içinde ne işe yaradığı yazılmıştır.
+Bu belge üç iş akışını adım adım tanımlar. Araç adları MCP araç adlarıdır; insanlar için parantez içinde ne işe yaradığı yazılmıştır.
 
-## Görev 1 — Yeni bölüm için kaynak hattı
+## İş akışı 1 — Kaynak keşfi ve PDF listesi
+
+Başlamadan önce kullanıcıdan proje klasörünün tam yolunu alın. Bu yol olmadan
+dosya oluşturmayın. Aday JSON'u ve `01_fulltext_listesi.html` dosyasını aynı
+projenin `01_kaynak_kesfi/` klasörüne yazın. İlk adımda
+`paperqa_create_workspace(project_directory=...)` çağrısı yaparak proje
+kökünde üç iş akışı klasörünü oluşturun. Proje adı klasör adından alınır;
+gerekirse `name` ile açıkça verilebilir. Sonra kullanıcıya üç akıştan hangisini
+yapacağını sorun; seçim gelmeden arama, PDF işleme veya raporlama yapmayın.
 
 ### Adım 1: Kapsamı netleştir
 
@@ -109,7 +117,9 @@ Kurallar:
 
 ```bash
 cd <repo>
-python3 scripts/build_fulltext_list.py adaylar.json -o 01_fulltext_listesi.html
+python3 scripts/build_fulltext_list.py \
+  <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.json \
+  -o <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.html
 ```
 
 Çıktı:
@@ -120,33 +130,42 @@ python3 scripts/build_fulltext_list.py adaylar.json -o 01_fulltext_listesi.html
 - Her satırda yazdırılabilir "indirildi" kutusu; durum tarayıcıda saklanır.
 - Yerel PDF yolu içermez.
 
-### Adım 7: PDF'leri yerleştir ve projeyi kaydet
+## İş akışı 2 — PDF'leri projeye kaydetme ve kanıta dayalı taslak
 
-Kullanıcı PDF'leri `paper_directory` klasörüne indirir. Dosya adında DOI olması en güvenilir yöntemdir.
+### Adım 1: Proje klasörünü ve PDF klasörünü belirle
+
+Kullanıcı iş akışı 2'yi seçtikten sonra PDF'leri
+`<proje-kökü>/02_bolum_taslagi/fulltext/` altına koyar. Dosyalar gelmeden taslak
+hazırlamaya başlamayın. Dosya adında DOI olması en güvenilir yöntemdir.
+`paperqa_create_workspace` sonucundaki `workflow_project_names.draft` değerini
+PaperQA proje adı olarak kullanın; `output_directory` proje kökü,
+`paper_directory` bu PDF klasörüdür.
 
 ```text
 paperqa_register_project(
-  name="proje-adi",
-  paper_directory="~/Documents/papers/example",
+  name="<workflow_project_names.draft>",
+  paper_directory="<proje-kökü>/02_bolum_taslagi/fulltext",
   title="...",
   description="...",
-  include_subdirectories=false
+  include_subdirectories=false,
+  output_directory="<kullanıcının-verdiği-proje-kökü>"
 )
-project_audit(project="proje-adi")
-paperqa_build_index(project="proje-adi")
-paperqa_status(project="proje-adi")
-library_status(project="proje-adi")
+project_audit(project="<workflow_project_names.draft>")
+paperqa_build_index(project="<workflow_project_names.draft>")
+paperqa_status(project="<workflow_project_names.draft>")
+library_status(project="<workflow_project_names.draft>")
 ```
 
 Kurallar:
 
 - `paperqa_register_project` manifest üretir; DOI'ler dosya adından veya ilk iki sayfadan algılanır.
+- Yeni proje kaydında `output_directory` zorunludur. Manifest ve indeks, proje klasöründeki `.literature-mcp/` içine yazılır.
 - DOI'siz dosyalar varsayılan olarak manifest dışıdır. Taslak/izin gibi dosyalar için `include_files_without_doi=true` gerekir.
 - `project_audit` manifest dışı kalan dosyaları ve DOI eşleşmelerini gösterir.
 - `paperqa_build_index` yalnızca manifest üyelerini indeksler; başka projenin indeksine dokunmaz.
 - `paperqa_status` beklenen dosya sayısını göstermiyorsa PDF'leri ve manifesti kontrol edin.
 
-### Adım 8: Taslağı yaz
+### Adım 2: Taslağı yaz
 
 Her bölüm paragrafı için:
 
@@ -164,42 +183,66 @@ read_paper(identifier="10....", id_type="doi", project="proje-adi", max_pages=20
 Kurallar:
 
 - `paperqa_search` sonucu aday cümle/DOI verir; nihai alıntı için sayfa doğrulaması şarttır.
-- `paperqa_ask` yalnızca taslak fikir verir; cümleleri doğrudan teslime almayın.
+- PDF'te doğrulanan bulguları, paragrafın amacı ve önceki/sonraki cümleleriyle uyumlu özgün Türkçe cümlelerle yazın. Kaynağın sonucunu koruyun; kaynak cümlesinin sözdizimini kopyalamayın.
+- Doğrudan alıntıyı yalnızca ifade biçimi önemliyse kullanın; kısa tutun, alıntı olarak işaretleyin ve PDF sayfasını verin. İngilizce kaynak cümlesi rapor/denetim alanında birebir gösterilebilir; bu, taslak metnine aynen alınacağı anlamına gelmez.
+- `paperqa_ask` sentezlenmiş taslak fikir verebilir, ancak yeniden yazımın özgünlüğünü veya kanıta uygunluğunu garanti etmez. Her iddiayı `paperqa_search` ve `paperqa_read_pages` ile doğrulayın ve taslağı kendiniz bağlama uygun biçimde kurun.
 - Her paragraf en az bir doğrulanmış kaynağa bağlanır.
 - Kaynak yoksa iddia yazılmaz; gerekirse "Bu konuda doğrudan kanıt bulunamadı" denir.
 
-### Adım 9: Teslim
+### Adım 3: Taslağı proje klasörüne kaydet ve teslim et
 
-```text
-export_review(
-  title="...",
-  sections=[...],
-  references=[...],
-  format="md",
-  filename="04_denetim_raporu.md"
-)
-```
+Taslak rapor verisini `<proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.json`
+olarak kaydedin. JSON'da `intro` bölüm metnini, `change_cards` Ek 1'deki her
+iddianın sayfa doğrulamalı kaynak cümlesi ve bağlama uygun özgün anlatımını,
+`claim_matrix` ise iddia–kanıt tablosunu taşır. Kaynak denetim özetini
+`source_audit` alanına ekleyin. Böylece aynı HTML `chapter-report` şablonu
+üçüncü iş akışındaki Ek 1 ve iddia–kanıt matrisini içerir.
 
-Ardından insan için altın standart HTML teslim üretilir:
+Yeni taslakta her `change_cards` kaydı bir taslak iddiasını temsil eder:
+`author_sentence` ilk taslak iddiası, `sources` PDF sayfasındaki kısa özgün
+alıntı ve Türkçe çevirisi, `rewritten_sentence` paragrafta kullanılan bağlama
+uygun özgün ifade olur. Sunum etiketlerini `card_label="İddia"`,
+`author_label="Taslakta ileri sürülen iddia"`,
+`rewritten_label="Bölümde kullanılan cümle"` ve
+`notes_heading="Kanıt ve bağlam notu"` olarak verin. `claim_matrix` her iddia
+için DOI, sayfa, kanıt türü ve destek durumunu taşır.
+
+Önce kalite kapısını çalıştırın, sonra HTML ve Markdown'ı üretin:
 
 ```bash
-chapter-report build rapor.json -o 05_bolum_raporu.html --check
-chapter-report build rapor.json -o 05_bolum_raporu.html \
-  --markdown 05_bolum_raporu.md
+chapter-report build <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.json --check
+chapter-report build <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.json \
+  -o <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.html \
+  --markdown <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.md
 ```
 
-HTML'de kaynaklar `https://doi.org/...` ile listelenir; yerel PDF yolu bulunmaz. Teslimden sonra `--cleanup intermediate` veya `--cleanup all` seçeneği sunulur.
+İkinci akışın ana teslimi HTML'dir; bölüm metni, Ek 1 ve Ek 2 matrisi birlikte
+bulunur. Markdown aynı içeriğin düzenlenebilir sürümüdür.
 
-## Görev 2 — Mevcut taslağı denetleme
+DOI bağlantıları raporda `https://doi.org/...` biçimindedir; yerel PDF yolu
+veya `file://` bağlantısı teslim HTML'ine eklenmez.
+
+## İş akışı 3 — Mevcut taslağı denetleme
+
+Denetim taslağını ve rapor dosyalarını `<proje-kökü>/03_taslak_denetimi/taslak/`
+altında tutun. Kullanıcı denetlenecek taslağı bu klasöre, tam metin PDF'lerini
+`03_taslak_denetimi/fulltext/` altına koyar. Dosyalar gelmeden denetime başlamayın.
+Bu akış için `workflow_project_names.audit` adını kullanarak ayrı PDF projesi
+kaydedin; böylece ikinci akışın indeksiyle karışmaz. Rapor `chapter-report`
+kalite kapısından geçmelidir.
 
 ### Adım 1: Projeyi doğrula
 
 ```text
-list_projects()
-paperqa_projects()
-project_audit(project="...")
-paperqa_status(project="...")
-library_status(project="...")
+paperqa_register_project(
+  name="<workflow_project_names.audit>",
+  paper_directory="<proje-kökü>/03_taslak_denetimi/fulltext",
+  output_directory="<proje-kökü>",
+  title="..."
+)
+project_audit(project="<workflow_project_names.audit>")
+paperqa_status(project="<workflow_project_names.audit>")
+library_status(project="<workflow_project_names.audit>")
 ```
 
 Proje adı, PDF klasörü ve indeks uyuşmuyorsa durun; kullanıcıya sorun.
@@ -313,7 +356,8 @@ export_review(
   claims=[...],
   references=[...],
   format="md",
-  filename="04_denetim_raporu.md"
+  output_path="<proje-kökü>/03_taslak_denetimi/taslak/04_denetim_raporu.md",
+  project="proje-adi"
 )
 export_review(format="csv", filename="03_iddia_kanit_matrisi.csv")
 export_review(format="json", filename="02_degisiklik_kartlari.json")
@@ -322,15 +366,17 @@ export_review(format="json", filename="02_degisiklik_kartlari.json")
 Ardından insan için altın standart HTML: düzeltilmiş metin, Ek 1 değişiklik kartları, Ek 2 kaynak denetimi + iddia–kanıt matrisi, düzeltme özeti ve sınırlılıklar. DOI linkleri `https://doi.org/...`.
 
 ```bash
-chapter-report build rapor.json -o 05_bolum_raporu.html --check
-chapter-report build rapor.json -o 05_bolum_raporu.html \
-  --markdown 05_bolum_raporu.md
+chapter-report build <proje-kökü>/03_taslak_denetimi/taslak/rapor.json --check
+chapter-report build <proje-kökü>/03_taslak_denetimi/taslak/rapor.json \
+  -o <proje-kökü>/03_taslak_denetimi/taslak/05_bolum_raporu.html \
+  --markdown <proje-kökü>/03_taslak_denetimi/taslak/05_bolum_raporu.md
 ```
 
 Teslimden sonra üretilmiş ara dosyaları temizleme seçeneği sunulur:
 
 ```bash
-chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
+chapter-report cleanup \
+  --manifest <proje-kökü>/03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json \
   --scope intermediate --dry-run
 ```
 

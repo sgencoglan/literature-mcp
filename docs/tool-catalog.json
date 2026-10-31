@@ -663,8 +663,25 @@
       ]
     },
     "paperqa-local": {
-      "tool_count": 8,
+      "tool_count": 9,
       "tools": [
+        {
+          "name": "paperqa_create_workspace",
+          "description": "Kullanıcının seçtiği proje kökünde üç iş akışı klasörünü oluşturur. İş akışı seçimini veya PaperQA proje kaydını yapmaz. Var olan dosyaları silmez veya taşımaz. PDF klasörleri 02_bolum_taslagi/fulltext ve 03_taslak_denetimi/fulltext; taslak klasörleri her iki akışta taslak/ altındadır.",
+          "input_schema": {
+            "properties": {
+              "project_directory": { "title": "Project Directory", "type": "string" },
+              "name": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }],
+                "default": null,
+                "title": "Name"
+              }
+            },
+            "required": ["project_directory"],
+            "title": "paperqa_create_workspaceArguments",
+            "type": "object"
+          }
+        },
         {
           "name": "paperqa_projects",
           "description": "Kayıtlı projeleri durumlarıyla listeler (izole PDF klasörü + manifest + indeks).",
@@ -676,7 +693,7 @@
         },
         {
           "name": "paperqa_register_project",
-          "description": "Bir PDF klasörünü izole proje olarak kaydeder ve manifest CSV üretir.\n\n- DOI, dosya adından (``10.1007s...pdf`` gibi) veya ilk iki sayfadan algılanır.\n- Metadata Crossref (yedek: OpenAlex) ile zenginleştirilir; API anahtarı gerekmez.\n- Mevcut manifest ``refresh_manifest=True`` verilmedikçe korunur.\n- Kayıtlı bir projenin klasörü veya alt klasör taraması değiştirilecekse\n  ``refresh_manifest=True`` zorunludur; aksi hâlde eski manifest yeni\n  klasörle karışır.\n- DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz\n  (``include_files_without_doi=True`` ile dahil edilir).\n- Aynı DOI'ye çözülen ikinci dosya manifeste alınmaz; ``skipped_duplicate_doi``\n  alanında raporlanır.\n- ``output_directory`` verilmezse çıktılar proje klasörüne (``paper_directory``)\n  yazılır; böylece raporlar baştan kullanıcının verdiği klasörde kalır.\n- İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.\n",
+          "description": "Bir PDF klasörünü izole projeye kaydeder. Kullanıcının seçtiği proje klasörü ``output_directory`` olarak zorunludur; yeni manifest ve indeks de bu klasörün ``.literature-mcp/`` altına yazılır.\n\n- DOI, dosya adından veya ilk iki sayfadan algılanır.\n- Metadata Crossref (yedek: OpenAlex) ile zenginleştirilir.\n- Mevcut manifest ``refresh_manifest=True`` verilmedikçe korunur.\n- DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz.\n- İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.\n",
           "input_schema": {
             "properties": {
               "name": {
@@ -756,21 +773,14 @@
                 "title": "Index Name"
               },
               "output_directory": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
+                "type": "string",
                 "title": "Output Directory"
               }
             },
             "required": [
               "name",
-              "paper_directory"
+              "paper_directory",
+              "output_directory"
             ],
             "title": "paperqa_register_projectArguments",
             "type": "object"
@@ -908,7 +918,7 @@
         },
         {
           "name": "paperqa_ask",
-          "description": "Proje indeksi üzerinde yerel LLM'e soru sorar (taslak cevap).\n\nYerel llama.cpp sunucusunu kullanır. Sunucu kapalıysa MCP onu otomatik\nbaşlatır ve yalnızca kendisi başlattıysa boşta kalınca durdurur\n(``PAPERQA_AUTO_START`` / ``PAPERQA_AUTO_STOP_IDLE``). CPU'da yavaştır ve\nküçük modeller atıf hatası yapabilir. Cevabı taslak kabul edip her iddiayı\n``paperqa_search`` veya ``paperqa_read_pages`` ile doğrulayın.\n",
+          "description": "Proje indeksi üzerinde yerel LLM'e soru sorar (taslak cevap).\n\nYerel llama.cpp sunucusunu kullanır. Sunucu kapalıysa MCP onu otomatik\nbaşlatır ve yalnızca kendisi başlattıysa boşta kalınca durdurur\n(``PAPERQA_AUTO_START`` / ``PAPERQA_AUTO_STOP_IDLE``). CPU'da yavaştır ve\nküçük modeller atıf hatası yapabilir. Cevabı taslak kabul edin; kaynak\ncümlelerini kopyalamadan bulguları bağlama uygun özgün ifadelerle yazın.\nHer iddiayı ``paperqa_search`` veya ``paperqa_read_pages`` ile doğrulayın.\nAraç, bu yazım biçimini garanti etmez.\n",
           "input_schema": {
             "properties": {
               "project": {
@@ -946,5 +956,5 @@
       ]
     }
   },
-  "total_tools": 27
+  "total_tools": 28
 }

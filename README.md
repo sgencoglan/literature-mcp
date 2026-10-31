@@ -2,23 +2,34 @@
 
 [![validate](https://github.com/sgencoglan/literature-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sgencoglan/literature-mcp/actions/workflows/ci.yml)
 
-Kaynaklı literatür taraması ve kitap bölümü denetimi için iki yerel MCP
-sunucusu, şemalar, dokümantasyon ve tek dosyalık HTML üreticileri.
+Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Durum:** v2.3.0 yayın öncesi. Son public sürüm v2.2.0. Depoda PDF, indeks,
+> **Sürüm:** v2.4.0. Son public sürüm v2.3.0. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
 
-İki ayrı iş akışını, aynı proje kaydı ve aynı PDF klasörlerini kullanarak
-yürütür:
+Kullanıcı önce proje klasörünün yolunu verir. `paperqa_create_workspace` bu
+klasörde üç iş akışı klasörünü açar; ardından MCP hangi akışın yapılacağını
+sorar. Yalnızca seçimden sonra ilgili arama veya dosya işleme başlar. PDF,
+manifest ve indeks proje kökünde kalır.
 
-1. **Yeni bölüm için kaynak hattı:** DOI adayları → metadata doğrulama →
-   fulltext indirme listesi (HTML) → kullanıcının indirdiği PDF'ler → izole
-   yerel indeks → sayfa doğrulamalı taslak.
-2. **Mevcut taslağı denetleme:** proje envanteri → iddia–kanıt eşleştirmesi →
+Başlangıç sırası: proje kökünü al → `paperqa_create_workspace` ile üç klasörü
+aç → kullanıcıya “1 Kaynak keşfi, 2 PDF’lerden bölüm taslağı, 3 Mevcut
+taslağı denetleme” seçeneklerini sor → seçilen akışın girdilerini işle.
+
+1. **Kaynak keşfi ve PDF listesi:** Literatür taraması → DOI ve yayıncı
+   doğrulama → `01_kaynak_kesfi/` içine fulltext indirme listesi (HTML).
+2. **PDF'lerden kanıta dayalı taslak:** Kullanıcı PDF'leri
+   `02_bolum_taslagi/fulltext/` içine koyar → MCP bunları kaydeder ve izole indeksler
+   → bulguları paragraf bağlamına uygun özgün
+   Türkçe cümlelerle aktaran, sayfa doğrulamalı `02_bolum_taslagi.md` ve
+   yazdırılabilir `02_bolum_taslagi/taslak/02_bolum_taslagi.html`.
+3. **Mevcut taslağı denetleme:** kullanıcının `03_taslak_denetimi/taslak/` içine
+   koyduğu taslak ve `03_taslak_denetimi/fulltext/` içindeki tam metin PDF'leri →
+   iddia–kanıt eşleştirmesi →
    cümle bazlı düzeltme kartları → kaynak denetimi + iddia–kanıt matrisi →
-   altın standart HTML raporu.
+   `03_taslak_denetimi/taslak/` içine altın standart HTML raporu.
 
 Temel ilke: **LLM çıktısı kanıt değildir.** Kanıt, PDF sayfasından okunan
 birebir cümle ve doğrulanmış DOI'dir. `paperqa_ask` yalnızca taslak/özet
@@ -78,13 +89,13 @@ yalnızca listeler; `--yes` onay sormaz.
 | Bileşen | Konum | Görev |
 |---|---|---|
 | `sciencedirect-meta` MCP | [`packages/sciencedirect-meta`](packages/sciencedirect-meta) | 19 araç: metadata/DOI arama, DOI doğrulama, dergi quartile, yerel PDF okuma, kanıt denetimi, rapor dışa aktarma |
-| `paperqa-local` MCP | [`packages/paperqa-local`](packages/paperqa-local) | 8 araç: proje kaydı, manifest, PaperQA2 indeksi, semantik arama, sayfa okuma, LLM durumu, yerel taslak |
+| `paperqa-local` MCP | [`packages/paperqa-local`](packages/paperqa-local) | 9 araç: proje klasörlerini başlatma, kayıt, manifest, PaperQA2 indeksi, semantik arama, sayfa okuma, LLM durumu, yerel taslak |
 | `report-kit` | [`packages/report-kit`](packages/report-kit) | Altın standart HTML raporu, kalite kapısı ve manifest tabanlı temizlik |
 | Ortak proje kaydı | `projects.json` (varsayılan: `~/.literature-mcp/projects.json`) | Her projenin PDF klasörü, manifesti ve indeksi; projeler izoledir |
 | Fulltext üreticisi | [`scripts/build_fulltext_list.py`](scripts/build_fulltext_list.py) | DOI adaylarını tek dosyalık, yazdırılabilir HTML'e çevirir |
 | Şemalar | [`schemas/`](schemas) | Fulltext listesi, düzeltme kartı, iddia–kanıt matrisi, bölüm raporu |
 | Ajan sözleşmesi | [`AGENTS.md`](AGENTS.md) | Bağlayıcı kurallar, araç politikası, kabul kriterleri |
-| Araç kataloğu | [`docs/tool-catalog.json`](docs/tool-catalog.json) | 27 aracın makine okunabilir girdi/çıktı şeması |
+| Araç kataloğu | [`docs/tool-catalog.json`](docs/tool-catalog.json) | 28 aracın makine okunabilir girdi/çıktı şeması |
 
 ## Kurulum
 
@@ -127,6 +138,8 @@ dokunmaz.
 
 Yerel model yalnızca taslak/özet içindir; nihai raporun kanıtı
 `paperqa_search` + `paperqa_read_pages` ile sayfa düzeyinde doğrulanır.
+Taslakta kaynak cümleleri kopyalanmaz; bulgular bağlama uygun biçimde yeniden
+ifade edilir. `paperqa_ask` bu yazım biçimini garanti etmez.
 
 ### Veri dosyaları
 
@@ -196,7 +209,25 @@ python3 scripts/build_fulltext_list.py \
 .venv/bin/chapter-report build examples/chapter-report.example.json --check
 ```
 
-## İş akışı 1 — Yeni bölüm
+## İş akışı 1 — Kaynak keşfi ve PDF listesi
+
+Başlamadan önce kullanıcıdan proje klasörünün yolunu alın. Bu klasör yoksa
+kullanıcının verdiği tam yolda oluşturun; mevcut çalışma dizinini veya rastgele
+geçici bir klasörü çıktı konumu olarak seçmeyin.
+
+Ardından `paperqa_create_workspace(project_directory)` çağrısıyla proje
+kökünde `01_kaynak_kesfi/`, `02_bolum_taslagi/` ve `03_taslak_denetimi/`
+klasörlerini oluşturun. Proje adı klasör adından alınır; istenirse `name`
+parametresiyle açıkça verilebilir. Ardından kullanıcıya 1, 2 veya 3. iş
+akışını seçmesini sorun; seçimden önce kaynak araması ya da PDF işleme yapmayın.
+
+```text
+<proje-kökü>/
+├── 01_kaynak_kesfi/       # İş akışı 1
+├── 02_bolum_taslagi/      # PDF'ler fulltext/, çıktılar taslak/ altında
+├── 03_taslak_denetimi/    # Taslak taslak/, PDF'ler fulltext/ altında
+└── .literature-mcp/       # Manifest ve yerel indeks
+```
 
 ```text
 Konu/kapsam
@@ -206,20 +237,39 @@ Konu/kapsam
   → verify_doi_and_publisher + doi_provenance + journal_rank
   → aday JSON (schemas/fulltext-list.schema.json)
   → scripts/build_fulltext_list.py
-  → 01_fulltext_listesi.html
-  → kullanıcı PDF'leri proje klasörüne indirir
+  → <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.html
+```
+
+## İş akışı 2 — PDF'lerden kanıta dayalı taslak
+
+PDF'leri `<proje-klasörü>/02_bolum_taslagi/fulltext/` içine koyun; taslak
+çıktıları `02_bolum_taslagi/taslak/` altında tutulur. Aynı
+`chapter-report` şablonu taslak HTML'inde bölüm metnini, Ek 1 kaynak–taslak
+eşleştirmelerini ve Ek 2 iddia–kanıt matrisini verir.
+
+```text
+Kullanıcı PDF'leri `<proje-kökü>/02_bolum_taslagi/fulltext/` klasörüne indirir
   → paperqa_register_project
   → project_audit
   → paperqa_build_index
   → paperqa_status + library_status
   → paperqa_search / paperqa_read_pages / read_paper
-  → bölüm taslağı + kaynakça
+  → <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.json
+  → chapter-report build
+  → <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.html + .md
 ```
 
-## İş akışı 2 — Mevcut taslağı denetleme
+## İş akışı 3 — Mevcut taslağı denetleme
+
+Denetlenen taslak ve rapor çıktıları
+`<proje-kökü>/03_taslak_denetimi/taslak/` içinde tutulur. Kullanıcı
+denetlenecek taslağı da bu alt klasöre koyar. Ana rapor
+`05_bolum_raporu.html` dosyasıdır.
 
 ```text
-Proje + taslak
+Kullanıcı taslağı 03_taslak_denetimi/taslak/ içine, PDF'leri
+03_taslak_denetimi/fulltext/ içine koyar
+  → ayrı PaperQA proje kaydı (workflow_project_names.audit)
   → project_audit / paperqa_status / library_status
   → taslağı cümlelere/iddialara ayır
   → her iddia için paperqa_search + paperqa_read_pages
@@ -227,27 +277,30 @@ Proje + taslak
   → düzeltme kartları (schemas/change-card.schema.json)
   → Ek 2 kaynak denetimi
   → iddia–kanıt matrisi (schemas/claim-evidence.schema.json)
-  → chapter-report build → 05_bolum_raporu.html
+  → chapter-report build → <proje-kökü>/03_taslak_denetimi/taslak/05_bolum_raporu.html
   → istenirse --cleanup intermediate/all
 ```
 
 ## Çıktılar
 
-Her projenin `output_directory` klasöründe. Kayıt sırasında ayrı bir çıktı
-klasörü verilmezse başta verilen proje klasörü (`paper_directory`) kullanılır:
+Ana ve ek çıktılar ilgili iş akışı klasöründedir. Manifest ve indeks proje
+kökündeki `.literature-mcp/` klasörüne yazılır:
 
 ```text
-01_fulltext_listesi.html
-01_fulltext_listesi.json
-02_degisiklik_kartlari.csv
-02_degisiklik_kartlari.json
-03_kaynak_denetimi.csv
-03_iddia_kanit_matrisi.csv
-04_denetim_raporu.html
-04_denetim_raporu.md
-05_bolum_raporu.html
-05_bolum_raporu.md
-05_bolum_raporu.manifest.json
+01_kaynak_kesfi/01_fulltext_listesi.html
+01_kaynak_kesfi/01_fulltext_listesi.json
+02_bolum_taslagi/taslak/02_bolum_taslagi.json
+02_bolum_taslagi/taslak/02_bolum_taslagi.html
+02_bolum_taslagi/taslak/02_bolum_taslagi.md
+03_taslak_denetimi/taslak/02_degisiklik_kartlari.csv
+03_taslak_denetimi/taslak/02_degisiklik_kartlari.json
+03_taslak_denetimi/taslak/03_kaynak_denetimi.csv
+03_taslak_denetimi/taslak/03_iddia_kanit_matrisi.csv
+03_taslak_denetimi/taslak/04_denetim_raporu.html
+03_taslak_denetimi/taslak/04_denetim_raporu.md
+03_taslak_denetimi/taslak/05_bolum_raporu.html
+03_taslak_denetimi/taslak/05_bolum_raporu.md
+03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json
 ```
 
 - HTML: insan tarafından okunur, tek dosya, yazdırılabilir.
@@ -289,7 +342,7 @@ Bu betik JSON şemalarını, Python sözdizimini, fulltext üreticisini,
 - [`docs/output-spec.md`](docs/output-spec.md) — dosya adları ve biçimler
 - [`docs/report-standard.md`](docs/report-standard.md) — altın standart ve kalite kapısı
 - [`docs/local-llm.md`](docs/local-llm.md) — llama.cpp kurulumu, model ve donanım sınırı
-- [`docs/tool-catalog.md`](docs/tool-catalog.md) — 27 aracın özeti
+- [`docs/tool-catalog.md`](docs/tool-catalog.md) — 28 aracın özeti
 - [`docs/publishing.md`](docs/publishing.md) — public repo kontrolü
 
 ## Lisans

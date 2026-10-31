@@ -1,6 +1,6 @@
 # Mimari
 
-Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırlarını tanımlar. İnsanlar için özet: iki MCP sunucusu, ortak bir proje kaydı, altın standart rapor üreteci ve dosya tabanlı çıktılar.
+Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırlarını tanımlar. İnsanlar için özet: üç iş akışı iki MCP sunucusunu, ortak proje kaydını, altın standart rapor üretecini ve dosya tabanlı çıktıları kullanır.
 
 ## Bileşenler
 
@@ -11,7 +11,7 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ MCP                           │ MCP
 ┌───────────────▼───────────────┐   ┌───────────▼─────────────────────┐
-│ sciencedirect-meta (19 araç)  │   │ paperqa-local (8 araç)          │
+│ sciencedirect-meta (19 araç)  │   │ paperqa-local (9 araç)          │
 │ • DOI/metadata arama          │   │ • proje kaydı + manifest        │
 │ • DOI doğrulama, provenance   │   │ • PaperQA2 indeksi              │
 │ • journal quartile (SCImago)  │   │ • semantik arama (LLM'siz)      │
@@ -49,12 +49,12 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 
 ### paperqa-local
 
-- **8 araç:** `paperqa_projects`, `paperqa_register_project`, `paperqa_build_index`, `paperqa_status`, `paperqa_search`, `paperqa_read_pages`, `paperqa_llm_status`, `paperqa_ask`.
+- **9 araç:** `paperqa_create_workspace`, `paperqa_projects`, `paperqa_register_project`, `paperqa_build_index`, `paperqa_status`, `paperqa_search`, `paperqa_read_pages`, `paperqa_llm_status`, `paperqa_ask`.
 - `paperqa_search` ve `paperqa_read_pages` LLM çağırmaz; embedding tabanlı arama ve PyMuPDF sayfa çıkarımı yapar.
 - `paperqa_ask` yerel llama.cpp sunucusunu kullanır. Varsayılan model Qwen2.5-3B-Instruct Q4_K_M'dir. CPU'da yavaştır ve 3B model bile atıf hatası yapabilir; çıktısı **taslaktır**, kanıt değildir. 7B model bu donanım sınıfında önerilmez.
 - `paperqa_ask`, sunucu kapalıysa llama.cpp'yi otomatik başlatır (`PAPERQA_AUTO_START=1`), model hazır olana kadar bekler ve yalnızca kendi başlattığı sunucuyu `PAPERQA_AUTO_STOP_IDLE` saniye sonra durdurur. Elle başlatılan sunucuya dokunmaz; çökme sonrası kalan sunucu pid dosyasından sahiplenilir.
 - `paperqa_llm_status` arka ucun erişilebilirliğini, yüklü modelleri ve otomatik yaşam döngüsü durumunu (`auto_start`, `auto_stop_idle_seconds`, `managed`, `managed_pid`) raporlar; sunucuyu başlatmaz.
-- `paperqa_register_project`, `output_directory` verilmezse çıktıları başta verilen proje klasörüne (`paper_directory`) yönlendirir. `export_review(project=...)` ve rapor üretimi bu klasörü kullanır.
+- `paperqa_create_workspace`, seçilen proje kökünde üç akış klasörü açar. `paperqa_register_project` proje kökü olan `output_directory` yolunu zorunlu ister. `export_review(project=...)` ve rapor üretimi bu kökü kullanır.
 - İndeks üyeliği manifest ile sabittir. Klasöre sonradan bırakılan PDF, manifeste eklenmedikçe indekse girmez.
 - Manifest yolları proje klasörüne göre doğrulanır; mutlak yol, `..` kaçışı ve çift kayıt reddedilir. `paperqa_status` manifest–indeks uyuşmazlıklarını ve `healthy` durumunu raporlar. Aynı veya iç içe indeks yolu kullanan projeler reddedilir.
 - `paperqa_build_index(rebuild=True)` eski indeksi `.bak-*` klasörüne taşır; çökme durumunda geri getirir, kısmi başarısızlıkta yedeği korur.
@@ -78,14 +78,18 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 | `include_subdirectories` | Alt klasörler taranacak mı? |
 | `manifest` | Manifest CSV yolu |
 | `index_directory`, `index_name` | PaperQA2 indeks konumu |
-| `output_directory` | Çıktı klasörü; kayıtta verilmezse `paper_directory` |
+| `output_directory` | Kullanıcının seçtiği proje klasörü; yeni kayıt için zorunlu |
 | `analysis_json` | Varsa kayıtlı analiz dosyası; yoksa `null` |
 
 İki MCP sunucusu da aynı registry'yi okur (`LIT_PROJECTS_REGISTRY` ile değiştirilebilir). Böylece `project_audit` ile `paperqa_status` aynı projeyi görür.
 
 ## Veri akışı
 
-### Görev 1 — Yeni bölüm
+### Başlangıç ve iş akışı 1 — Kaynak keşfi ve PDF listesi
+
+Kullanıcı proje kökünü verir; `paperqa_create_workspace` üç akış klasörünü
+oluşturur. Ajan ardından 1/2/3 seçimini sorar ve yalnızca seçilen akışı
+başlatır. Akış 1 kaynak listesi `01_kaynak_kesfi/` içine yazılır.
 
 ```text
 Soru/kapsam
@@ -101,9 +105,20 @@ Soru/kapsam
    │
    ├─ aday JSON (schemas/fulltext-list.schema.json)
    │      └─ scripts/build_fulltext_list.py
-   │             └─ 01_fulltext_listesi.html (insan)
-   │
-   ├─ kullanıcı PDF'leri indirir → paper_directory
+   │             └─ 01_kaynak_kesfi/01_fulltext_listesi.html (insan)
+```
+
+### İş akışı 2 — PDF'lerden kanıta dayalı taslak
+
+Akış 2 PDF'leri `<proje-klasörü>/02_bolum_taslagi/fulltext/` altında, taslak
+dosyaları `02_bolum_taslagi/taslak/` altında tutulur. Akış 3 girdileri ise
+`03_taslak_denetimi/taslak/` ve `03_taslak_denetimi/fulltext/` altındadır. İki akış ayrı
+PaperQA proje adı, manifest ve indeks kullanır. HTML aynı chapter-report şablonunu kullanır
+ve Ek 1 ile Ek 2 iddia–kanıt matrisini içerir. Manifest ve indeks proje
+kökündeki `.literature-mcp/` altındadır.
+
+```text
+Kullanıcı PDF'leri akışın fulltext/ klasörüne koyar → paper_directory
    │
    ├─ paperqa_register_project → manifest.csv
    ├─ project_audit → DOI/metadata/atıf denetimi
@@ -115,10 +130,13 @@ Soru/kapsam
                  └─ export_review (MD/CSV/JSON)
 ```
 
-### Görev 2 — Mevcut taslağı denetleme
+### İş akışı 3 — Mevcut taslağı denetleme
+
+Raporun ana teslimi `03_taslak_denetimi/taslak/05_bolum_raporu.html` olur.
 
 ```text
-Proje + taslak
+Kullanıcının taslağı (`03_taslak_denetimi/taslak/`) + PDF'ler
+(`03_taslak_denetimi/fulltext/`)
    │
    ├─ project_audit / paperqa_status / library_status
    │      └─ gerçek dosya ve indeks durumu
