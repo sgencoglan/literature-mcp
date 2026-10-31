@@ -1,5 +1,17 @@
 # Değişiklik Günlüğü
 
+## v2.6.0 — 2026-10-31
+
+### Eklendi
+
+- İş akışı 0'da kullanıcı bir çalışma başlığı seçtikten sonra yöntem ve
+  tasarım önerisi üretimi. Öneri; araştırma soruları, gerekçeli desen,
+  örneklem/güç hesabı, ölçümler ve geçerlik sınırları, veri toplama, analiz,
+  etik ve kullanıcı karar noktalarını kapsar.
+- Yöntem tasarımı için JSON Schema, çevrimdışı HTML üreticisi ve örnek çıktı.
+- Tasarım durumu `proposed` olarak saklanır; kullanıcı/araştırma ekibi
+  onaylamadan kesinleştirilmez.
+
 ## v2.5.1 — 2026-10-31
 
 ### Düzeltildi

@@ -99,6 +99,8 @@ Araştırma konusu
    │      └─ OpenAlex + PubMed + Europe PMC + Crossref
    ├─ olası boşluklar + başlık/amaç önerileri
    │      └─ 00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
+   ├─ kullanıcı başlık seçer
+   │      └─ yöntem/tasarım önerisi → 00_konu_basligi_kesfi/01_yontem_tasarimi.html
    │
 Soru/kapsam
    │

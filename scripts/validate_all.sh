@@ -46,6 +46,7 @@ root = Path(".")
 pairs = [
     ("schemas/fulltext-list.schema.json", "examples/fulltext-list.example.json"),
     ("schemas/topic-discovery.schema.json", "examples/topic-discovery.example.json"),
+    ("schemas/study-design.schema.json", "examples/study-design.example.json"),
     ("schemas/change-card.schema.json", "examples/change-card.example.json"),
     ("schemas/claim-evidence.schema.json", "examples/claim-evidence.example.json"),
     ("schemas/chapter-report.schema.json", "examples/chapter-report.example.json"),
@@ -135,6 +136,25 @@ print("OK: konu keşfi HTML örneği güncel")
 PY
 then
   bad "konu keşfi HTML örneği kaynakla uyuşmuyor"
+fi
+
+note "Yöntem tasarımı üreticisi"
+if ! "$PY" scripts/build_study_design.py examples/study-design.example.json --check; then
+  bad "yöntem tasarımı örneği doğrulanamadı"
+fi
+if ! "$PY" - <<'PY'
+import json
+from pathlib import Path
+from scripts.build_study_design import render
+
+data = json.loads(Path("examples/study-design.example.json").read_text(encoding="utf-8"))
+expected = Path("examples/study-design.example.html").read_text(encoding="utf-8")
+if render(data) != expected:
+    raise SystemExit("examples/study-design.example.html güncel değil; yeniden üretin")
+print("OK: yöntem tasarımı HTML örneği güncel")
+PY
+then
+  bad "yöntem tasarımı HTML örneği kaynakla uyuşmuyor"
 fi
 
 note "Git izleme kontrolü"

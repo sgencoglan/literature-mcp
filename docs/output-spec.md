@@ -32,8 +32,10 @@ kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 
 | Dosya | Biçim | Kime | İçerik |
 |---|---|---|---|
-| `00_konu_basligi_kesfi/00_konu_basligi_kesfi.json` | JSON | Ajan | Veri tabanı sorgu kaydı, sıralı başlık/amaç önerileri, boşluk sinyali ve sınırlılıklar |
+| `00_konu_basligi_kesfi/00_konu_basligi_kesfi.json` | JSON | Ajan | Veri tabanı sorgu kaydı, sıralı başlık/amaç önerileri, seçilen başlık (seçimden sonra) ve sınırlılıklar |
 | `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` | HTML | İnsan | Önerileri ve OpenAlex/PubMed/Europe PMC/Crossref tarama kapsamını gösteren çevrimdışı rapor |
+| `00_konu_basligi_kesfi/01_yontem_tasarimi.json` | JSON | Ajan | Kullanıcının seçtiği başlık için varsayımları açık yöntem/tasarım önerisi, örneklem, ölçüm, analiz ve etik plan |
+| `00_konu_basligi_kesfi/01_yontem_tasarimi.html` | HTML | İnsan | Aynı tasarımın karar noktaları ve sınırlılıklarını gösteren çevrimdışı rapor |
 | `01_kaynak_kesfi/01_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları ve her kaynak için katkı/sınır analizi |
 | `01_kaynak_kesfi/01_fulltext_listesi.json` | JSON | Ajan | Aynı verinin şemalı hâli |
 | `02_bolum_taslagi/taslak/02_bolum_taslagi.json` | JSON | Ajan | Bölüm metni, Ek 1, Ek 2 ve Ek 4 için chapter-report girdisi |
@@ -65,6 +67,12 @@ boşluk sinyalini belirtir; kesin özgünlük iddiası değildir.
 `scripts/build_topic_discovery.py`, JSON'u tek dosyalık çevrimdışı HTML'e
 çevirir. Arama başarısızlıkları ve kapsam dışı kalabilecek alan-özel veri
 tabanları raporda görünür olmalıdır.
+
+Kullanıcı bir başlık seçtikten sonra yöntem/tasarım dosyaları
+[`../schemas/study-design.schema.json`](../schemas/study-design.schema.json)
+şemasına uyar. `scripts/build_study_design.py` tasarım JSON'unu çevrimdışı
+HTML'e çevirir. Kullanıcı/araştırma ekibi onayına kadar `design_status`
+`proposed` kalır.
 
 ## 01 — Fulltext listesi
 

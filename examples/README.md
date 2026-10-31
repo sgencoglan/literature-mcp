@@ -9,6 +9,8 @@ biçimini göstermektir.
 | `fulltext-list.example.json` | `schemas/fulltext-list.schema.json` |
 | `topic-discovery.example.json` | `schemas/topic-discovery.schema.json` |
 | `topic-discovery.example.html` | JSON örneğinden üretilen konu/başlık keşfi raporu |
+| `study-design.example.json` | `schemas/study-design.schema.json` |
+| `study-design.example.html` | Seçilen başlık için örnek yöntem/tasarım raporu |
 | `change-card.example.json` | `schemas/change-card.schema.json` |
 | `claim-evidence.example.json` | `schemas/claim-evidence.schema.json` |
 | `chapter-report.example.json` | `schemas/chapter-report.schema.json` |
@@ -21,6 +23,10 @@ HTML örneğini yeniden üretmek için:
 python3 scripts/build_topic_discovery.py \
   examples/topic-discovery.example.json \
   -o examples/topic-discovery.example.html --force
+
+python3 scripts/build_study_design.py \
+  examples/study-design.example.json \
+  -o examples/study-design.example.html --force
 
 python3 scripts/build_fulltext_list.py \
   examples/fulltext-list.example.json \

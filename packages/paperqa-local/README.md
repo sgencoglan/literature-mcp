@@ -58,7 +58,9 @@ veya taşımaz, PaperQA projesi kaydetmez. Her iş akışında PDF'ler `fulltext
 taslak dosyaları ve raporlar `taslak/` altında tutulur. Araçtan sonra kullanıcıya 0, 1, 2 veya
 3. iş akışından hangisini yapmak istediğini sorun. Akış 0 konu/başlık/amaç
 keşfidir; varsayılan OpenAlex, PubMed, Europe PMC, Crossref taramasını
-`00_konu_basligi_kesfi/` içinde raporlar. Akış 2 veya 3 seçilince
+`00_konu_basligi_kesfi/` içinde raporlar. Kullanıcı önerilen başlıklardan
+birini seçtiğinde yöntem/tasarım önerisi de aynı klasöre JSON ve çevrimdışı
+HTML olarak eklenir. Akış 2 veya 3 seçilince
 yalnızca o akışın PDF klasörünü aracın döndürdüğü ayrı proje adıyla kaydedin.
 
 ### llama.cpp (önerilen)

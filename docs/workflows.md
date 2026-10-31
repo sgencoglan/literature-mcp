@@ -62,8 +62,31 @@ python3 scripts/build_topic_discovery.py \
   -o <proje-kökü>/00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
 ```
 
-Kullanıcı önerilerden birini seçip kapsamını onayladıktan sonra, seçilen
-başlık/amaç 1. iş akışına başlangıç olarak aktarılabilir.
+### Adım 5: Seçilen başlık için yöntem ve tasarım oluştur
+
+Kullanıcı sıralı önerilerden birini seçince seçimi kaydedin ve o önerinin
+başlığı, sorusu ve amaçlarını başlangıç girdisi yapın. Tasarımı önemli ölçüde
+değiştirecek belirsizlikleri sorun (ör. ülke/kurum erişimi, hedef yaş grubu,
+veri toplama olanağı, zaman ve bütçe). Yanıt beklerken varsayımları açıkça
+belirten bir tasarım önerisi hazırlayın; varsayımları doğrulanmış bilgi gibi
+sunmayın.
+
+Tasarım; araştırma soruları ve desen gerekçesi, evren ve seçim ölçütleri,
+örnekleme kanalı, örneklem hedefi ve güç hesabı, değişkenler ve ölçüm
+araçlarının hedef yaş/dil/klinik gruptaki geçerlik sınırları, veri toplama,
+analiz, karma yöntem bütünleştirmesi, etik, uygulanabilirlik, sınırlılıklar ve
+kullanıcı/araştırma ekibinin netleştireceği kararları içermelidir. Güncel
+literatürü ölçüm ve desen seçimi için kontrol edin. Ölçek puanını tanı gibi
+sunmayın; kesitsel tasarımdan nedensellik çıkarmayın; özgünlüğü kesin hükme
+bağlamayın.
+
+Seçimi keşif JSON'unda kaydedin. Tasarımı
+`00_konu_basligi_kesfi/01_yontem_tasarimi.json` içine
+`schemas/study-design.schema.json` biçiminde yazın ve
+`scripts/build_study_design.py` ile aynı adlı çevrimdışı HTML üretin.
+Başlangıç durumu `proposed` olmalı; kullanıcı/araştırma ekibi açıkça
+onaylayana kadar tasarımı kesinleştirmeyin. Onaylanan başlık ve tasarım
+akış 1'in arama çerçevesine aktarılabilir.
 
 ## İş akışı 1 — Kaynak keşfi ve PDF listesi
 

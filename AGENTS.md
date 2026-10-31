@@ -13,7 +13,8 @@ Her yeni proje kullanıcı proje kökünü verince başlar; `paperqa_create_work
 3. Her sorgu ve her veritabanı için `sources_status`, kayıt sayısı ve hata/not bilgisini kaydet. Aranmayan veya başarısız kaynağı başarılı gibi işaretleme; kısıtlı kapsamlı kaynakları (PubMed/Europe PMC gibi) belirt.
 4. En yakın bulunan yayınlara ve kapsanmayan bağlam/örneklem/yöntem/sonuçlara dayalı sıralı çalışma başlığı, araştırma sorusu, genel ve özel amaçlar, önerilen desen, yapılabilirlik ve sıralama gerekçesi ver.
 5. Mutlak özgünlük iddiasında bulunma. `novelty_signal` zayıf/orta/belirgin boşluk sinyalidir; tam yenilik değerlendirmesi sistematik tarama, atıf zinciri ve alan uzmanı doğrulaması gerektirir.
-6. `schemas/topic-discovery.schema.json` uyumlu `00_konu_basligi_kesfi/00_konu_basligi_kesfi.json` üret ve `scripts/build_topic_discovery.py` ile HTML'e dönüştür. Kullanıcı öneri seçip kapsamı onaylayınca akış 1'e aktar.
+6. `schemas/topic-discovery.schema.json` uyumlu keşif JSON'u ve HTML'i üret. Kullanıcı önerilerden birini seçince seçimi kaydet; varsayımlarını açıkça belirterek `schemas/study-design.schema.json` uyumlu yöntem/tasarım JSON'u ve `scripts/build_study_design.py` ile HTML üret.
+7. Tasarımda araştırma soruları, desen gerekçesi, evren/örneklem, güç hesabı, ölçümler ve alt grup geçerliği, prosedür, analiz, etik, sınırlılıklar ve kullanıcı karar noktaları bulunsun. Kullanıcı onaylamadan `design_status` değerini `proposed` durumundan çıkarma; tasarım onaylanan başlıkla birlikte akış 1'e aktarılabilir.
 
 ### İş akışı 1 — Kaynak keşfi ve PDF listesi
 
@@ -168,6 +169,8 @@ Proje `output_directory` altında:
 ```text
 00_konu_basligi_kesfi/00_konu_basligi_kesfi.json
 00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
+00_konu_basligi_kesfi/01_yontem_tasarimi.json
+00_konu_basligi_kesfi/01_yontem_tasarimi.html
 01_kaynak_kesfi/01_fulltext_listesi.html
 01_kaynak_kesfi/01_fulltext_listesi.json
 02_bolum_taslagi/taslak/02_bolum_taslagi.json

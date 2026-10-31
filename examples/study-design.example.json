@@ -1,0 +1,69 @@
+{
+  "project": "ornek-uzaktan-calisma",
+  "title": "Seçilen başlık için araştırma yöntemi ve tasarım önerisi",
+  "generated_at": "2026-10-31",
+  "selected_proposal": {
+    "rank": 1,
+    "proposed_title": "Uzaktan çalışan ebeveynlerde sınır yönetimi ve psikolojik iyi oluş"
+  },
+  "design_status": "proposed",
+  "assumptions": [
+    "Kurgusal örnek; gerçek kaynak araması ve uygulanabilirlik değerlendirmesi değildir.",
+    "Türkiye'de yürütülecek nicel bir çalışma varsayılmıştır."
+  ],
+  "research_questions": [
+    "Sınır yönetimi ile psikolojik iyi oluş arasında nasıl bir ilişki vardır?",
+    "Yönetici desteği bu ilişkiyle nasıl bağlantılıdır?"
+  ],
+  "aim": "Uzaktan çalışan ebeveynlerde sınır yönetimi, yönetici desteği ve psikolojik iyi oluş ilişkilerini incelemek.",
+  "objectives": [
+    "İş-aile sınır yönetimini ölçmek.",
+    "Yönetici desteği ile iyi oluş arasındaki ilişkiyi değerlendirmek."
+  ],
+  "design_rationale": "Kesitsel anket tasarımı temel ilişkileri düşük maliyetle inceleyebilir; nedensellik göstermez.",
+  "design": {
+    "approach": "Nicel",
+    "design_type": "Kesitsel, ilişkisel anket",
+    "setting": "Türkiye'de uzaktan çalışan ebeveynler; örnekleme kanalları doğrulanmalı.",
+    "timeframe": "Bir veri toplama dönemi"
+  },
+  "population": {
+    "target": "Türkiye'de uzaktan çalışan ve en az bir çocuğun bakım sorumluluğunu üstlenen yetişkinler.",
+    "inclusion": ["18 yaş veya üzeri olmak.", "Son altı ay içinde haftada en az iki gün uzaktan çalışmış olmak."],
+    "exclusion": ["Uzaktan çalışma ölçütünü karşılamamak."]
+  },
+  "sampling": {
+    "strategy": "Uygunluk ve kartopu örneklemesi; olası seçilim yanlılığı raporlanır.",
+    "recruitment": "İşveren ağları ve ebeveyn toplulukları; katılım gönüllüdür."
+  },
+  "sample_size": {
+    "target": "En az 200 tamamlanmış anket hedefi (örnek amaçlı).",
+    "rationale": "Bu örnek sayı güç analizi yerine geçmez; birincil model, beklenen etki ve eksik veri payı belirlenerek yeniden hesaplanmalıdır."
+  },
+  "variables": [
+    {"name":"Sınır yönetimi","role":"Yordayıcı","operationalization":"Uygun Türkçe ölçme aracıyla sürekli puan."},
+    {"name":"Psikolojik iyi oluş","role":"Sonuç","operationalization":"Uygun Türkçe ölçme aracıyla sürekli puan."},
+    {"name":"Yönetici desteği","role":"Düzenleyici aday","operationalization":"Önceden belirlenmiş ölçüm ve etkileşim terimi."}
+  ],
+  "measures": [
+    {"construct":"Sınır yönetimi","instrument_or_method":"Yaş ve bağlama uygun Türkçe geçerlik/güvenirlik kanıtı olan ölçek seçilecek.","caveat":"Ölçek adı, kullanım izni ve puanlama yöntemi protokolden önce doğrulanmalı."},
+    {"construct":"Psikolojik iyi oluş","instrument_or_method":"Türkçe uyarlaması bulunan, hedef örneklemde uygunluğu gösterilmiş ölçek.","caveat":"Ölçme hatası ve öz-bildirim yanlılığı raporlanmalı."}
+  ],
+  "procedure": [
+    {"stage":"Hazırlık","description":"Ölçme aracı izinlerini ve etik kurul gerekliliklerini tamamla; anketi küçük bir grupla anlaşılabilirlik açısından pilotla."},
+    {"stage":"Veri toplama","description":"Bilgilendirilmiş onamdan sonra çevrimiçi anketi uygula; tekilleştirme ve eksik veri kurallarını önceden kaydet."}
+  ],
+  "analysis": {
+    "quantitative": ["Tanımlayıcı istatistikleri ve eksik veri örüntülerini raporla.", "Önceden tanımlanmış kovaryatlarla çoklu regresyon kur; varsayımları ve güven aralıklarını raporla."],
+    "qualitative": [],
+    "integration": "Karma yöntem tasarımı olmadığı için veri türlerini bütünleştirme adımı yoktur."
+  },
+  "ethics": [
+    "Katılım gönüllü olmalı; onam ve veri koruma metinleri açık olmalıdır.",
+    "Etik kurul onayı ve gerekli kurum izinleri veri toplamadan önce alınmalıdır."
+  ],
+  "feasibility": ["Örnekleme kanallarının erişilebilirliği pilot öncesi doğrulanmalıdır."],
+  "limitations": ["Kesitsel tasarım zamansal sıra ve nedensellik göstermez.", "Gönüllü çevrimiçi örnekleme genellenebilirliği sınırlayabilir."],
+  "decisions_for_user": ["İşveren/katılımcı erişim kanallarını netleştir.", "Etki varsayımlarına göre resmi güç analizini tamamla."],
+  "references": []
+}

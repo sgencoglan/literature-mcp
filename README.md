@@ -4,7 +4,7 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.5.1. Son public sürüm v2.5.0. Depoda PDF, indeks,
+> **Sürüm:** v2.6.0. Son public sürüm v2.5.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
@@ -22,10 +22,14 @@ girdilerini işle.
 0. **Konu, çalışma başlığı ve amaç keşfi:** varsayılan OpenAlex, PubMed,
    Europe PMC ve Crossref aramalarından konu sinyalleri ve en yakın çalışmaları
    çıkar → olası araştırma boşluklarına dayalı başlık/amaç önerilerini sırala →
-   `00_konu_basligi_kesfi/` içine JSON ve tek dosyalık HTML raporu yaz.
+   `00_konu_basligi_kesfi/` içine JSON ve tek dosyalık HTML raporu yaz →
+   kullanıcı bir başlığı seçince varsayımları açık yöntem/tasarım önerisini
+   aynı klasöre JSON ve HTML olarak kaydet.
 
 Şema ve HTML üreticisi: [`topic-discovery.schema.json`](schemas/topic-discovery.schema.json),
 [`build_topic_discovery.py`](scripts/build_topic_discovery.py).
+Seçilen başlık için tasarım çıktısı: [`study-design.schema.json`](schemas/study-design.schema.json),
+[`build_study_design.py`](scripts/build_study_design.py).
 
 1. **Kaynak keşfi ve PDF listesi:** Literatür taraması → DOI ve yayıncı
    doğrulama → `01_kaynak_kesfi/` içine fulltext indirme listesi (HTML).
@@ -230,7 +234,12 @@ başlıkları, araştırma soruları, amaçlar, yakın çalışmalar ve uygulana
 gerekçeleriyle sıralanır. Özgünlük, bu taramada görülen boşluk sinyali olarak
 ifade edilir; kesin yenilik iddiası değildir. Raporlar
 `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` ve `.json` olarak yazılır.
-Seçilen öneri, kullanıcı onayından sonra akış 1'in arama çerçevesi olur.
+Seçilen önerinin ardından yöntem/tasarım önerisi
+`00_konu_basligi_kesfi/01_yontem_tasarimi.html` ve `.json` olarak hazırlanır.
+Varsayımlar, örneklem hesabı, ölçüm aracı sınırlılıkları ve etik noktalar
+görünür tutulur; öneri kullanıcı/araştırma ekibi onaylayana kadar
+kesinleştirilmez. Onaylanan başlık ve tasarım akış 1'in arama çerçevesine
+aktarılabilir.
 
 Başlamadan önce kullanıcıdan proje klasörünün yolunu alın. Bu klasör yoksa
 kullanıcının verdiği tam yolda oluşturun; mevcut çalışma dizinini veya rastgele
@@ -259,6 +268,10 @@ Konu/araştırma çerçevesi
   → schemas/topic-discovery.schema.json
   → scripts/build_topic_discovery.py
   → <proje-kökü>/00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
+  → kullanıcı önerilerden birini seçer
+  → schemas/study-design.schema.json
+  → scripts/build_study_design.py
+  → <proje-kökü>/00_konu_basligi_kesfi/01_yontem_tasarimi.html
 
 Konu/kapsam
   → deep_research / search_literature
