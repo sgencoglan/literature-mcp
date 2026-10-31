@@ -73,7 +73,7 @@ Kırmızı ile işaretlenen her değişiklik için sırasıyla yazarın taslakta
 
 **Türkçesi:** “Uzaktan çalışma refahla heterojen ilişkiler göstermiştir: özerklik daha yüksek memnuniyetle, mesai dışı erişilebilirlik ise tükenmeyle ilişkilendirilmiştir.”
 
-**Yeniden yazılan cümle:** **“Uzaktan çalışmanın refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).”**
+**Yeniden yazılan cümle:** **“Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon ⟦MCP ekledi: aynı süreçte⟧ ortaya çıkabilir (Demir, 2024).”**
 
 **Düzeltme notu — 1. cümle**
 
@@ -246,4 +246,4 @@ _Her kaynağın bu çalışmadaki olası katkısı ve sınırları ayrı değerl
 **Değerlendirme dayanağı:** Sayfa numarası doğrulanmış tam metin · incelenen sayfa(lar): 5–6
 
 
-_literature-mcp · chapter-report v2.5.0 · Sentetik örnek; gerçek kaynak değildir._
+_literature-mcp · chapter-report v2.5.1 · Sentetik örnek; gerçek kaynak değildir._

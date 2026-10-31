@@ -241,7 +241,7 @@ def render_intro(intro: dict[str, Any]) -> str:
                 if segment.get("added_by_mcp"):
                     parts.append(f'<mark class="mcp-added">{text}</mark>')
                 elif segment.get("changed"):
-                    parts.append(f'<mark class="revised">{text}</mark>')
+                    parts.append(f"<mark>{text}</mark>")
                 else:
                     parts.append(text)
             out.append("<p>" + "".join(parts) + "</p>")
@@ -268,7 +268,7 @@ def render_rewritten_sentence(card: dict[str, Any], sentence: str) -> str:
                 if segment.get("added_by_mcp"):
                     rendered.append(f'<mark class="mcp-added">{text}</mark>')
                 else:
-                    rendered.append(f'<mark class="revised">{text}</mark>')
+                    rendered.append(f"<mark>{text}</mark>")
             return "".join(rendered)
     return f'<mark class="revised">{quote(sentence)}</mark>'
 

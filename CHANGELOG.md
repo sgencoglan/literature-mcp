@@ -1,5 +1,14 @@
 # Değişiklik Günlüğü
 
+## v2.5.1 — 2026-10-31
+
+### Düzeltildi
+
+- Yeniden yazılan cümle örneğindeki segment metni tam cümleyle eşleştirildi;
+  kalite kapısındaki segment bütünlüğü hatası giderildi.
+- Düzenlenen cümle vurgusu testler ve eski HTML tüketicileriyle uyumlu yalın
+  `<mark>` etiketi kullanıyor; MCP eklemeleri ayrı sınıflı renklendirmeyi koruyor.
+
 ## v2.5.0 — 2026-10-31
 
 ### Eklendi
