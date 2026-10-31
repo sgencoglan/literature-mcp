@@ -11,7 +11,8 @@
     "intro",
     "change_cards",
     "source_audit",
-    "claim_matrix"
+    "claim_matrix",
+    "source_contributions"
   ],
   "properties": {
     "schema": { "const": 2 },
@@ -41,6 +42,75 @@
     "next_steps": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 }
+    },
+    "context_review": {
+      "type": "object",
+      "required": ["scope", "overall", "paragraphs"],
+      "properties": {
+        "heading": { "type": "string" },
+        "scope": { "type": "string", "minLength": 1 },
+        "overall": { "type": "string", "minLength": 1 },
+        "paragraphs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["location", "paragraph_excerpt", "paragraph_function", "sentence_fit", "flow_fit", "article_fit"],
+            "properties": {
+              "location": { "type": "string", "minLength": 1 },
+              "paragraph_excerpt": { "type": "string", "minLength": 1 },
+              "paragraph_function": { "type": "string", "minLength": 1 },
+              "sentence_fit": { "type": "string", "minLength": 1 },
+              "flow_fit": { "type": "string", "minLength": 1 },
+              "article_fit": { "type": "string", "minLength": 1 },
+              "recommended_action": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "source_recommendations_note": { "type": "string" },
+    "source_recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "doi", "fit_reason", "related_location", "metadata_verified", "fulltext_reviewed"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1 },
+          "citation": { "type": "string" },
+          "authors": { "type": "string" },
+          "journal": { "type": "string" },
+          "year": { "type": ["integer", "string"] },
+          "doi": { "type": "string", "pattern": "^10\\.\\d{4,9}/\\S+$" },
+          "fit_reason": { "type": "string", "minLength": 1 },
+          "related_location": { "type": "string", "minLength": 1 },
+          "fit_dimensions": { "type": "array", "items": { "type": "string" } },
+          "metadata_verified": { "const": true },
+          "fulltext_reviewed": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "source_contributions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["doi", "project_relevance", "supports", "does_not_support", "limits", "assessment_basis"],
+        "properties": {
+          "doi": { "type": "string", "pattern": "^10\\.\\d{4,9}/\\S+$" },
+          "citation": { "type": "string" },
+          "project_relevance": { "type": "string", "minLength": 1 },
+          "supports": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "does_not_support": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "limits": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "assessment_basis": { "enum": ["metadata", "abstract", "fulltext", "fulltext_pages"] },
+          "pages": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
     },
     "footer": { "type": "string" },
     "summary": {
@@ -84,7 +154,8 @@
                           "required": ["text"],
                           "properties": {
                             "text": { "type": "string", "minLength": 1 },
-                            "changed": { "type": "boolean" }
+                            "changed": { "type": "boolean" },
+                            "added_by_mcp": { "type": "boolean" }
                           },
                           "additionalProperties": true
                         }
@@ -143,6 +214,18 @@
             }
           },
           "rewritten_sentence": { "type": "string", "minLength": 1 },
+          "rewritten_segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["text"],
+              "properties": {
+                "text": { "type": "string" },
+                "added_by_mcp": { "type": "boolean" }
+              },
+              "additionalProperties": true
+            }
+          },
           "notes": {
             "type": "array",
             "minItems": 1,
@@ -256,5 +339,20 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["context_review"] },
+      "then": { "required": ["source_recommendations"] }
+    },
+    {
+      "if": {
+        "properties": {
+          "source_recommendations": { "maxItems": 0 }
+        },
+        "required": ["source_recommendations"]
+      },
+      "then": { "required": ["source_recommendations_note"] }
+    }
+  ]
 }

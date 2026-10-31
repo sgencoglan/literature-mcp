@@ -1,6 +1,6 @@
 # Public repo kontrolü
 
-Son public sürüm **v2.4.0**'dır. Bu belge v2.4.1 ve sonraki sürümleri
+Son public sürüm **v2.4.1**'dir. Bu belge v2.5.0 ve sonraki sürümleri
 yayımlarken uygulanacak kontrol listesini korur.
 
 ## 1. Kişisel veri ve dosya kontrolü
@@ -59,9 +59,9 @@ branch protection ve zorunlu CI kontrolü açılmalıdır.
 
 1. Sürüm metadatası (`VERSION`, `pyproject.toml`, `__version__`), changelog ve README sürümünü eşleştirin.
 2. Yerel depoyu hazırlayın: `git add .`, `git commit`.
-3. `git tag -a v2.4.1 -m "İndeks kapsamı doğrulama düzeltmesi"`.
+3. `git tag -a v2.5.0 -m "Kaynak katkısı ve sınır raporlaması"`.
 4. `git push origin main --tags`.
-5. `gh release create v2.4.1 --title "v2.4.1" --notes-file <sürüm-notları>`.
+5. `gh release create v2.5.0 --title "v2.5.0" --notes-file <sürüm-notları>`.
 6. Bir kez daha `git ls-files` ve `git grep` ile sızıntı kontrolü yapın.
 7. Public görünürlüğü yalnızca kontrol listesi tamamsa değiştirin.
 

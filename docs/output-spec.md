@@ -7,7 +7,7 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 - **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile üç iş akışı klasörü açın.
 - **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 1, 2 veya 3 seçmesini isteyin; seçimden önce arama veya dosya işleme yapmayın.
 - **Akış klasörleri:** `01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/`. Her çıktıyı ilgili klasöre yazın. PDF'ler akış 2 ve 3 için ilgili klasörün `fulltext/` altına konur.
-- **Ana dosyalar:** İş akışı 1 `01_kaynak_kesfi/01_fulltext_listesi.html`; iş akışı 2 aynı chapter-report tasarımında bölüm metni + Ek 1 + Ek 2 matrisi içeren `02_bolum_taslagi/taslak/02_bolum_taslagi.html` ve eş Markdown'ı; iş akışı 3 `03_taslak_denetimi/taslak/05_bolum_raporu.html` üretir.
+- **Ana dosyalar:** İş akışı 1 `01_kaynak_kesfi/01_fulltext_listesi.html` ve her kaynak için katkı/sınır değerlendirmesi; iş akışı 2 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren chapter-report HTML/Markdown; iş akışı 3 bağlam değerlendirmesi + Ek 1 + Ek 2 + Ek 3 + Ek 4 içeren `05_bolum_raporu.html` üretir.
 - **PaperQA kaynakları:** `output_directory` proje köküdür. Akış 2 PDF'leri `02_bolum_taslagi/fulltext/`, akış 3 PDF'leri `03_taslak_denetimi/fulltext/` altındadır. Her akış ayrı proje adı, manifest ve indeks kullanır; bunlar `<proje-kökü>/.literature-mcp/` altında tutulur.
 
 - **Dil:** Teslim Türkçedir. İngilizce kaynak cümlesi özgün hâliyle verilir; Türkçesi ayrı alanda bulunur.
@@ -17,7 +17,7 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 - **Tarih:** ISO 8601 (`2026-10-20`) veya ISO 8601 saatli (`2026-10-20T14:30:00+03:00`).
 - **Sayfa:** 1 tabanlı PDF sayfa numarası. Aralık `page_start`–`page_end` olarak verilir.
 - **Alıntı:** Kısa tutulur (genellikle 1–3 cümle); telif hakkı ve bağlam korunur.
-- **Kırmızı:** Yalnızca değişen cümle. Paragrafın tamamı, başlık, kaynakça veya tablo kırmızıya boyanmaz.
+- **Kırmızı:** Yeniden düzenlenen cümle. İlk taslakta olmayan anlamlı MCP eklemeleri mavi/yeşil gösterilir. Paragrafın tamamı, başlık, kaynakça veya tablo kırmızıya boyanmaz.
 
 ## Dosya adları
 
@@ -31,11 +31,11 @@ kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 
 | Dosya | Biçim | Kime | İçerik |
 |---|---|---|---|
-| `01_kaynak_kesfi/01_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları |
+| `01_kaynak_kesfi/01_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları ve her kaynak için katkı/sınır analizi |
 | `01_kaynak_kesfi/01_fulltext_listesi.json` | JSON | Ajan | Aynı verinin şemalı hâli |
-| `02_bolum_taslagi/taslak/02_bolum_taslagi.json` | JSON | Ajan | Bölüm metni, Ek 1 ve Ek 2 için chapter-report girdisi |
+| `02_bolum_taslagi/taslak/02_bolum_taslagi.json` | JSON | Ajan | Bölüm metni, Ek 1, Ek 2 ve Ek 4 için chapter-report girdisi |
 | `02_bolum_taslagi/taslak/02_bolum_taslagi.md` | Markdown | İnsan + ajan | Taslak + kanıt eklerinin düzenlenebilir sürümü |
-| `02_bolum_taslagi/taslak/02_bolum_taslagi.html` | HTML | İnsan | Bölüm metni + Ek 1 + iddia–kanıt matrisi |
+| `02_bolum_taslagi/taslak/02_bolum_taslagi.html` | HTML | İnsan | Bölüm metni + Ek 1 + iddia–kanıt matrisi + Ek 4 |
 | `03_taslak_denetimi/taslak/02_degisiklik_kartlari.csv` | CSV | İnsan + ajan | Cümle bazlı düzeltme kartları |
 | `03_taslak_denetimi/taslak/02_degisiklik_kartlari.json` | JSON | Ajan | Kartların şemalı hâli |
 | `03_taslak_denetimi/taslak/03_kaynak_denetimi.csv` | CSV | İnsan + ajan | Kaynak denetimi |
@@ -43,7 +43,7 @@ kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 | `03_taslak_denetimi/taslak/04_denetim_raporu.html` | HTML | İnsan | Kartlar + denetim + matris + kaynakça |
 | `03_taslak_denetimi/taslak/04_denetim_raporu.md` | Markdown | İnsan + ajan | Düzenlenebilir rapor |
 | `03_taslak_denetimi/taslak/04_denetim_raporu.json` | JSON | Ajan | Tam yapılandırılmış rapor |
-| `03_taslak_denetimi/taslak/05_bolum_raporu.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + Ek 1 + Ek 2 |
+| `03_taslak_denetimi/taslak/05_bolum_raporu.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + bağlam değerlendirmesi + Ek 1–4 |
 | `03_taslak_denetimi/taslak/05_bolum_raporu.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
 | `03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
@@ -98,6 +98,11 @@ Aday alanları:
 | `priority` | enum | evet | `A`, `B`, `C` |
 | `access` | string | hayır | `Açık erişim`, `Kurum erişimi`, `Erişim yok` |
 | `rationale` | string | evet | Neden seçildi |
+| `project_relevance` | string | evet | Bu çalışmada hangi bölüm/amaç için kullanılabileceği |
+| `supports` | string[] | evet | Tam metin/özet/metaveri dayanağının destekleyebileceği önermeler |
+| `does_not_support` | string[] | evet | Kaynaktan çıkarılamayacak sonuçlar |
+| `limits` | string[] | evet | Tasarım, örneklem ve kapsam sınırlılıkları |
+| `assessment_basis` | enum | evet | `metadata`, `abstract`, `fulltext`, `fulltext_pages`; PDF kanıtı sayfa doğrulaması gerektirir |
 
 Şema: [`../schemas/fulltext-list.schema.json`](../schemas/fulltext-list.schema.json).
 
@@ -140,7 +145,7 @@ Not: ...
 Durum: supported
 ```
 
-Kırmızı yalnızca `rewritten_sentence` üzerindedir. Kaynak cümlesi ve çevirisi normal renkte, alıntı bloğu olarak verilir.
+`rewritten_sentence` kırmızıyla işaretlenir. İlk taslakta bulunmayan ve anlam taşıyan eklemeler `rewritten_segments[].added_by_mcp=true` ile mavi/yeşil gösterilir. Tam metin `intro.paragraphs[].segments` içinde de aynı eklemeler işaretlenir. Renk lejantı zorunludur. Kaynak cümlesi ve çevirisi normal renkte kalır. Salt dilbilgisi/parafraz farkları yeni bilgi eklemesi sayılmaz.
 
 ## 03 — Kaynak denetimi (Ek 2)
 
@@ -199,7 +204,7 @@ Kırmızı yalnızca `rewritten_sentence` üzerindedir. Kaynak cümlesi ve çevi
 
 1. Kapak: proje, taslak, tarih, kapsam.
 2. Yönetici özeti: kaç kart, kaç kaynak, kaç iddia, kaç `not_found`.
-3. Düzeltme kartları (kırmızı cümleler).
+3. Düzeltme kartları (yeniden düzenlenen cümleler kırmızı; anlamlı MCP eklemeleri mavi/yeşil).
 4. Ek 2 kaynak denetimi tablosu.
 5. İddia–kanıt matrisi.
 6. Kaynakça: yalnızca DOI linkleri.
@@ -235,15 +240,24 @@ standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
 
 ### Bölümler
 
-1. Düzeltilmiş bölüm metni; yalnızca değişen cümleler kırmızı.
+1. Düzeltilmiş bölüm metni; yeniden düzenlenen ifadeler kırmızı, MCP'nin
+   eklediği anlamlı ifadeler mavi/yeşil.
 2. Ek 1 — değişiklik kartları: yazar cümlesi, kaynak cümlesi (İngilizce),
    Türkçe çeviri, yeniden yazılan cümle, “ne değişti / neden” notu ve durum
    rozeti.
 3. Ek 2 — kaynak envanteri (rol + sınırlılık sütunları), konum + kanıt türü +
    not sütunlu iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar ve opsiyonel
    sonraki adımlar.
-4. Opsiyonel kaynakça; yalnızca DOI linkleri.
-5. Opsiyonel kaynak politikası kutusu (`notice`) ve footer.
+4. İş akışı 3 için bağlam değerlendirmesi: paragraf işlevi, cümle/paragraf
+   uyumu, geçişler ve makale/bölüm bağlamı.
+5. **Ek 3 — Bağlama uygun kaynak önerileri:** ilgili iddia/konum, doğrulanmış
+   DOI/metaveri ve uygunluk gerekçesi. Tam metni incelenmeyen adaylar kanıt
+   olarak sunulmaz; öneri yoksa nedeni yazılır.
+6. **Ek 4 — Bu çalışmada kaynakların katkısı ve sınırları:** her DOI için
+   proje ile ilgisi, neyi desteklediği/neye dayanak olmadığı, sınırlılıklar ve
+   değerlendirme temeli (metadata/abstract/fulltext/fulltext_pages).
+7. Opsiyonel kaynakça; yalnızca DOI linkleri.
+8. Opsiyonel kaynak politikası kutusu (`notice`) ve footer.
 
 ### JSON alanları
 
@@ -262,6 +276,10 @@ standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
   "change_cards": [...],
   "source_audit": [...],
   "claim_matrix": [...],
+  "context_review": {...},
+  "source_recommendations": [...],
+  "source_recommendations_note": "...",
+  "source_contributions": [...],
   "correction_summary": [...],
   "limitations": [...],
   "next_steps": [...],
@@ -302,7 +320,7 @@ PDF, indeks ve registry dosyaları manifest dışında olduğu için silinmez.
 - [ ] Tüm DOI'ler `https://doi.org/...` biçiminde.
 - [ ] Yerel PDF yolu / `file://` yok.
 - [ ] Her alıntıda DOI + sayfa var.
-- [ ] Kırmızı yalnızca değişen cümlede.
+- [ ] Yeniden düzenlenen cümleler kırmızı; ilk taslakta olmayan anlamlı MCP eklemeleri mavi/yeşil ve lejantlı.
 - [ ] `paperqa_ask` çıktısı kanıt olarak kullanılmadı.
 - [ ] CSV UTF-8 BOM'lu, başlıklar doğru.
 - [ ] JSON şemaya uyuyor.

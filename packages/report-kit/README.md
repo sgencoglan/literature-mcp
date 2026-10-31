@@ -5,13 +5,17 @@ olarak üretir. Tasarım, b1 pilot raporu için beğenilen altın standart rapor
 görsel dilini korur:
 
 - geniş sayfa (980 px), sans-serif başlıklar, kart/kanıt/not düzeni,
-- düzeltilmiş bölüm metni ve yalnızca değişen cümlelerde kırmızı `<mark>`,
+- düzeltilmiş bölüm metni; yeniden düzenleme kırmızı, anlamlı MCP eklemeleri mavi/yeşil `<mark>`,
 - üst bilgi sayı rozetleri ve opsiyonel kaynak politikası kutusu (`notice`),
 - Ek 1: yazar cümlesi → kaynak cümlesi (İngilizce) → Türkçe çeviri → yeniden
   yazılan cümle → “ne değişti / neden” notu; kart başlığında durum rozeti,
 - Ek 2: kaynak envanteri (rol ve sınırlılık sütunlarıyla), konum + kanıt türü +
   not sütunlu iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar ve opsiyonel
   sonraki adımlar,
+- iş akışı 3 için paragraf/makale bağlamı değerlendirmesi ve Ek 3 bağlama uygun
+  DOI/metaverisi doğrulanmış kaynak önerileri; tam metni okunmamış öneriler kanıt sayılmaz,
+- Ek 4'te her kaynak için bu projedeki katkı, desteklemediği çıkarımlar ve
+  çalışma sınırlılıkları; değerlendirme dayanağı (özet/tam metin/sayfa) görünür,
 - baskıya uygun tablo sarmalayıcıları ve footer.
 
 ## Kurulum

@@ -62,7 +62,7 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 ### report-kit
 
 - **1 CLI:** `chapter-report`.
-- Düzeltilmiş bölüm metni + Ek 1 + Ek 2'yi tek dosyalık HTML'e yazar.
+- Düzeltilmiş bölüm metni + Ek 1 + Ek 2 + Ek 4'ü; iş akışı 3'te ayrıca bağlam değerlendirmesi + Ek 3 kaynak önerilerini tek dosyalık HTML'e yazar.
 - Kalite kapısı: DOI/sayfa/alıntı/çeviri zorunluluğu, yerel yol yasağı, HTML dengesi.
 - Manifest tabanlı temizlik: yalnızca üretilmiş dosyaları siler; PDF/indeks/registry'ye dokunmaz.
 - Tasarım tek CSS dosyasındadır: `packages/report-kit/src/report_kit/templates/chapter-report.css`.
@@ -114,7 +114,7 @@ Akış 2 PDF'leri `<proje-klasörü>/02_bolum_taslagi/fulltext/` altında, tasla
 dosyaları `02_bolum_taslagi/taslak/` altında tutulur. Akış 3 girdileri ise
 `03_taslak_denetimi/taslak/` ve `03_taslak_denetimi/fulltext/` altındadır. İki akış ayrı
 PaperQA proje adı, manifest ve indeks kullanır. HTML aynı chapter-report şablonunu kullanır
-ve Ek 1 ile Ek 2 iddia–kanıt matrisini içerir. Manifest ve indeks proje
+ve bağlam değerlendirmesi, Ek 1, Ek 2 iddia–kanıt matrisi, Ek 3 kaynak önerileri ile Ek 4 kaynak katkısı/sınırlarını içerir. Manifest ve indeks proje
 kökündeki `.literature-mcp/` altındadır.
 
 ```text

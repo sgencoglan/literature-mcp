@@ -92,14 +92,14 @@ def validate(data: Any) -> List[str]:
         if not isinstance(item, dict):
             errors.append(f"{path}: nesne olmalı.")
             continue
-        for key in ("doi", "title", "authors", "year", "journal", "publisher", "priority", "rationale"):
+        for key in ("doi", "title", "authors", "year", "journal", "publisher", "priority", "rationale", "project_relevance", "supports", "does_not_support", "limits", "assessment_basis"):
             value = require(item, key, path, errors)
             if value is None:
                 continue
             if key == "year":
                 if not isinstance(value, int) or isinstance(value, bool):
                     errors.append(f"{path}.year: tam sayı olmalı.")
-            elif key in ("title", "authors", "journal", "rationale") and (not isinstance(value, str) or not value.strip()):
+            elif key in ("title", "authors", "journal", "rationale", "project_relevance") and (not isinstance(value, str) or not value.strip()):
                 errors.append(f"{path}.{key}: boş olmayan metin olmalı.")
             elif key == "doi":
                 if not isinstance(value, str) or not DOI_RE.match(value):
@@ -108,6 +108,14 @@ def validate(data: Any) -> List[str]:
                 errors.append(f"{path}.publisher: {value!r} desteklenmiyor. Seçenekler: {PUBLISHERS}")
             elif key == "priority" and value not in PRIORITY_ORDER:
                 errors.append(f"{path}.priority: A/B/C olmalı.")
+            elif key in ("supports", "does_not_support", "limits"):
+                if not isinstance(value, list) or not value or any(not isinstance(entry, str) or not entry.strip() for entry in value):
+                    errors.append(f"{path}.{key}: boş olmayan metinlerden oluşan liste olmalı.")
+            elif key == "assessment_basis" and value not in {"metadata", "abstract", "fulltext", "fulltext_pages"}:
+                errors.append(f"{path}.assessment_basis: metadata/abstract/fulltext/fulltext_pages olmalı.")
+
+        if item.get("assessment_basis") == "fulltext_pages" and not str(item.get("pages") or "").strip():
+            errors.append(f"{path}.pages: fulltext_pages için PDF sayfaları zorunlu.")
 
         quartile = item.get("quartile")
         if quartile not in QUARTILES:
@@ -158,6 +166,7 @@ def render_rows(candidates: List[Dict[str, Any]]) -> str:
         publisher = str(item["publisher"])
         priority = str(item["priority"])
         rationale = str(item["rationale"])
+        basis = str(item["assessment_basis"])
         quartile = item.get("quartile") or "-"
         citations = item.get("citations")
         open_access = bool(item.get("open_access"))
@@ -206,6 +215,29 @@ def render_rows(candidates: List[Dict[str, Any]]) -> str:
         </td>
         <td class="links">{' '.join(links)}</td>
       </tr>"""
+        )
+        basis_labels = {
+            "metadata": "Bibliyografik metaveri",
+            "abstract": "Özet",
+            "fulltext": "Tam metin",
+            "fulltext_pages": "Sayfa numarası doğrulanmış tam metin",
+        }
+        basis_text = basis_labels.get(basis, basis)
+        if item.get("pages"):
+            basis_text += f' · incelenen PDF sayfaları: {esc(item["pages"])}'
+        if basis not in {"fulltext", "fulltext_pages"}:
+            basis_text += " — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir"
+        detail_parts = [
+            f'<p><strong>Bu çalışmadaki rolü:</strong> {esc(item["project_relevance"])}</p>',
+            "<div><strong>Neyi destekliyor:</strong><ul>" + "".join(f"<li>{esc(value)}</li>" for value in item["supports"]) + "</ul></div>",
+            "<div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul>" + "".join(f"<li>{esc(value)}</li>" for value in item["does_not_support"]) + "</ul></div>",
+            "<div><strong>Sınırlar ve dikkat noktaları:</strong><ul>" + "".join(f"<li>{esc(value)}</li>" for value in item["limits"]) + "</ul></div>",
+            f'<p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> {esc(basis_text)}</p>',
+        ]
+        rows.append(
+            '<tr class="contribution-row"><td colspan="8"><div class="contribution">'
+            + "".join(detail_parts)
+            + "</div></td></tr>"
         )
     return "\n".join(rows)
 
@@ -332,6 +364,12 @@ td.links { min-width: 190px; white-space: nowrap; }
 .authors { font-size: 12.5px; color: var(--muted); }
 .title { font-weight: 600; margin: 2px 0 5px; }
 .rationale { font-size: 12.5px; color: var(--muted); }
+.contribution-row { background: #f8fafc; }
+.contribution-row:hover { background: #f8fafc; }
+.contribution { border-left: 3px solid var(--accent); padding: 2px 12px; font-size: 13px; }
+.contribution p { margin: 5px 0; }
+.contribution ul { margin: 2px 0 7px; padding-left: 20px; }
+.contribution-basis { color: var(--muted); font-size: 12px; }
 .muted { color: var(--muted); font-size: 12.5px; }
 .badge {
   display: inline-block;

@@ -1,5 +1,26 @@
 # Değişiklik Günlüğü
 
+## v2.5.0 — 2026-10-31
+
+### Eklendi
+
+- Üç iş akışında da her kaynağın bu projedeki katkısını, desteklediği ve
+  desteklemediği çıkarımları, sınırlılıklarını ve değerlendirme dayanağını
+  gösterme. İş akışı 1'de kaynak listesine; iş akışı 2 ve 3 raporlarında Ek 4'e
+  eklendi.
+- Özet/metaveri temelli kaynak yorumlarını sayfa doğrulamalı PDF kanıtından
+  ayıran `assessment_basis` alanı ve rapor sunumu.
+- Akış 3 raporunda yeniden düzenlenen ifadeler ile MCP'nin anlamlı yeni
+  eklemelerini farklı renklerde gösterme.
+- Akış 3 için paragraf/makale bağlam değerlendirmesi ve bağlama daha uygun
+  kaynak adaylarını Ek 3'te sunma.
+
+### Değişti
+
+- Fulltext listesi ve bölüm raporu şemaları; kaynak katkısı ve sınır
+  değerlendirmelerini zorunlu kılacak şekilde genişletildi.
+- Rapor örnekleri, iş akışı yönergeleri ve kabul ölçütleri güncellendi.
+
 ## v2.4.1 — 2026-10-31
 
 ### Düzeltildi

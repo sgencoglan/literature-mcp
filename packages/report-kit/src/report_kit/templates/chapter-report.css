@@ -4,6 +4,7 @@
   --line: #e3e6ea;
   --accent: #8a1c1c;
   --marker: rgba(255, 0, 0, 0.13);
+  --added-marker: rgba(0, 112, 125, 0.18);
 }
 * { box-sizing: border-box; }
 body {
@@ -65,6 +66,44 @@ mark, .mark {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+mark.mcp-added {
+  background: var(--added-marker);
+  color: #064f59;
+}
+.color-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  text-align: left;
+  font: .78rem -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--muted);
+}
+.legend-swatch { padding: .15rem .4rem; border-radius: 3px; }
+.revised-swatch { background: var(--marker); }
+.added-swatch { background: var(--added-marker); color: #064f59; }
+.context-assessment { margin: 2rem 0; }
+.context-card, .recommendation-card, .contribution-card {
+  border: 1px solid var(--line);
+  border-left: 4px solid #6f7780;
+  border-radius: 6px;
+  padding: .75rem 1rem;
+  margin: .8rem 0;
+  break-inside: avoid;
+}
+.context-card h3, .recommendation-card h3, .contribution-card h3 { margin: .1rem 0 .45rem; }
+.context-card p, .recommendation-card p, .contribution-card p { text-align: left; margin: .35rem 0; }
+.context-excerpt { color: #404850; font-size: .92rem; }
+.recommendation-card { border-left-color: #087b67; }
+.contribution-card { border-left-color: #8a1c1c; }
+.recommendation-card h3 { font-size: .98rem; }
+.recommendation-card a { color: var(--accent); }
+.recommendation-meta, .recommendation-status {
+  color: var(--muted);
+  font: .8rem -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.recommendation-status { font-weight: 700; }
+.contribution-card ul { margin: .2rem 0 .55rem; padding-left: 1.35rem; }
+.contribution-basis { color: var(--muted); font-size: .82rem; }
 p { margin: .8rem 0; text-align: justify; }
 .appendix {
   margin-top: 2.8rem;

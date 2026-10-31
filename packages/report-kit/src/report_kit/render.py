@@ -20,6 +20,9 @@ BOLD_RE = re.compile(r"\*\*(.+?)\*\*", re.S)
 DEFAULT_HEADINGS = {
     "appendix_1": "Ek 1 — Değişikliklerin Kaynak Cümleleriyle Karşılaştırması",
     "appendix_2": "Ek 2 — Kaynak Denetimi ve İddia–Kanıt Matrisi",
+    "appendix_3": "Ek 3 — Bağlama Uygun Kaynak Önerileri",
+    "appendix_4": "Ek 4 — Bu Çalışmada Kaynakların Katkısı ve Sınırları",
+    "context_assessment": "Bağlam ve Paragraf Bütünlüğü Değerlendirmesi",
     "source_inventory": "1) Kaynak Envanteri",
     "claim_matrix": "2) İddia–Kanıt Matrisi",
     "corrections": "3) Düzeltme Önerileri (özet)",
@@ -29,7 +32,9 @@ DEFAULT_HEADINGS = {
 }
 
 DEFAULT_APPENDIX_INTRO = (
-    "Kırmızı ile işaretlenen her değişiklik için sırasıyla: yazarın taslakta "
+    "Kırmızı ile işaretlenen bölümler yeniden düzenlenen metni, mavi/yeşil "
+    "ile işaretlenen bölümler MCP'nin eklediği anlamlı ifadeleri gösterir. "
+    "Her değişiklik için sırasıyla: yazarın taslakta "
     "yazdığı cümle, makaledeki orijinal cümle, bu cümlenin Türkçesi, yeniden "
     "yazılan cümle ve ilgili cümlenin düzeltme notu (ne değişti, neden) "
     "verilmiştir. İngilizce alıntılar kaynaklardan birebir alınmış; Türkçe "
@@ -230,17 +235,162 @@ def render_intro(intro: dict[str, Any]) -> str:
                 if not isinstance(segment, dict):
                     parts.append(rich(segment).strip())
                     continue
-                text = rich(segment.get("text", "")).strip()
+                text = rich(segment.get("text", ""))
                 if not text:
                     continue
-                if segment.get("changed"):
-                    parts.append(f"<mark>{text}</mark>")
+                if segment.get("added_by_mcp"):
+                    parts.append(f'<mark class="mcp-added">{text}</mark>')
+                elif segment.get("changed"):
+                    parts.append(f'<mark class="revised">{text}</mark>')
                 else:
                     parts.append(text)
-            out.append("<p>\n  " + "\n  ".join(parts) + "\n</p>")
+            out.append("<p>" + "".join(parts) + "</p>")
         else:
             out.append(f"<p>{rich(paragraph.get('text', ''))}</p>")
     return "\n".join(out)
+
+
+def render_rewritten_sentence(card: dict[str, Any], sentence: str) -> str:
+    """Render a revised sentence and highlight meaning-bearing MCP additions."""
+    segments = card.get("rewritten_segments")
+    if isinstance(segments, list) and segments:
+        segment_text = "".join(
+            str(segment.get("text", ""))
+            for segment in segments
+            if isinstance(segment, dict)
+        )
+        if segment_text == str(sentence):
+            rendered: list[str] = []
+            for segment in segments:
+                if not isinstance(segment, dict):
+                    continue
+                text = escape(segment.get("text", ""))
+                if segment.get("added_by_mcp"):
+                    rendered.append(f'<mark class="mcp-added">{text}</mark>')
+                else:
+                    rendered.append(f'<mark class="revised">{text}</mark>')
+            return "".join(rendered)
+    return f'<mark class="revised">{quote(sentence)}</mark>'
+
+
+def render_context_assessment(review: dict[str, Any]) -> str:
+    """Render paragraph and source-document context evaluations."""
+    out = ['<section class="context-assessment" id="baglam-degerlendirmesi">']
+    out.append(f"  <h2>{escape(review.get('heading') or DEFAULT_HEADINGS['context_assessment'])}</h2>")
+    if review.get("scope"):
+        out.append(f'  <p><strong>İncelenen kapsam:</strong> {rich(review["scope"])}</p>')
+    if review.get("overall"):
+        out.append(f'  <p><strong>Genel değerlendirme:</strong> {rich(review["overall"])}</p>')
+    for index, item in enumerate(review.get("paragraphs") or [], 1):
+        if not isinstance(item, dict):
+            continue
+        location = escape(item.get("location") or f"Paragraf {index}")
+        out.append('  <article class="context-card">')
+        out.append(f"    <h3>{location}</h3>")
+        if item.get("paragraph_excerpt"):
+            out.append(
+                f'    <p class="context-excerpt"><strong>Bağlam:</strong> '
+                f'{quote(item["paragraph_excerpt"])}</p>'
+            )
+        for key, label in (
+            ("paragraph_function", "Paragrafın işlevi"),
+            ("sentence_fit", "Cümlenin paragrafa uyumu"),
+            ("flow_fit", "Cümleler arası akış"),
+            ("article_fit", "Makale/bölüm bağlamına uyum"),
+            ("recommended_action", "Bağlam için öneri"),
+        ):
+            if item.get(key):
+                out.append(f'    <p><strong>{label}:</strong> {rich(item[key])}</p>')
+        out.append("  </article>")
+    out.append("</section>")
+    return "\n".join(out)
+
+
+def render_source_recommendations(items: list[dict[str, Any]]) -> str:
+    out: list[str] = []
+    for index, item in enumerate(items, 1):
+        if not isinstance(item, dict):
+            continue
+        title = escape(item.get("title") or item.get("citation") or f"Öneri {index}")
+        doi = str(item.get("doi") or "").strip()
+        title_html = f'<a href="{doi_url(doi)}">{title}</a>' if is_doi(doi) else title
+        out.append('  <article class="recommendation-card">')
+        out.append(f"    <h3>{index}. {title_html}</h3>")
+        author = escape(item.get("authors") or "")
+        journal = escape(item.get("journal") or "")
+        year = escape(item.get("year") or "")
+        detail = " · ".join(part for part in (author, f"{journal} ({year})" if journal and year else journal or year) if part)
+        if detail:
+            out.append(f'    <p class="recommendation-meta">{detail}</p>')
+        if item.get("related_location"):
+            out.append(f'    <p><strong>İlgili konum:</strong> {rich(item["related_location"])}</p>')
+        if item.get("fit_dimensions"):
+            dimensions = ", ".join(str(value) for value in item["fit_dimensions"])
+            out.append(f'    <p><strong>Bağlam eşleşmesi:</strong> {escape(dimensions)}</p>')
+        out.append(f'    <p><strong>Neden daha uygun olabilir:</strong> {rich(item.get("fit_reason", ""))}</p>')
+        checked = bool(item.get("fulltext_reviewed"))
+        label = "Tam metni incelendi" if checked else "Aday kaynak — tam metin henüz incelenmedi; kanıt değildir"
+        out.append(f'    <p class="recommendation-status">{escape(label)}</p>')
+        out.append("  </article>")
+    return "\n".join(out)
+
+
+def render_source_contributions(items: list[dict[str, Any]]) -> str:
+    """Render each audited source's project-specific contribution and limits."""
+    out: list[str] = []
+    for index, item in enumerate(items, 1):
+        if not isinstance(item, dict):
+            continue
+        citation = escape(item.get("citation") or item.get("title") or f"Kaynak {index}")
+        doi = str(item.get("doi") or "").strip()
+        heading = f'<a href="{doi_url(doi)}">{citation}</a>' if is_doi(doi) else citation
+        out.append('  <article class="contribution-card">')
+        out.append(f"    <h3>{index}. {heading}</h3>")
+        if item.get("project_relevance"):
+            out.append(f'    <p><strong>Bu çalışmadaki rolü:</strong> {rich(item["project_relevance"])}</p>')
+        for key, label in (
+            ("supports", "Neyi destekliyor"),
+            ("does_not_support", "Neyi desteklemiyor / göstermiyor"),
+            ("limits", "Sınırlar ve dikkat noktaları"),
+        ):
+            values = item.get(key) or []
+            if values:
+                out.append(f"    <p><strong>{label}:</strong></p>")
+                out.append("    " + render_list(values))
+        basis = str(item.get("assessment_basis") or "metadata")
+        basis_labels = {
+            "metadata": "Bibliyografik metaveri",
+            "abstract": "Özet",
+            "fulltext": "Tam metin",
+            "fulltext_pages": "Sayfa numarası doğrulanmış tam metin",
+        }
+        basis_label = basis_labels.get(basis, basis)
+        pages = item.get("pages")
+        if pages:
+            basis_label += f" · incelenen sayfa(lar): {escape(pages)}"
+        if basis not in {"fulltext", "fulltext_pages"}:
+            basis_label += " · ön değerlendirme; tam metin kanıtı değildir"
+        out.append(f'    <p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> {escape(basis_label)}</p>')
+        out.append("  </article>")
+    return "\n".join(out)
+
+
+def has_mcp_additions(data: dict[str, Any]) -> bool:
+    intro = data.get("intro") or {}
+    for paragraph in intro.get("paragraphs") or [] if isinstance(intro, dict) else []:
+        if isinstance(paragraph, dict) and any(
+            isinstance(segment, dict) and segment.get("added_by_mcp")
+            for segment in paragraph.get("segments") or []
+        ):
+            return True
+    return any(
+        isinstance(card, dict)
+        and any(
+            isinstance(segment, dict) and segment.get("added_by_mcp")
+            for segment in card.get("rewritten_segments") or []
+        )
+        for card in data.get("change_cards") or []
+    )
 
 
 def render_change_cards(cards: list[dict[str, Any]]) -> str:
@@ -301,7 +451,7 @@ def render_change_cards(cards: list[dict[str, Any]]) -> str:
             rewritten_label = escape(card.get("rewritten_label") or "Yeniden yazılan cümle")
             out.append(
                 f'  <div class="row"><span class="lbl">{rewritten_label}</span>'
-                f'<p class="rewritten"><mark>{quote(rewritten)}</mark></p></div>'
+                f'<p class="rewritten">{render_rewritten_sentence(card, str(rewritten))}</p></div>'
             )
 
         notes = [note for note in (card.get("notes") or []) if isinstance(note, dict)]
@@ -430,7 +580,7 @@ def render_report(data: dict[str, Any]) -> str:
     meta_parts.append(f"{meta_prefix} — <strong>{project}</strong>")
     meta_note = escape(
         data.get("meta_note")
-        or "Kırmızı zemin: önceki taslağa göre değiştirilen veya eklenen cümleler"
+        or "Kırmızı: yeniden düzenlenen ifade · Mavi/yeşil: MCP'nin eklediği anlamlı ifade"
     )
     meta_parts.append(meta_note)
     if data.get("generated_at"):
@@ -447,6 +597,13 @@ def render_report(data: dict[str, Any]) -> str:
     if notice_html:
         body.append(notice_html)
 
+    if has_mcp_additions(data):
+        body.append(
+            '<p class="color-legend"><span class="legend-swatch revised-swatch">'
+            'Kırmızı: yeniden düzenlenen ifade</span><span class="legend-swatch added-swatch">'
+            'Mavi/yeşil: MCP tarafından eklenen anlamlı ifade</span></p>'
+        )
+
     intro = data.get("intro")
     if isinstance(intro, dict):
         body.append('<section id="metin">')
@@ -455,6 +612,10 @@ def render_report(data: dict[str, Any]) -> str:
             body.append(f"<h2>{escape(intro_heading)}</h2>")
         body.append(render_intro(intro))
         body.append("</section>")
+
+    context_review = data.get("context_review")
+    if isinstance(context_review, dict):
+        body.append(render_context_assessment(context_review))
 
     cards = data.get("change_cards") or []
     if cards:
@@ -533,6 +694,35 @@ def render_report(data: dict[str, Any]) -> str:
             body.append(f"  <h3>{escape(headings['references'])}</h3>")
             body.append(render_references(references))
 
+        body.append("</section>")
+
+    recommendations = data.get("source_recommendations")
+    recommendation_note = data.get("source_recommendations_note")
+    if isinstance(recommendations, list):
+        body.append('<section class="appendix appendix-recommendations">')
+        body.append(f"  <h2>{escape(headings['appendix_3'])}</h2>")
+        body.append(
+            '  <p class="legend">Bunlar bağlama göre önerilen aday kaynaklardır; '
+            'Ek 2\'de sayfa doğrulamalı kanıt olarak değerlendirilmedikçe taslağı desteklediği kabul edilmez.</p>'
+        )
+        if recommendations:
+            body.append(render_source_recommendations(recommendations))
+        elif recommendation_note:
+            body.append(f'  <p>{rich(recommendation_note)}</p>')
+        else:
+            body.append('  <p>Bu bağlam için doğrulanmış kaynak önerisi bulunamadı.</p>')
+        body.append("</section>")
+
+    contributions = data.get("source_contributions")
+    if isinstance(contributions, list):
+        body.append('<section class="appendix appendix-contributions">')
+        body.append(f"  <h2>{escape(headings['appendix_4'])}</h2>")
+        body.append(
+            '  <p class="legend">Her kaynağın bu çalışmadaki olası katkısı ve sınırları '
+            'ayrı değerlendirilir. Özet veya metaveriye dayalı değerlendirme, PDF sayfası '
+            'doğrulanmış kanıt yerine geçmez.</p>'
+        )
+        body.append(render_source_contributions(contributions))
         body.append("</section>")
 
     if data.get("footer"):

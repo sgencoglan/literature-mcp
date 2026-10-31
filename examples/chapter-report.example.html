@@ -11,6 +11,7 @@
   --line: #e3e6ea;
   --accent: #8a1c1c;
   --marker: rgba(255, 0, 0, 0.13);
+  --added-marker: rgba(0, 112, 125, 0.18);
 }
 * { box-sizing: border-box; }
 body {
@@ -72,6 +73,44 @@ mark, .mark {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+mark.mcp-added {
+  background: var(--added-marker);
+  color: #064f59;
+}
+.color-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  text-align: left;
+  font: .78rem -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--muted);
+}
+.legend-swatch { padding: .15rem .4rem; border-radius: 3px; }
+.revised-swatch { background: var(--marker); }
+.added-swatch { background: var(--added-marker); color: #064f59; }
+.context-assessment { margin: 2rem 0; }
+.context-card, .recommendation-card, .contribution-card {
+  border: 1px solid var(--line);
+  border-left: 4px solid #6f7780;
+  border-radius: 6px;
+  padding: .75rem 1rem;
+  margin: .8rem 0;
+  break-inside: avoid;
+}
+.context-card h3, .recommendation-card h3, .contribution-card h3 { margin: .1rem 0 .45rem; }
+.context-card p, .recommendation-card p, .contribution-card p { text-align: left; margin: .35rem 0; }
+.context-excerpt { color: #404850; font-size: .92rem; }
+.recommendation-card { border-left-color: #087b67; }
+.contribution-card { border-left-color: #8a1c1c; }
+.recommendation-card h3 { font-size: .98rem; }
+.recommendation-card a { color: var(--accent); }
+.recommendation-meta, .recommendation-status {
+  color: var(--muted);
+  font: .8rem -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.recommendation-status { font-weight: 700; }
+.contribution-card ul { margin: .2rem 0 .55rem; padding-left: 1.35rem; }
+.contribution-basis { color: var(--muted); font-size: .82rem; }
 p { margin: .8rem 0; text-align: justify; }
 .appendix {
   margin-top: 2.8rem;
@@ -206,26 +245,49 @@ li { margin: .3rem 0; }
 </head>
 <body>
 <h1>1. Giriş — Düzeltilmiş Taslak ve Kaynak Denetimi</h1>
-<p class="meta">Düzeltilmiş taslak — <strong>ornek-uzaktan-calisma</strong> · Kırmızı zemin: önceki taslağa göre değiştirilen veya eklenen cümleler · Tarih: 2026-10-22</p>
+<p class="meta">Düzeltilmiş taslak — <strong>ornek-uzaktan-calisma</strong> · Kırmızı: yeniden düzenlenen ifade · Mavi/yeşil: MCP'nin eklediği anlamlı ifade · Tarih: 2026-10-22</p>
 <p class="summary-strip"><span><b>3</b> değişiklik kartı</span><span><b>3</b> kaynak</span><span><b>4</b> iddia</span><span><b>1</b> kanıtlanamayan iddia</span></p>
 <div class="notice"><strong>Kaynak politikası.</strong> Önce tam metin; tam metinde karşılığı yoksa ve açıkça “özet” olarak etiketlenirse özet kullanıldı. Alıntılar sayfa numarasıyla doğrulandı. Bu örnekteki kaynaklar ve DOI’ler sentetiktir; gerçek teslimde kullanılamaz.</div>
+<p class="color-legend"><span class="legend-swatch revised-swatch">Kırmızı: yeniden düzenlenen ifade</span><span class="legend-swatch added-swatch">Mavi/yeşil: MCP tarafından eklenen anlamlı ifade</span></p>
 <section id="metin">
 <h2>Düzeltilmiş metin</h2>
-<p>
-  Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir.
-  <mark>Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).</mark>
-</p>
-<p>
-  <mark>İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya &amp; Yılmaz, 2023).</mark>
-</p>
-<p>
-  Bu bölümün amacı, uzaktan çalışma düzenlerinde çalışan refahını destekleyen koşulları tartışmak ve yöneticilere uygulanabilir bir çerçeve sunmaktır.
-  <mark>Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).</mark>
-</p>
+<p>Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir. <mark class="revised">Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon </mark><mark class="mcp-added">aynı süreçte</mark><mark class="revised"> ortaya çıkabilir (Demir, 2024).</mark></p>
+<p><mark class="revised">İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya &amp; Yılmaz, 2023).</mark></p>
+<p>Bu bölümün amacı, uzaktan çalışma düzenlerinde çalışan refahını destekleyen koşulları tartışmak ve yöneticilere uygulanabilir bir çerçeve sunmaktır. <mark class="revised">Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).</mark></p>
+</section>
+<section class="context-assessment" id="baglam-degerlendirmesi">
+  <h2>Bağlam ve Paragraf Bütünlüğü Değerlendirmesi</h2>
+  <p><strong>İncelenen kapsam:</strong> Uzaktan çalışma ve çalışan refahını tartışan giriş bölümü; üç paragraf ve dayanak makalelerin ilgili bağlamı.</p>
+  <p><strong>Genel değerlendirme:</strong> Düzeltilen iddialar bölümün amacına hizmet ediyor. P1’de farklı yönlü refah ilişkileri birlikte sunuluyor; P2’de ölçülmemiş işten ayrılma sonucu iddiası çıkarılıyor; P3’te bireysel ve örgütsel etkenler dengeleniyor.</p>
+  <article class="context-card">
+    <h3>Giriş, 1. paragraf</h3>
+    <p class="context-excerpt"><strong>Bağlam:</strong> “Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir. Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).”</p>
+    <p><strong>Paragrafın işlevi:</strong> Uzaktan çalışmanın refahla ilişkisini tek yönlü olmayan bir çerçevede tanıtmak.</p>
+    <p><strong>Cümlenin paragrafa uyumu:</strong> Düzeltilen cümle, paragrafın ilk cümlesindeki sınır değişimini refahın farklı yönlü sonuçlarına bağlar.</p>
+    <p><strong>Cümleler arası akış:</strong> İlk cümleden sonra özerklik ve erişilebilirlik örneklerine geçiş anlaşılır; atıf cümle sonunda kalır.</p>
+    <p><strong>Makale/bölüm bağlamına uyum:</strong> Kaynak makale özerklik ve mesai dışı erişilebilirlikle ilişkili farklı sonuçları bildiriyor; paragraf bu ilişkileri nedensellik iddiasına çevirmiyor.</p>
+    <p><strong>Bağlam için öneri:</strong> Sonraki bölümde izolasyon iddiası korunacaksa doğrudan ölçen bir kaynak ekleyin.</p>
+  </article>
+  <article class="context-card">
+    <h3>Giriş, 2. paragraf</h3>
+    <p class="context-excerpt"><strong>Bağlam:</strong> “İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya &amp; Yılmaz, 2023).”</p>
+    <p><strong>Paragrafın işlevi:</strong> İş–aile çatışması tartışmasını ölçülmüş değişkenlerle sınırlamak.</p>
+    <p><strong>Cümlenin paragrafa uyumu:</strong> Yeni cümle kaynağın gerçekten incelediği sınır yönetimi ve iş–aile çatışmasına odaklanır.</p>
+    <p><strong>Cümleler arası akış:</strong> İddianın kapsamı daraltıldığı için paragrafta kanıtsız işten ayrılma sonucu ileri sürülmüyor.</p>
+    <p><strong>Makale/bölüm bağlamına uyum:</strong> Kaynak makalede işten ayrılma niyeti sonuç değişkeni değil; bu nedenle eski iddia çıkarıldı.</p>
+  </article>
+  <article class="context-card">
+    <h3>Giriş, 3. paragraf</h3>
+    <p class="context-excerpt"><strong>Bağlam:</strong> “Bu bölümün amacı, uzaktan çalışma düzenlerinde çalışan refahını destekleyen koşulları tartışmak ve yöneticilere uygulanabilir bir çerçeve sunmaktır. Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).”</p>
+    <p><strong>Paragrafın işlevi:</strong> Bölümün uygulama amacını örgütsel koşullarla ilişkilendirmek.</p>
+    <p><strong>Cümlenin paragrafa uyumu:</strong> Yönetici desteği örneği, paragrafın yöneticilere uygulanabilir çerçeve sunma amacını geliştirir.</p>
+    <p><strong>Cümleler arası akış:</strong> Amaç cümlesinden tükenme bulgusuna geçiş tutarlı ve konuyu somutlaştırıyor.</p>
+    <p><strong>Makale/bölüm bağlamına uyum:</strong> Kaynak, bireysel dayanıklılık kontrol edildiğinde de yönetici desteği ilişkisini raporluyor; taslak tek nedenli açıklamadan kaçınıyor.</p>
+  </article>
 </section>
 <section class="appendix appendix-cards">
   <h2>Ek 1 — Değişikliklerin Kaynak Cümleleriyle Karşılaştırması</h2>
-  <p class="legend">Kırmızı ile işaretlenen her değişiklik için sırasıyla yazarın taslakta yazdığı cümle, kaynaktaki orijinal cümle, bu cümlenin Türkçesi, yeniden yazılan cümle ve düzeltme notu verilmiştir. Bu dosyadaki kaynaklar ve DOI’ler yalnızca biçim gösterimi için üretilmiş sentetik örneklerdir.</p>
+  <p class="legend">Kırmızı ile işaretlenen her değişiklik için sırasıyla yazarın taslakta yazdığı cümle, kaynaktaki orijinal cümle, bu cümlenin Türkçesi, yeniden yazılan cümle ve düzeltme notu verilmiştir. Mavi/yeşil parçalar ilk taslakta bulunmayan anlamlı MCP eklemeleridir. Bu dosyadaki kaynaklar ve DOI’ler yalnızca biçim gösterimi için üretilmiş sentetik örneklerdir.</p>
 <article class="card" id="degisiklik-1">
   <h3>Değişiklik 1 — Uzaktan çalışmanın refah etkisini tek yönlü sunmak (1. paragraf, 2. cümle) <span class="badge warn">🟡 Kısmi</span></h3>
   <div class="row"><span class="lbl">Yazarın yazdığı</span><p>“Uzaktan çalışma çalışan refahını azaltır; esneklik bu olumsuz etkiyi telafi edemez.”</p></div>
@@ -234,7 +296,7 @@ li { margin: .3rem 0; }
     <p class="en" lang="en">“Remote work had heterogeneous associations with well-being: autonomy was linked to higher satisfaction, whereas after-hours connectivity was linked to exhaustion.”</p>
     <p class="tr"><span class="lbl">Türkçesi</span>“Uzaktan çalışma refahla heterojen ilişkiler göstermiştir: özerklik daha yüksek memnuniyetle, mesai dışı erişilebilirlik ise tükenmeyle ilişkilendirilmiştir.”</p>
   </div>
-  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark>“Uzaktan çalışmanın refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).”</mark></p></div>
+  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark class="revised">“Uzaktan çalışmanın refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).”</mark></p></div>
   <div class="notes">
     <h4>Düzeltme notu</h4>
     <ol>
@@ -250,7 +312,7 @@ li { margin: .3rem 0; }
     <p class="en" lang="en">“Boundary management explained additional variance in work–family conflict, but turnover intention was not included as an outcome in the model.”</p>
     <p class="tr"><span class="lbl">Türkçesi</span>“Sınır yönetimi, iş–aile çatışmasındaki ek varyansı açıklamış; ancak işten ayrılma niyeti modelde sonuç değişkeni olarak yer almamıştır.”</p>
   </div>
-  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark>“İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya &amp; Yılmaz, 2023).”</mark></p></div>
+  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark class="revised">“İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya &amp; Yılmaz, 2023).”</mark></p></div>
   <div class="notes">
     <h4>Düzeltme notu</h4>
     <ol>
@@ -266,7 +328,7 @@ li { margin: .3rem 0; }
     <p class="en" lang="en">“Leader support was negatively associated with exhaustion after controlling for individual resilience, suggesting that organizational factors also matter.”</p>
     <p class="tr"><span class="lbl">Türkçesi</span>“Yönetici desteği, bireysel dayanıklılık kontrol edildikten sonra da tükenmeyle negatif ilişkiliydi; bu, örgütsel etkenlerin de önemli olduğunu göstermektedir.”</p>
   </div>
-  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark>“Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).”</mark></p></div>
+  <div class="row"><span class="lbl">Yeniden yazılan cümle</span><p class="rewritten"><mark class="revised">Yönetici desteğinin tükenme üzerindeki rolü, </mark><mark class="mcp-added">bireysel dayanıklılık kadar örgütsel tasarımın da</mark><mark class="revised"> dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).</mark></p></div>
   <div class="notes">
     <h4>Düzeltme notu</h4>
     <ol>
@@ -326,6 +388,77 @@ li { margin: .3rem 0; }
   <li>Arslan, D.; Öz, E.; Tan, F. (2025). <i>Yönetici desteği, dayanıklılık ve tükenme</i>. Örnek Örgütsel Davranış Dergisi. <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></li>
 </ol>
 </section>
-<footer class="report-footer"><p>literature-mcp · chapter-report v2.4.1 · Sentetik örnek; gerçek kaynak değildir.</p></footer>
+<section class="appendix appendix-recommendations">
+  <h2>Ek 3 — Bağlama Uygun Kaynak Önerileri</h2>
+  <p class="legend">Bunlar bağlama göre önerilen aday kaynaklardır; Ek 2'de sayfa doğrulamalı kanıt olarak değerlendirilmedikçe taslağı desteklediği kabul edilmez.</p>
+  <article class="recommendation-card">
+    <h3>1. <a href="https://doi.org/10.5555/ornek.2022.004">Uzaktan çalışmada iş–aile sınırları ve refah</a></h3>
+    <p class="recommendation-meta">Örnek, E.; Araştırmacı, F. · Örnek İş ve Yaşam Dergisi (2022)</p>
+    <p><strong>İlgili konum:</strong> Giriş, 1. paragraf; izolasyon ve sınır yönetimi cümlesi</p>
+    <p><strong>Bağlam eşleşmesi:</strong> konu, iş–aile sınırları, refah</p>
+    <p><strong>Neden daha uygun olabilir:</strong> Başlık ve doğrulanmış özette uzaktan çalışma, iş–aile sınırları ve çalışan refahı birlikte ele alınıyor; bu nedenle mevcut genel refah kaynaklarından paragrafın sınır yönetimi bağlamına daha yakından uyabilir.</p>
+    <p class="recommendation-status">Aday kaynak — tam metin henüz incelenmedi; kanıt değildir</p>
+  </article>
+</section>
+<section class="appendix appendix-contributions">
+  <h2>Ek 4 — Bu Çalışmada Kaynakların Katkısı ve Sınırları</h2>
+  <p class="legend">Her kaynağın bu çalışmadaki olası katkısı ve sınırları ayrı değerlendirilir. Özet veya metaveriye dayalı değerlendirme, PDF sayfası doğrulanmış kanıt yerine geçmez.</p>
+  <article class="contribution-card">
+    <h3>1. <a href="https://doi.org/10.5555/ornek.2024.001">Demir — Uzaktan çalışma ve refah</a></h3>
+    <p><strong>Bu çalışmadaki rolü:</strong> Uzaktan çalışma ve çalışan refahının farklı yönlerini açıklayan giriş iddiaları için temel ampirik kaynak.</p>
+    <p><strong>Neyi destekliyor:</strong></p>
+    <ul>
+  <li>Kesitsel bulgular özerklik ile memnuniyet, mesai dışı erişilebilirlik ile tükenme arasında farklı yönlerde ilişkiler bildiriyor.</li>
+</ul>
+    <p><strong>Neyi desteklemiyor / göstermiyor:</strong></p>
+    <ul>
+  <li>Uzaktan çalışmanın tüm çalışanlarda refahı tek yönlü azalttığını veya ilişkilerin nedensel olduğunu göstermiyor.</li>
+  <li>İzolasyonun her örneklemde ortaya çıktığını tek başına kanıtlamıyor.</li>
+</ul>
+    <p><strong>Sınırlar ve dikkat noktaları:</strong></p>
+    <ul>
+  <li>Kesitsel tasarım nedensel çıkarıma izin vermiyor.</li>
+  <li>Örneklem ve ölçüm bağlamı başka çalışan gruplarına genellemeyi sınırlayabilir.</li>
+</ul>
+    <p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Sayfa numarası doğrulanmış tam metin · incelenen sayfa(lar): 4–5</p>
+  </article>
+  <article class="contribution-card">
+    <h3>2. <a href="https://doi.org/10.5555/ornek.2023.002">Kaya &amp; Yılmaz — Sınır yönetimi</a></h3>
+    <p><strong>Bu çalışmadaki rolü:</strong> İş–aile sınır yönetimini tartışırken doğrudan incelenen değişkenlere dayalı bağlam kaynağı.</p>
+    <p><strong>Neyi destekliyor:</strong></p>
+    <ul>
+  <li>Sınır yönetimi ile iş–aile çatışmasının birlikte ele alınmasını destekliyor.</li>
+</ul>
+    <p><strong>Neyi desteklemiyor / göstermiyor:</strong></p>
+    <ul>
+  <li>İşten ayrılma niyeti veya işten ayrılma davranışı hakkında sonuç çıkarmayı desteklemiyor.</li>
+</ul>
+    <p><strong>Sınırlar ve dikkat noktaları:</strong></p>
+    <ul>
+  <li>Tek sektör örneklemi genellemeyi sınırlandırıyor.</li>
+  <li>İşten ayrılma niyeti ölçülmemiş.</li>
+</ul>
+    <p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Sayfa numarası doğrulanmış tam metin · incelenen sayfa(lar): 3–4</p>
+  </article>
+  <article class="contribution-card">
+    <h3>3. <a href="https://doi.org/10.5555/ornek.2025.003">Arslan vd. — Yönetici desteği ve tükenme</a></h3>
+    <p><strong>Bu çalışmadaki rolü:</strong> Yönetici desteği ve örgütsel koşulların çalışan refahıyla ilişkisini bölümün uygulama amacına bağlar.</p>
+    <p><strong>Neyi destekliyor:</strong></p>
+    <ul>
+  <li>Yönetici desteği ile tükenme arasındaki raporlanan ilişkiyi ve bireysel dayanıklılık değişkeninin ele alınmasını destekliyor.</li>
+</ul>
+    <p><strong>Neyi desteklemiyor / göstermiyor:</strong></p>
+    <ul>
+  <li>Yönetici desteğinin tek başına tükenmeyi önlediğini veya gözlenen ilişkinin nedensel olduğunu göstermiyor.</li>
+</ul>
+    <p><strong>Sınırlar ve dikkat noktaları:</strong></p>
+    <ul>
+  <li>Beyaz yakalı örneklem kültürel ve mesleki genellemeyi sınırlar.</li>
+  <li>İlişkiyi müdahale etkisi gibi yorumlamamak gerekir.</li>
+</ul>
+    <p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Sayfa numarası doğrulanmış tam metin · incelenen sayfa(lar): 5–6</p>
+  </article>
+</section>
+<footer class="report-footer"><p>literature-mcp · chapter-report v2.5.0 · Sentetik örnek; gerçek kaynak değildir.</p></footer>
 </body>
 </html>

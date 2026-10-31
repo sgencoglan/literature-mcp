@@ -13,9 +13,10 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 3. Gerekirse `search_all`, `search_sciencedirect`, `search_pubmed`, `search_europepmc` ile genişlet.
 4. Her aday için `get_article` ve `get_links` ile metadata ve linkleri al.
 5. `verify_doi_and_publisher`, `doi_provenance`, `journal_rank` ile DOI'yi, yayıncıyı ve quartile'ı doğrula.
-6. Adayları `schemas/fulltext-list.schema.json` biçiminde JSON'a yaz.
-7. Aday JSON'u `01_kaynak_kesfi/` içine yaz; `scripts/build_fulltext_list.py` ile `01_kaynak_kesfi/01_fulltext_listesi.html` üret.
-8. Fulltext indirme listesini teslim et. Bu iş akışı burada tamamlanır.
+6. Her aday için projedeki olası katkıyı, destekleyebileceği ve destekleyemeyeceği sonuçları, sınırlılıkları ve değerlendirme temelini (metadata/abstract/fulltext/fulltext_pages) belirt. Tam metin veya sayfa görülmediyse bunu ön değerlendirme olarak sun.
+7. Adayları `schemas/fulltext-list.schema.json` biçiminde JSON'a yaz.
+8. Aday JSON'u `01_kaynak_kesfi/` içine yaz; `scripts/build_fulltext_list.py` ile `01_kaynak_kesfi/01_fulltext_listesi.html` üret.
+9. Kaynak başına katkı ve sınır değerlendirmelerinin HTML'de göründüğünü kontrol et. Bu iş akışı burada tamamlanır.
 
 ### İş akışı 2 — PDF'lerden kanıta dayalı taslak
 
@@ -24,7 +25,8 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 3. `project_audit` → `paperqa_build_index` → `paperqa_status` → `library_status` ile PDF'leri kaydet ve indeksi doğrula.
 4. Taslak için yalnızca `paperqa_search` + `paperqa_read_pages` / `read_paper` kanıtını kullan.
 5. PDF'ten doğrulanan bulguları, paragrafın amacı ve bağlamına uygun özgün Türkçe cümlelerle yeniden ifade et. Kaynak cümlelerini taslağa aynen kopyalama; yalnızca gerektiğinde kısa, açıkça alıntılanmış ve sayfa numarası verilmiş alıntılar kullan.
-6. Taslak raporu JSON'unu `02_bolum_taslagi/taslak/` içine yaz. `chapter-report build` ile HTML ve Markdown üret; HTML'de bölüm metni, Ek 1 kaynak–taslak eşleştirmeleri ve Ek 2 iddia–kanıt matrisi bulunmalı.
+6. `source_audit` içindeki her DOI için `source_contributions` alanına projedeki rolünü, desteklediği/desteklemediği önerme türlerini, sınırlılıklarını ve değerlendirme temelini yaz. Sayfa doğrulanmayanlar kanıt olarak gösterilmemeli.
+7. Taslak raporu JSON'unu `02_bolum_taslagi/taslak/` içine yaz. `chapter-report build` ile HTML ve Markdown üret; HTML'de bölüm metni, Ek 1 kaynak–taslak eşleştirmeleri, Ek 2 iddia–kanıt matrisi ve Ek 4 kaynak katkısı/sınırları bulunmalı.
 
 ### İş akışı 3 — Mevcut taslağı denetleme
 
@@ -32,16 +34,20 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 2. `workflow_project_names.audit` adını kullanarak denetim PDF klasörünü ayrı bir PaperQA projesi olarak kaydet. `output_directory` proje kökü olsun; denetim manifesti ve indeksi taslak hazırlama akışından ayrı tutulur.
 3. `project_audit`, `paperqa_status`, `library_status` ile bu denetim projesinin gerçek durumunu doğrula.
 4. Taslağı oku ve her cümleyi/iddiayı ayrı kaydet.
-5. Her iddia için:
+5. Her iddianın paragrafını ve taslağın ilgili bölümünü de değerlendir. Paragrafın amacı, komşu cümlelerle akışı, bölüm savıyla uyumu ve kaynak makalenin amacı/yöntemi/örneklemi/sınırlılıklarını raporun `context_review` alanına yaz.
+6. Her iddia için:
    - `paperqa_search(project=..., query=...)`
    - Dönen DOI'yi `paperqa_read_pages(project=..., doi=..., page_start=..., page_end=...)` ile doğrula.
    - Gerekirse `read_paper` ile tam metni oku.
-6. `verify_doi_and_publisher` ve `doi_provenance` ile DOI'nin gerçekliğini; `journal_rank` ile dergi quartile'ını doğrula.
-7. `compare_studies` ve `evidence_check` yalnızca **yardımcı** tarama içindir; nihai kanıt değildir.
-8. Her düzeltme için `schemas/change-card.schema.json` uyumlu kart üret.
-9. Ek 2 kaynak denetimi ve iddia–kanıt matrisini `schemas/claim-evidence.schema.json` uyumlu üret.
-10. `export_review(output_path=<proje-kökü>/03_taslak_denetimi/...)` ile Markdown/CSV/JSON; insan teslimi için `chapter-report build` ile `03_taslak_denetimi/taslak/05_bolum_raporu.html` üret.
-11. Kalite kapısı 0 hata verene kadar düzelt; teslimden sonra kullanıcıya `--cleanup intermediate/all` seçeneğini sun.
+7. `verify_doi_and_publisher` ve `doi_provenance` ile DOI'nin gerçekliğini; `journal_rank` ile dergi quartile'ını doğrula.
+8. `compare_studies` ve `evidence_check` yalnızca **yardımcı** tarama içindir; nihai kanıt değildir.
+9. Her düzeltme için `schemas/change-card.schema.json` uyumlu kart üret. `rewritten_segments` ile anlam bakımından yeni eklenen ifadeleri `added_by_mcp=true` olarak işaretle; tam cümleyle aynı metni oluşturduğunu doğrula.
+10. Paragraf/bölüm metnindeki aynı yeni ifadeleri `intro.paragraphs[].segments` içinde `added_by_mcp=true` olarak da işaretle. HTML lejantında kırmızı yeniden düzenlenen metni, mavi/yeşil MCP eklemesini anlatsın.
+11. Bağlama daha uygun kaynak adaylarını bul, DOI ve metadata doğrula; `source_recommendations` alanına neden daha iyi uyduklarını yaz. Bunlar tam metin sayfaları doğrulanmadıkça kanıt sayılmaz. Aday yoksa boş dizi ve `source_recommendations_note` kullan.
+12. Ek 2 kaynak denetimi ve iddia–kanıt matrisini `schemas/claim-evidence.schema.json` uyumlu üret.
+13. `source_audit` içindeki her DOI için `source_contributions` alanına projedeki rolünü, desteklediği/desteklemediği önerme türlerini, sınırlılıklarını ve sayfa doğrulaması dahil değerlendirme temelini yaz.
+14. `export_review(output_path=<proje-kökü>/03_taslak_denetimi/taslak/...)` ile Markdown/CSV/JSON; insan teslimi için `chapter-report build` ile `03_taslak_denetimi/taslak/05_bolum_raporu.html` üret. HTML'de bağlam değerlendirmesi, Ek 3 kaynak önerileri ve Ek 4 kaynak katkısı/sınırları bulunmalı.
+15. Kalite kapısı 0 hata verene kadar düzelt; teslimden sonra kullanıcıya `--cleanup intermediate/all` seçeneğini sun.
 
 ## 2. Zorunlu kurallar
 
@@ -51,7 +57,7 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 4. **DOI biçimi.** Teslimlerde yalnızca `https://doi.org/<doi>` kullan. Yerel PDF yolu, `file://` linki veya kullanıcı klasör yolu teslim dosyasına yazılmaz.
 5. **Uydurma yasağı.** DOI, yazar, yıl, dergi, sayfa, alıntı veya sonuç uydurma. Emin değilsen `not_found`, kısmi kanıt varsa `partially_supported` yaz ve kullanıcıya bildir.
 6. **Dil.** Teslim Türkçedir. Kaynak cümlesi İngilizceyse özgün hâliyle ver; Türkçe çevirisini ayrı yaz. Çeviri, alıntının yerine geçmez.
-7. **Kırmızı kural.** HTML'de yalnızca **değişen cümle** kırmızı işaretlenir. Paragrafın tamamı, başlık veya kaynak listesi kırmızıya boyanmaz.
+7. **Renk kuralı.** HTML'de yalnızca yeniden düzenlenen cümle/parça kırmızı; MCP'nin eklediği anlamlı yeni ifade mavi/yeşil işaretlenir. Paragrafın tamamı, başlık veya kaynak listesi renklendirilmez.
 8. **Beş platform.** Yalnızca Ovid LWW, ScienceDirect, SpringerLink, Wiley ve Taylor & Francis linkleri önceliklidir. Başka bir dizin sağlayıcısına bağımlılık kurma.
 9. **Mevcut projelere dokunma.** Kayıtlı bir projenin PDF klasörü, manifesti, indeksi veya `analysis_json` dosyası, kullanıcı açıkça istemedikçe değiştirilmez. Yeni çalışma için yeni klasör/manifest/indeks kullan.
 10. **Çıktı sözleşmesi.** Dosya adları, sütunlar ve biçimler [`docs/output-spec.md`](docs/output-spec.md) dosyasına uyar. JSON çıktıları `schemas/` altındaki şemalara uyumlu olur.
@@ -96,6 +102,7 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 - HTML tek dosya, yazdırılabilir ve çevrimdışı açılabilir olmalı.
 - Her satırda tıklanabilir DOI ve varsa yayıncı linki bulunmalı.
 - Liste HTML'i ve JSON'u `01_kaynak_kesfi/` içinde bulunmalı.
+- Her kaynakta bu projedeki olası katkı, destekleyemediği çıkarımlar, sınırlılıklar ve inceleme dayanağı gösterilmeli.
 
 ## 5. İş akışı 2 — kabul kriterleri
 
@@ -105,6 +112,7 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 - Yeniden yazım doğrulanmış kanıtın kapsamını korumalı; yeni genelleme veya nedensellik eklememeli.
 - `02_bolum_taslagi.json`, `.md` ve `.html` `02_bolum_taslagi/taslak/` içinde olmalı.
 - Taslak HTML'i Ek 1 kaynak–taslak eşleştirmelerini ve iddia–kanıt matrisini içermeli; `02_bolum_taslagi/taslak/` içine yazılmalı.
+- Ek 4 her kaynak için projeye katkı, desteklemediği çıkarımlar ve sınırları içermeli; özet/metaveri temelli yorumlar kanıt gibi sunulmamalı.
 
 ## 6. İş akışı 3 — kabul kriterleri
 
@@ -120,7 +128,10 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 - Ek 2 kaynak denetiminde her kaynak için DOI, yayıncı, Q, atıf, erişim ve kullanım kararı bulunmalı.
 - İddia–kanıt matrisinde her iddia için kaynak, sayfa, kısa kanıt, destek düzeyi ve karar bulunmalı.
 - İddia–kanıt matrisinde konum (`P1 · c2`), kanıt türü ve kısa not sütunları bulunmalı.
-- HTML'de düzeltilmiş cümleler kırmızı; kaynak cümlesi ve çevirisi normal renkte olmalı.
+- HTML'de yeniden düzenlenen metin kırmızı; MCP'nin anlamlı yeni eklemeleri mavi/yeşil, kaynak cümlesi ve çevirisi normal renkte olmalı. Renk lejantı bulunmalı.
+- HTML'de paragraf/bölüm bağlamı değerlendirilmeli: paragraf işlevi, cümle uyumu/akışı ve kaynak makalenin amacı-yöntemi-örneklemi-sınırlılıkları göz önünde bulundurulmalı.
+- HTML Ek 3'te bağlama daha uygun olabilecek, DOI ve metadata doğrulanmış kaynak adayları, ilgili konum ve uyum gerekçesiyle listelenmeli. Tam metni okunmamış adayların kanıt olmadığı açıkça yazılmalı; öneri yoksa nedeni belirtilmeli.
+- HTML Ek 4'te kaynak başına bu çalışmadaki rol, desteklediği/desteklemediği önerme türleri, sınırlılıklar ve değerlendirme temeli bulunmalı.
 - Son teslimde DOI linkleri `https://doi.org/...`; yerel PDF linki yok.
 - `05_bolum_raporu.html` `chapter-report` kalite kapısından 0 hatayla geçmeli; Ek 1 ve Ek 2 eksiksiz olmalı.
 - Ana rapor çıktısı `03_taslak_denetimi/taslak/` içinde olmalı.
@@ -171,7 +182,9 @@ Teslimden önce:
 - [ ] Her DOI `verify_doi_and_publisher` ile doğrulandı.
 - [ ] Her alıntı `paperqa_read_pages` ile sayfa numarasıyla teyit edildi.
 - [ ] `paperqa_ask` çıktısı hiçbir yerde kanıt olarak kullanılmadı.
-- [ ] HTML'de yalnızca değişen cümleler kırmızı.
+- [ ] HTML'de düzenlenen metin kırmızı, anlamlı MCP eklemeleri mavi/yeşil ve renk lejantı mevcut.
+- [ ] Kaynak listesi ve raporlarda Ek 4 kaynak katkısı/sınır değerlendirmeleri mevcut.
+- [ ] İş akışı 3'te paragraf/makale bağlamı değerlendirmesi ve Ek 3 kaynak önerileri mevcut.
 - [ ] Yerel PDF yolu / `file://` linki yok.
 - [ ] DOI linkleri `https://doi.org/...`.
 - [ ] CSV UTF-8 (BOM'lu) ve başlık satırı doğru.
@@ -185,7 +198,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.4.1; önceki public sürüm v2.4.0'dır.
+- Depo sürümü v2.5.0; önceki public sürüm v2.4.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 19 araç, `paperqa-local` 9 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur

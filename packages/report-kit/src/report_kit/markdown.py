@@ -109,7 +109,9 @@ def _intro(data: dict[str, Any]) -> str:
                     parts.append(_inline(segment))
                     continue
                 text = _inline(segment.get("text", ""))
-                if segment.get("changed"):
+                if segment.get("added_by_mcp"):
+                    parts.append(f"**⟦MCP ekledi: {text}⟧**")
+                elif segment.get("changed"):
                     leading = text[: len(text) - len(text.lstrip())]
                     trailing = text[len(text.rstrip()) :]
                     core = text.strip()
@@ -160,9 +162,26 @@ def _change_cards(cards: list[dict[str, Any]], headings: dict[str, str]) -> str:
             out.extend([f"**Türkçesi:** {_quote(source.get('translation', ''))}", ""])
         if card.get("rewritten_sentence"):
             rewritten_label = _text(card.get("rewritten_label") or "Yeniden yazılan cümle")
+            segments = card.get("rewritten_segments") or []
+            segment_text = "".join(
+                str(segment.get("text", ""))
+                for segment in segments
+                if isinstance(segment, dict)
+            )
+            if segments and segment_text == str(card["rewritten_sentence"]):
+                rewritten = "".join(
+                    f"⟦MCP ekledi: {_inline(segment.get('text', ''))}⟧"
+                    if segment.get("added_by_mcp")
+                    else _inline(segment.get("text", ""))
+                    for segment in segments
+                    if isinstance(segment, dict)
+                )
+                rewritten_quote = _quote(rewritten)
+            else:
+                rewritten_quote = _quote(card["rewritten_sentence"])
             out.extend(
                 [
-                    f"**{_inline(rewritten_label)}:** **{_quote(card['rewritten_sentence'])}**",
+                    f"**{_inline(rewritten_label)}:** **{rewritten_quote}**",
                     "",
                 ]
             )
@@ -177,6 +196,108 @@ def _change_cards(cards: list[dict[str, Any]], headings: dict[str, str]) -> str:
             out.append("")
         out.extend(["---", ""])
     return "\n".join(out).rstrip() + "\n"
+
+
+def _context_review(review: dict[str, Any], headings: dict[str, str]) -> str:
+    out = [f"## {review.get('heading') or headings['context_assessment']}", ""]
+    out.extend([f"**İncelenen kapsam:** {_inline(review.get('scope', ''))}", ""])
+    out.extend([f"**Genel değerlendirme:** {_inline(review.get('overall', ''))}", ""])
+    for index, item in enumerate(review.get("paragraphs") or [], 1):
+        if not isinstance(item, dict):
+            continue
+        out.extend([f"### {_inline(item.get('location') or f'Paragraf {index}')}", ""])
+        if item.get("paragraph_excerpt"):
+            out.extend([f"> {_quote(item['paragraph_excerpt'])}", ""])
+        for key, label in (
+            ("paragraph_function", "Paragrafın işlevi"),
+            ("sentence_fit", "Cümlenin paragrafa uyumu"),
+            ("flow_fit", "Cümleler arası akış"),
+            ("article_fit", "Makale/bölüm bağlamına uyum"),
+            ("recommended_action", "Bağlam için öneri"),
+        ):
+            if item.get(key):
+                out.extend([f"**{label}:** {_inline(item[key])}", ""])
+    return "\n".join(out)
+
+
+def _source_recommendations(
+    items: list[dict[str, Any]], note: str | None, headings: dict[str, str]
+) -> str:
+    out = [f"## {headings['appendix_3']}", ""]
+    out.extend([
+        "_Bunlar bağlama göre önerilen aday kaynaklardır. Ek 2'de sayfa doğrulamalı kanıt olarak değerlendirilmedikçe taslağı desteklediği kabul edilmez._",
+        "",
+    ])
+    if not items:
+        out.extend([_inline(note or "Bu bağlam için doğrulanmış kaynak önerisi bulunamadı."), ""])
+        return "\n".join(out)
+    for index, item in enumerate(items, 1):
+        if not isinstance(item, dict):
+            continue
+        title = _inline(item.get("title") or item.get("citation") or f"Öneri {index}")
+        doi = _text(item.get("doi")).strip()
+        if is_doi(doi):
+            title = f"[{title}]({doi_url(doi)})"
+        out.extend([f"### {index}. {title}", ""])
+        details = " · ".join(
+            part for part in (
+                _inline(item.get("authors") or ""),
+                f"{_inline(item.get('journal'))} ({_inline(item.get('year'))})"
+                if item.get("journal") and item.get("year")
+                else _inline(item.get("journal") or item.get("year") or ""),
+            ) if part
+        )
+        if details:
+            out.extend([details, ""])
+        out.extend([f"**İlgili konum:** {_inline(item.get('related_location', ''))}", ""])
+        if item.get("fit_dimensions"):
+            out.extend([f"**Bağlam eşleşmesi:** {_inline(', '.join(item['fit_dimensions']))}", ""])
+        out.extend([f"**Neden daha uygun olabilir:** {_inline(item.get('fit_reason', ''))}", ""])
+        status = "Tam metni incelendi" if item.get("fulltext_reviewed") else "Aday kaynak; tam metin incelenmedi ve kanıt değildir"
+        out.extend([f"_{status}_", ""])
+    return "\n".join(out)
+
+
+def _source_contributions(items: list[dict[str, Any]], headings: dict[str, str]) -> str:
+    out = [f"## {headings['appendix_4']}", ""]
+    out.extend([
+        "_Her kaynağın bu çalışmadaki olası katkısı ve sınırları ayrı değerlendirilir. "
+        "Özet veya metaveriye dayalı değerlendirme, PDF sayfası doğrulanmış kanıt yerine geçmez._",
+        "",
+    ])
+    for index, item in enumerate(items, 1):
+        if not isinstance(item, dict):
+            continue
+        title = _inline(item.get("citation") or item.get("title") or f"Kaynak {index}")
+        doi = _text(item.get("doi")).strip()
+        if is_doi(doi):
+            title = f"[{title}]({doi_url(doi)})"
+        out.extend([f"### {index}. {title}", ""])
+        if item.get("project_relevance"):
+            out.extend([f"**Bu çalışmadaki rolü:** {_inline(item['project_relevance'])}", ""])
+        for key, label in (
+            ("supports", "Neyi destekliyor"),
+            ("does_not_support", "Neyi desteklemiyor / göstermiyor"),
+            ("limits", "Sınırlar ve dikkat noktaları"),
+        ):
+            values = item.get(key) or []
+            if values:
+                out.append(f"**{label}:**")
+                out.extend(f"- {_inline(value)}" for value in values)
+                out.append("")
+        basis_key = _text(item.get("assessment_basis") or "metadata")
+        basis = {
+            "metadata": "Bibliyografik metaveri",
+            "abstract": "Özet",
+            "fulltext": "Tam metin",
+            "fulltext_pages": "Sayfa numarası doğrulanmış tam metin",
+        }.get(basis_key, basis_key)
+        if item.get("pages"):
+            basis += f" · incelenen sayfa(lar): {_text(item['pages'])}"
+        if basis_key not in {"fulltext", "fulltext_pages"}:
+            basis += " · ön değerlendirme; tam metin kanıtı değildir"
+        out.extend([f"**Değerlendirme dayanağı:** {_inline(basis)}", ""])
+    return "\n".join(out)
 
 
 def _source_table(items: list[dict[str, Any]]) -> str:
@@ -254,7 +375,7 @@ def render_markdown(data: dict[str, Any]) -> str:
     meta_prefix = _text(data.get("meta_prefix") or "Düzeltilmiş taslak")
     meta_note = _text(
         data.get("meta_note")
-        or "Kırmızı zemin: önceki taslağa göre değiştirilen veya eklenen cümleler"
+        or "Kırmızı: yeniden düzenlenen ifade · Mavi/yeşil: MCP'nin eklediği anlamlı ifade"
     )
     meta = f"{meta_prefix} — **{project}** · {meta_note}"
     if data.get("generated_at"):
@@ -274,6 +395,10 @@ def render_markdown(data: dict[str, Any]) -> str:
     intro = _intro(data)
     if intro:
         body.extend([intro, ""])
+
+    context_review = data.get("context_review")
+    if isinstance(context_review, dict):
+        body.extend([_context_review(context_review, headings), ""])
 
     cards = data.get("change_cards") or []
     if cards:
@@ -339,6 +464,19 @@ def render_markdown(data: dict[str, Any]) -> str:
                     line += f" [{doi}]({doi_url(doi)})"
                 body.append(line)
             body.append("")
+
+    if isinstance(data.get("source_recommendations"), list):
+        body.extend([
+            _source_recommendations(
+                data["source_recommendations"],
+                data.get("source_recommendations_note"),
+                headings,
+            ),
+            "",
+        ])
+
+    if isinstance(data.get("source_contributions"), list):
+        body.extend([_source_contributions(data["source_contributions"], headings), ""])
 
     if data.get("footer"):
         body.extend([f"_{_inline(data['footer'])}_", ""])

@@ -8,7 +8,7 @@ bir teslim üretmektir.
 ## Zorunlu yapı
 
 1. **Düzeltilmiş bölüm metni**
-   - Yalnızca değişen/eklenen cümleler kırmızı zeminle işaretlenir.
+   - Yeniden düzenlenen cümleler kırmızı; ilk taslakta bulunmayan anlamlı MCP eklemeleri mavi/yeşil zeminle işaretlenir.
    - Paragrafın tamamı, başlık, kaynakça veya tablo kırmızıya boyanmaz.
    - Kırmızı cümleler, rapor açıklaması değil, paragrafta kullanılabilecek son metin önerisidir. Önceki ve sonraki cümlelerle birlikte okunduğunda doğal akmalı ve paragrafın amacına hizmet etmelidir.
    - Metnin üstünde opsiyonel **kaynak politikası / yöntem notu** kutusu
@@ -19,6 +19,7 @@ bir teslim üretmektir.
      - kaynaktaki orijinal cümle (İngilizce, birebir),
      - Türkçe çeviri,
      - yeniden yazılan cümle (kırmızı),
+     - ilk taslakta bulunmayan anlamlı MCP eklemeleri (mavi/yeşil),
      - “Ne değişti?” ve “Neden?” notu.
    - Her kartta en az bir DOI + sayfa + alıntı bulunur.
    - Kart başlığında `evidence_status` rozeti gösterilir.
@@ -31,10 +32,22 @@ bir teslim üretmektir.
    - Düzeltme özeti.
    - Notlar ve sınırlılıklar.
    - **Sonraki adımlar** (`next_steps`, opsiyonel): yapılacak somut işler.
-4. **Kaynakça (opsiyonel)** — yalnızca `https://doi.org/...` linkleri.
-5. **Markdown eşlik dosyası (opsiyonel)** — aynı veriden üretilen düzenleme
-   katmanı; HTML'deki kırmızı vurgu `**değişen cümle**` olarak temsil edilir.
-6. **Footer (opsiyonel)** — proje, sürüm ve üretim tarihi; yerel yol içermez.
+4. **Bağlam değerlendirmesi (iş akışı 3)** — paragrafın işlevi, iddianın
+   paragraf ve bölüm akışına uyumu ve kaynak makalenin amacı/yöntemi/örneklemi/
+   sınırlılıkları.
+5. **Ek 3 — Bağlama uygun kaynak önerileri (iş akışı 3)** — DOI/metaverisi
+   doğrulanmış adaylar ve hangi iddia/bağlamla neden eşleştiği. Tam metni
+   incelenmeyenler kanıt olarak sunulmaz; öneri yoksa nedeni belirtilir.
+6. **Ek 4 — Bu çalışmada kaynakların katkısı ve sınırları** — kaynak başına
+   bu projedeki rolü, desteklediği ve desteklemediği önerme türleri,
+   sınırlılıklar ve değerlendirme dayanağı. Özet/metaveri değerlendirmesi,
+   sayfa doğrulamalı PDF kanıtı yerine geçmez. İş akışı 1'de aynı alanlar her
+   kaynağın altında gösterilir.
+7. **Kaynakça (opsiyonel)** — yalnızca `https://doi.org/...` linkleri.
+8. **Markdown eşlik dosyası (opsiyonel)** — aynı veriden üretilen düzenleme
+   katmanı; değişen metin kalın, MCP eklemeleri `⟦MCP ekledi: …⟧` olarak
+   gösterilir.
+9. **Footer (opsiyonel)** — proje, sürüm ve üretim tarihi; yerel yol içermez.
 
 ## Kanıt kuralları
 
@@ -84,8 +97,10 @@ gerekir.
 
 - Gövde genişliği `980px`, Georgia serif, 1.65 satır aralığı; başlıklar
   sistem sans-serif fontuyla.
-- Kırmızı: `rgba(255, 0, 0, 0.13)`, yalnızca değişen cümlede; HTML'de semantik
+- Kırmızı: `rgba(255, 0, 0, 0.13)`, yeniden düzenlenen cümlede; HTML'de semantik
   `<mark>` etiketi kullanılır.
+- Mavi/yeşil: ilk taslakta bulunmayan anlamlı MCP eklemeleri, `added_by_mcp`
+  işaretiyle ayrı renkte gösterilir ve renk lejantında açıklanır.
 - Üst bilgi: proje/tarih meta satırı, ardından sayı rozetleri
   (`summary-strip`) ve opsiyonel kaynak politikası kutusu (`notice`).
 - Ek 1 kartları: `.card` sınıfı, ince kenar, `break-inside: avoid`; kaynak

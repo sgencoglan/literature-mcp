@@ -168,6 +168,77 @@ def _validate_cards(cards: Any, result: ValidationResult) -> None:
             "not_found", "out_of_scope",
         }:
             result.add_warning(f"{path}.evidence_status: bilinmeyen durum {status!r}")
+        rewritten_segments = card.get("rewritten_segments")
+        if rewritten_segments is not None:
+            if not isinstance(rewritten_segments, list) or not rewritten_segments:
+                result.add_error(f"{path}.rewritten_segments: boş olmayan dizi olmalı")
+            else:
+                segment_text: list[str] = []
+                for sindex, segment in enumerate(rewritten_segments):
+                    spath = f"{path}.rewritten_segments[{sindex}]"
+                    if not isinstance(segment, dict):
+                        result.add_error(f"{spath}: nesne olmalı")
+                        continue
+                    if not isinstance(segment.get("text"), str) or not segment["text"]:
+                        result.add_error(f"{spath}.text: boş olmayan metin olmalı")
+                    else:
+                        segment_text.append(segment["text"])
+                if "".join(segment_text) != str(card.get("rewritten_sentence") or ""):
+                    result.add_error(
+                        f"{path}.rewritten_segments: birleştirilmiş metin rewritten_sentence ile aynı olmalı"
+                    )
+
+
+def _validate_context_review(review: Any, result: ValidationResult) -> None:
+    if not isinstance(review, dict):
+        result.add_error("$.context_review: nesne olmalı")
+        return
+    _require(review, ["scope", "overall", "paragraphs"], "$.context_review", result)
+    for field in ("scope", "overall"):
+        if not str(review.get(field) or "").strip():
+            result.add_error(f"$.context_review.{field}: boş olmayan metin olmalı")
+    paragraphs = review.get("paragraphs")
+    if not isinstance(paragraphs, list) or not paragraphs:
+        result.add_error("$.context_review.paragraphs: en az bir değerlendirme olmalı")
+        return
+    required = [
+        "location", "paragraph_excerpt", "paragraph_function", "sentence_fit",
+        "flow_fit", "article_fit",
+    ]
+    for index, item in enumerate(paragraphs):
+        path = f"$.context_review.paragraphs[{index}]"
+        if not isinstance(item, dict):
+            result.add_error(f"{path}: nesne olmalı")
+            continue
+        _require(item, required, path, result)
+        for field in required:
+            if not str(item.get(field) or "").strip():
+                result.add_error(f"{path}.{field}: boş olmayan metin olmalı")
+
+
+def _validate_source_recommendations(items: Any, note: Any, result: ValidationResult) -> None:
+    if not isinstance(items, list):
+        result.add_error("$.source_recommendations: dizi olmalı")
+        return
+    if not items and not str(note or "").strip():
+        result.add_error(
+            "$.source_recommendations_note: öneri yoksa bunun nedeni açıklanmalı"
+        )
+    for index, item in enumerate(items):
+        path = f"$.source_recommendations[{index}]"
+        if not isinstance(item, dict):
+            result.add_error(f"{path}: nesne olmalı")
+            continue
+        required = ["title", "doi", "fit_reason", "related_location", "metadata_verified", "fulltext_reviewed"]
+        _require(item, required, path, result)
+        for field in ("title", "fit_reason", "related_location"):
+            if not str(item.get(field) or "").strip():
+                result.add_error(f"{path}.{field}: boş olmayan metin olmalı")
+        _check_doi(item.get("doi"), f"{path}.doi", result)
+        if item.get("metadata_verified") is not True:
+            result.add_error(f"{path}.metadata_verified: yalnızca doğrulanmış DOI/metadata önerilebilir")
+        if not isinstance(item.get("fulltext_reviewed"), bool):
+            result.add_error(f"{path}.fulltext_reviewed: boolean olmalı")
 
 
 def _validate_sources(items: Any, result: ValidationResult) -> None:
@@ -193,6 +264,47 @@ def _validate_sources(items: Any, result: ValidationResult) -> None:
             result.add_error(f"{path}.role: kaynak kullanım rolü zorunlu")
         if not str(item.get("limitation") or "").strip():
             result.add_warning(f"{path}.limitation: sınırlılık boş")
+
+
+def _validate_source_contributions(items: Any, sources: Any, result: ValidationResult) -> None:
+    if not isinstance(items, list) or not items:
+        result.add_error("$.source_contributions: her raporda en az bir kaynak değerlendirmesi olmalı")
+        return
+    audit_dois = {
+        str(source.get("doi") or "").strip().lower()
+        for source in (sources or [])
+        if isinstance(source, dict)
+    }
+    covered: set[str] = set()
+    for index, item in enumerate(items):
+        path = f"$.source_contributions[{index}]"
+        if not isinstance(item, dict):
+            result.add_error(f"{path}: nesne olmalı")
+            continue
+        fields = ["doi", "project_relevance", "supports", "does_not_support", "limits", "assessment_basis"]
+        _require(item, fields, path, result)
+        doi = str(item.get("doi") or "").strip().lower()
+        _check_doi(item.get("doi"), f"{path}.doi", result)
+        if doi not in audit_dois:
+            result.add_error(f"{path}.doi: kaynak envanterinde bulunmalı")
+        if doi in covered:
+            result.add_error(f"{path}.doi: katkı değerlendirmesi tekrarlanmış: {doi}")
+        covered.add(doi)
+        for field in ("project_relevance",):
+            if not str(item.get(field) or "").strip():
+                result.add_error(f"{path}.{field}: boş olmayan metin olmalı")
+        for field in ("supports", "does_not_support", "limits"):
+            values = item.get(field)
+            if not isinstance(values, list) or not values or any(not str(value).strip() for value in values):
+                result.add_error(f"{path}.{field}: boş olmayan metinlerden oluşan dizi olmalı")
+        basis = item.get("assessment_basis")
+        if basis not in {"metadata", "abstract", "fulltext", "fulltext_pages"}:
+            result.add_error(f"{path}.assessment_basis: metadata/abstract/fulltext/fulltext_pages olmalı")
+        if basis == "fulltext_pages" and not str(item.get("pages") or "").strip():
+            result.add_error(f"{path}.pages: sayfa doğrulamalı değerlendirmede sayfa numarası zorunlu")
+    missing = audit_dois - covered
+    for doi in sorted(missing):
+        result.add_error(f"$.source_contributions: kaynak için katkı değerlendirmesi eksik: {doi}")
 
 
 def _validate_claims(items: Any, result: ValidationResult) -> None:
@@ -290,10 +402,21 @@ def validate_data(data: Any, strict: bool = False) -> ValidationResult:
     _validate_intro(data.get("intro"), result)
     _validate_cards(data.get("change_cards"), result)
     _validate_sources(data.get("source_audit"), result)
+    _validate_source_contributions(data.get("source_contributions"), data.get("source_audit"), result)
     _validate_claims(data.get("claim_matrix"), result)
     _validate_notice(data.get("notice"), result)
     _validate_next_steps(data.get("next_steps"), result)
     _validate_references(data.get("references"), result)
+    if "context_review" in data:
+        _validate_context_review(data.get("context_review"), result)
+        if "source_recommendations" not in data:
+            result.add_error(
+                "$.source_recommendations: context_review varsa Ek 3 için dizi zorunlu (öneri yoksa boş dizi verin)"
+            )
+    if "source_recommendations" in data:
+        _validate_source_recommendations(
+            data.get("source_recommendations"), data.get("source_recommendations_note"), result
+        )
     _check_local_paths(data, result)
 
     # Every card source must be present in the audited source inventory. This

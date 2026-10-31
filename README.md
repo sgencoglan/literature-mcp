@@ -4,7 +4,7 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.4.1. Son public sürüm v2.4.0. Depoda PDF, indeks,
+> **Sürüm:** v2.5.0. Son public sürüm v2.4.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
@@ -28,7 +28,8 @@ taslağı denetleme” seçeneklerini sor → seçilen akışın girdilerini iş
 3. **Mevcut taslağı denetleme:** kullanıcının `03_taslak_denetimi/taslak/` içine
    koyduğu taslak ve `03_taslak_denetimi/fulltext/` içindeki tam metin PDF'leri →
    iddia–kanıt eşleştirmesi →
-   cümle bazlı düzeltme kartları → kaynak denetimi + iddia–kanıt matrisi →
+   paragraf/makale bağlamı değerlendirmesi → cümle bazlı düzeltme kartları →
+   kaynak denetimi + iddia–kanıt matrisi + Ek 3 kaynak önerileri + Ek 4 kaynak katkısı/sınırları →
    `03_taslak_denetimi/taslak/` içine altın standart HTML raporu.
 
 Temel ilke: **LLM çıktısı kanıt değildir.** Kanıt, PDF sayfasından okunan
@@ -40,7 +41,8 @@ birebir cümle ve doğrulanmış DOI'dir. `paperqa_ask` yalnızca taslak/özet
 `chapter-report`, beğenilen b1 raporunun tasarımını ve kanıt disiplinini
 yeniden üretilebilir hâle getirir:
 
-- düzeltilmiş bölüm metni; yalnızca değişen cümlelerde kırmızı zemin,
+- düzeltilmiş bölüm metni; yeniden düzenlenen cümlelerde kırmızı, ilk taslakta olmayan anlamlı MCP eklemelerinde mavi/yeşil zemin,
+- paragraf ve makale bağlamı değerlendirmesi; Ek 3'te DOI/metaverisi doğrulanmış kaynak adayları, Ek 4'te kaynak katkısı ve sınırları,
 - **Ek 1:** yazar cümlesi → kaynak cümlesi (İngilizce) → Türkçe çeviri →
   yeniden yazılan cümle → “ne değişti / neden” notu,
 - **Ek 2:** DOI ve Q bilgili kaynak envanteri, sayfa doğrulamalı iddia–kanıt

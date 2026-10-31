@@ -105,7 +105,12 @@ Kurallar:
       "oa_pdf_url": null,
       "priority": "A",
       "access": "Kurum erişimi",
-      "rationale": "Doğrudan bölüm konusunu ölçen boylamsal çalışma."
+      "rationale": "Doğrudan bölüm konusunu ölçen boylamsal çalışma.",
+      "project_relevance": "Bölümdeki zaman içindeki değişim tartışmasına aday.",
+      "supports": ["Özet veya tam metin doğrulanırsa belirli zaman içi ilişkileri destekleyebilir."],
+      "does_not_support": ["Başlık ve metaveri tek başına etkinin yönünü veya nedenselliği göstermez."],
+      "limits": ["Örneklem, ölçüm aralığı ve sonuçlar tam metin incelemesine kadar doğrulanmamıştır."],
+      "assessment_basis": "metadata"
     }
   ]
 }
@@ -126,6 +131,9 @@ python3 scripts/build_fulltext_list.py \
 
 - Tek dosya, çevrimdışı açılır, yazdırılabilir.
 - Tıklanabilir `https://doi.org/...` ve yayıncı linkleri.
+- Her adayda bu çalışmadaki olası rol, destekleyebileceği/destekleyemeyeceği
+  sonuçlar ve sınırlılıklar. Özet veya tam metin görülmediyse HTML bunu ön
+  değerlendirme olarak belirtir; makale bulgusu gibi sunmaz.
 - Açık erişim PDF linki varsa ayrı gösterilir.
 - Her satırda yazdırılabilir "indirildi" kutusu; durum tarayıcıda saklanır.
 - Yerel PDF yolu içermez.
@@ -197,6 +205,11 @@ iddianın sayfa doğrulamalı kaynak cümlesi ve bağlama uygun özgün anlatım
 `claim_matrix` ise iddia–kanıt tablosunu taşır. Kaynak denetim özetini
 `source_audit` alanına ekleyin. Böylece aynı HTML `chapter-report` şablonu
 üçüncü iş akışındaki Ek 1 ve iddia–kanıt matrisini içerir.
+Her `source_audit` kaynağı için ayrıca `source_contributions` kaydı hazırlayın:
+bu projedeki rol, desteklediği ve desteklemediği önermeler, sınırlılıklar ve
+değerlendirme dayanağı (`abstract`, `fulltext` veya `fulltext_pages`). Sayfa
+doğrulanmamış değerlendirmeler PDF kanıtı gibi sunulmaz; HTML'de Ek 4 olarak
+gösterilir.
 
 Yeni taslakta her `change_cards` kaydı bir taslak iddiasını temsil eder:
 `author_sentence` ilk taslak iddiası, `sources` PDF sayfasındaki kısa özgün
@@ -216,7 +229,8 @@ chapter-report build <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.jso
   --markdown <proje-kökü>/02_bolum_taslagi/taslak/02_bolum_taslagi.md
 ```
 
-İkinci akışın ana teslimi HTML'dir; bölüm metni, Ek 1 ve Ek 2 matrisi birlikte
+İkinci akışın ana teslimi HTML'dir; bölüm metni, Ek 1, Ek 2 matrisi ve Ek 4
+kaynak katkısı/sınır değerlendirmeleri birlikte
 bulunur. Markdown aynı içeriğin düzenlenebilir sürümüdür.
 
 DOI bağlantıları raporda `https://doi.org/...` biçimindedir; yerel PDF yolu
@@ -248,6 +262,12 @@ library_status(project="<workflow_project_names.audit>")
 Proje adı, PDF klasörü ve indeks uyuşmuyorsa durun; kullanıcıya sorun.
 
 ### Adım 2: Taslağı cümlelere ayır
+
+Her iddiayı değerlendirirken yalnızca tek cümleyi değil, içinde bulunduğu
+paragrafı ve taslağın ilgili bölümünü de okuyun. Paragrafın amacını, önceki ve
+sonraki cümlelerle geçişi, bölümün ana savıyla ilişkisini; kaynağın amacı,
+yöntemi, örneklemi, bulguları ve sınırlılıklarıyla birlikte değerlendirin.
+Bu incelemeyi rapor JSON'undaki `context_review` alanına yazın.
 
 Her cümleyi/iddiayı ayrı kaydedin:
 
@@ -324,9 +344,26 @@ Kurallar:
 - `rewritten_sentence` paragraf içinde doğrudan kullanılabilir, doğal ve konuyla ilgili bir cümle olmalıdır. “Kaynak bunu göstermiyor” veya “bu iddia desteklenmiyor” gibi denetçi açıklamalarını ana metne koymayın; bunları `note` alanında ve iddia–kanıt matrisinde belirtin.
 - İddianın bir bölümü destekleniyorsa desteklenen anlamı koruyarak yeniden kurun. İddianın çekirdeği kanıtsızsa ana metinden çıkarın veya aynı paragraf amacına hizmet eden, kaynakla destekli bir önerme kullanın; destek boşluğunu yapay bir geçiş cümlesiyle doldurmayın.
 - Kartı tamamlamadan önce önerilen cümleyi paragrafın tamamında okuyun. Bağlaçların, zamirlerin ve atıfların akışa uyduğunu; cümlenin paragrafın işlevine katkı verdiğini kontrol edin.
-- HTML'de yalnızca `rewritten_sentence` kırmızı; kaynak cümlesi ve çevirisi normal renktedir.
+- `rewritten_segments` ile cümleyi metin parçalarına ayırın. Yeniden düzenlenen parçaları kırmızı; MCP'nin ilk taslakta bulunmayan, anlam taşıyan eklemelerini `added_by_mcp=true` ile mavi/yeşil gösterin. Sırf dilbilgisi için kullanılan bağlaçları veya eş anlamlı yeniden yazımı “yeni bilgi” gibi işaretlemeyin. Parçaların birleştirilmiş metni `rewritten_sentence` ile birebir aynı olmalı.
+- Düzeltilmiş tam metnin `intro.paragraphs[].segments` alanında da cümle düzeyindeki `changed` işaretini, yeni anlam taşıyan kısımlarda `added_by_mcp` işaretiyle birlikte kullanın. HTML lejantında iki rengin anlamını belirtin.
 
-### Adım 6: Ek 2 kaynak denetimi
+### Adım 6: Bağlamı değerlendir ve Ek 3 kaynaklarını öner
+
+`context_review` alanında incelenen bölüm kapsamını ve genel değerlendirmeyi
+yazın. Her paragraf için konum, paragraf alıntısı, paragrafın işlevi, düzeltilen
+cümleyle uyumu, cümleler arası akış ve makale/bölümün genel savıyla uyumu
+belirtin. Kaynağın araştırma amacı, yöntemi, örneklemi ve sınırlılıklarının
+iddia yorumunu nasıl etkilediğini de değerlendirin.
+
+Paragraf amacı veya bölüm bağlamı için mevcut kaynaklardan daha uygun kaynak
+adayları bulun. DOI ve bibliyografik metadatayı doğrulayın; her öneride hangi
+iddia/konum için neden daha iyi eşleştiğini yazın. Bunları `source_recommendations`
+alanına ekleyin; HTML'de Ek 3 olarak sunulur. Tam metni henüz incelenmemiş
+adayları açıkça işaretleyin; önerilen kaynakları Ek 2'deki doğrulanmış kanıt
+gibi göstermeyin. Uygun aday yoksa boş dizi verip `source_recommendations_note`
+alanında bunu açıklayın.
+
+### Adım 7: Ek 2 kaynak denetimi
 
 Her kaynak için:
 
@@ -336,7 +373,13 @@ Her kaynak için:
 - Kullanım kararı: çekirdek / destek / bağlam / dışla
 - Sınırlılık notu
 
-### Adım 7: İddia–kanıt matrisi
+Her kaynak DOI'si için `source_contributions` alanında bu çalışmadaki rolünü,
+desteklediği/desteklemediği önerme türlerini, sınırlılıklarını ve değerlendirmenin
+hangi temele (`fulltext_pages` tercih edilir) dayandığını yazın. Bu kayıtlar HTML
+raporunda **Ek 4** olur; tam metin sayfası doğrulaması olmayan değerlendirmeler
+ön analiz olarak etiketlenir.
+
+### Adım 8: İddia–kanıt matrisi
 
 Her iddia için `schemas/claim-evidence.schema.json` uyumlu satır:
 
@@ -347,7 +390,7 @@ Her iddia için `schemas/claim-evidence.schema.json` uyumlu satır:
 - `strength` (`strong`, `moderate`, `weak`)
 - `decision` (`keep`, `revise`, `delete`, `add_source`)
 
-### Adım 8: Rapor ve teslim
+### Adım 9: Rapor ve teslim
 
 ```text
 export_review(
@@ -363,7 +406,7 @@ export_review(format="csv", filename="03_iddia_kanit_matrisi.csv")
 export_review(format="json", filename="02_degisiklik_kartlari.json")
 ```
 
-Ardından insan için altın standart HTML: düzeltilmiş metin, Ek 1 değişiklik kartları, Ek 2 kaynak denetimi + iddia–kanıt matrisi, düzeltme özeti ve sınırlılıklar. DOI linkleri `https://doi.org/...`.
+Ardından insan için altın standart HTML: düzeltilmiş metin, paragraf/makale bağlamı değerlendirmesi, Ek 1 değişiklik kartları, Ek 2 kaynak denetimi + iddia–kanıt matrisi, Ek 3 bağlama uygun kaynak önerileri ve Ek 4 kaynak katkısı/sınır değerlendirmeleri; ayrıca düzeltme özeti ve sınırlılıklar. DOI linkleri `https://doi.org/...`.
 
 ```bash
 chapter-report build <proje-kökü>/03_taslak_denetimi/taslak/rapor.json --check

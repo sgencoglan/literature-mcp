@@ -20,7 +20,18 @@
       "oa_pdf_url": "https://example.org/oa/example-0001.pdf",
       "priority": "A",
       "access": "Açık erişim",
-      "rationale": "Uzaktan çalışma ile refah arasındaki ilişkiyi doğrudan sentezliyor."
+      "rationale": "Uzaktan çalışma ile refah arasındaki ilişkiyi doğrudan sentezliyor.",
+      "project_relevance": "Bu çalışmada uzaktan çalışma ve çalışan refahı arasındaki ilişkiye odaklanan temel aday kaynak.",
+      "supports": [
+        "Başlık ve arama kapsamı bakımından refah ilişkilerini inceleyen kaynak olarak değerlendirilebilir."
+      ],
+      "does_not_support": [
+        "Yalnızca bu bibliyografik kayıttan herhangi bir etki yönü, nedensellik veya alt grup sonucu çıkarılamaz."
+      ],
+      "limits": [
+        "Yöntem, örneklem, ölçümler ve sonuçlar tam metin/özet incelenmeden doğrulanmış değildir."
+      ],
+      "assessment_basis": "metadata"
     },
     {
       "doi": "10.5555/example.2025.002",
@@ -36,7 +47,18 @@
       "oa_pdf_url": null,
       "priority": "A",
       "access": "Kurum erişimi",
-      "rationale": "Hibrit düzenlerde zaman içindeki değişimi boylamsal veriyle gösteriyor."
+      "rationale": "Hibrit düzenlerde zaman içindeki değişimi boylamsal veriyle gösteriyor.",
+      "project_relevance": "Hibrit çalışma ve iş–yaşam dengesi konusunda zaman içindeki değişim için aday kaynak.",
+      "supports": [
+        "Boylamsal çalışma türü bilgisi doğrulanırsa zaman boyutlu iş–yaşam dengesi tartışmasına katkı sağlayabilir."
+      ],
+      "does_not_support": [
+        "Başlık tek başına hibrit çalışmanın dengeyi iyileştirdiğini veya bozduğunu kanıtlamaz."
+      ],
+      "limits": [
+        "Örneklem, ölçüm aralığı ve nedensel sınırlılıklar henüz incelenmedi."
+      ],
+      "assessment_basis": "metadata"
     },
     {
       "doi": "10.5555/example.2024.003",
@@ -52,7 +74,18 @@
       "oa_pdf_url": null,
       "priority": "B",
       "access": "Kurum erişimi",
-      "rationale": "Sınır yönetimi mekanizması için nitel bağlam sağlıyor."
+      "rationale": "Sınır yönetimi mekanizması için nitel bağlam sağlıyor.",
+      "project_relevance": "Uzaktan çalışma, sınır yönetimi ve tükenmişlik arasındaki olası mekanizmayı incelemek için aday kaynak.",
+      "supports": [
+        "Sınır yönetimi temasının tükenmişlik tartışmasıyla bağlantısını kurmaya yardımcı olabilir."
+      ],
+      "does_not_support": [
+        "Bu kayıt, mekanizmanın yönünü veya tüm çalışanlarda geçerli olduğunu göstermiyor."
+      ],
+      "limits": [
+        "Nitel/tam metin bulguları ve örneklem kapsamı doğrulanmalı."
+      ],
+      "assessment_basis": "metadata"
     },
     {
       "doi": "10.5555/example.2023.004",
@@ -68,7 +101,18 @@
       "oa_pdf_url": "https://example.org/oa/example-0004.pdf",
       "priority": "C",
       "access": "Açık erişim",
-      "rationale": "Kavramsal çerçeve; doğrudan veri değil, bağlam ve tanım desteği."
+      "rationale": "Kavramsal çerçeve; doğrudan veri değil, bağlam ve tanım desteği.",
+      "project_relevance": "Örgütsel destek kavramını tanımlamak ve bölümün kavramsal çerçevesine bağlamak için aday kaynak.",
+      "supports": [
+        "Kavramsal tanım ve örgütsel destek çerçevesi sunabilir."
+      ],
+      "does_not_support": [
+        "Ampirik etki büyüklüğü veya doğrudan müdahale sonucu kanıtı olarak kullanılamaz."
+      ],
+      "limits": [
+        "Kaydın kapsamı ve kavramsal yaklaşımı tam metinden kontrol edilmeli."
+      ],
+      "assessment_basis": "metadata"
     }
   ]
 }
