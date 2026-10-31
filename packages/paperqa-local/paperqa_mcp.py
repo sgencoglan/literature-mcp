@@ -1235,6 +1235,8 @@ async def paperqa_create_workspace(
 
     Var olan dosyaları silmez veya taşımaz. Akış 2 ve 3 için PDF klasörlerini,
     workflow'a göre ayrılmış manifestler ve indeksler için iç klasörleri açar.
+    Birden çok araştırma başlığı için akış 1 listeleri aynı 01_kaynak_kesfi
+    klasöründe tutulur ve 00_kaynak_listeleri.html giriş sayfasında gösterilir.
     """
     root = Path(project_directory).expanduser().resolve()
     name = (name or "").strip()
@@ -1284,6 +1286,13 @@ async def paperqa_create_workspace(
             "1_source_discovery": str(paths["source_discovery"]),
             "2_draft": str(paths["draft"]),
             "3_draft_audit": str(paths["draft_audit"]),
+        },
+        "source_discovery_outputs": {
+            "directory": str(paths["source_discovery"]),
+            "landing_html": str(paths["source_discovery"] / "00_kaynak_listeleri.html"),
+            "single_study_html": str(paths["source_discovery"] / "01_fulltext_listesi.html"),
+            "multiple_study_filename_pattern": "<sira>_<arastirma-kisa-adi>_fulltext_listesi.{json,html}",
+            "rule": "Birden çok seçilmiş araştırmanın tüm listelerini bu klasöre yaz; ayrı araştırma kök klasörleri oluşturma.",
         },
         "fulltext_directories": {
             "draft": str(paths["draft_fulltext"]),

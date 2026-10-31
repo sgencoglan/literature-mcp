@@ -115,7 +115,8 @@ Soru/kapsam
    │
    ├─ aday JSON (schemas/fulltext-list.schema.json)
    │      └─ scripts/build_fulltext_list.py
-   │             └─ 01_kaynak_kesfi/01_fulltext_listesi.html (insan)
+   │             ├─ 01_kaynak_kesfi/00_kaynak_listeleri.html (çoklu liste giriş sayfası)
+   │             └─ 01_kaynak_kesfi/<araştırma>_fulltext_listesi.html (insan)
 ```
 
 ### İş akışı 2 — PDF'lerden kanıta dayalı taslak

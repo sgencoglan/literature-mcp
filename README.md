@@ -280,7 +280,8 @@ Konu/kapsam
   → verify_doi_and_publisher + doi_provenance + journal_rank
   → aday JSON (schemas/fulltext-list.schema.json)
   → scripts/build_fulltext_list.py
-  → <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.html
+  → <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.html (tek araştırma)
+  → <proje-kökü>/01_kaynak_kesfi/00_kaynak_listeleri.html (birden çok araştırma)
 ```
 
 ## İş akışı 2 — PDF'lerden kanıta dayalı taslak
@@ -330,8 +331,11 @@ Ana ve ek çıktılar ilgili iş akışı klasöründedir. Manifest ve indeks pr
 kökündeki `.literature-mcp/` klasörüne yazılır:
 
 ```text
-01_kaynak_kesfi/01_fulltext_listesi.html
+01_kaynak_kesfi/00_kaynak_listeleri.html
+01_kaynak_kesfi/01_fulltext_listesi.html (tek araştırma)
 01_kaynak_kesfi/01_fulltext_listesi.json
+01_kaynak_kesfi/01_<arastirma-kisa-adi>_fulltext_listesi.html (çoklu araştırma)
+01_kaynak_kesfi/01_<arastirma-kisa-adi>_fulltext_listesi.json
 02_bolum_taslagi/taslak/02_bolum_taslagi.json
 02_bolum_taslagi/taslak/02_bolum_taslagi.html
 02_bolum_taslagi/taslak/02_bolum_taslagi.md

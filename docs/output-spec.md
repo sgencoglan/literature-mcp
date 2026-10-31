@@ -7,7 +7,7 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 - **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile 00–03 akış klasörlerini açın.
 - **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 0, 1, 2 veya 3 seçmesini isteyin; seçimden önce arama veya PDF işleme yapmayın.
 - **Akış klasörleri:** `00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/`. Her çıktıyı ilgili klasöre yazın. PDF'ler akış 2 ve 3 için ilgili klasörün `fulltext/` altına konur.
-- **Ana dosyalar:** İş akışı 0 `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` ve JSON öneri raporu; iş akışı 1 `01_kaynak_kesfi/01_fulltext_listesi.html` ve her kaynak için katkı/sınır değerlendirmesi; iş akışı 2 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren chapter-report HTML/Markdown; iş akışı 3 bağlam değerlendirmesi + Ek 1 + Ek 2 + Ek 3 + Ek 4 içeren `05_bolum_raporu.html` üretir.
+- **Ana dosyalar:** İş akışı 0 `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` ve JSON öneri raporu; iş akışı 1 tek araştırmada `01_fulltext_listesi.html`, birden çok araştırmada her araştırmaya özel adlandırılmış liste HTML'leri ve tümüne bağlantı veren `00_kaynak_listeleri.html` üretir. Her kaynak için katkı/sınır değerlendirmesi bulunur. İş akışı 2 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren chapter-report HTML/Markdown; iş akışı 3 bağlam değerlendirmesi + Ek 1 + Ek 2 + Ek 3 + Ek 4 içeren `05_bolum_raporu.html` üretir.
 - **PaperQA kaynakları:** `output_directory` proje köküdür. Akış 2 PDF'leri `02_bolum_taslagi/fulltext/`, akış 3 PDF'leri `03_taslak_denetimi/fulltext/` altındadır. Her akış ayrı proje adı, manifest ve indeks kullanır; bunlar `<proje-kökü>/.literature-mcp/` altında tutulur.
 
 - **Dil:** Teslim Türkçedir. İngilizce kaynak cümlesi özgün hâliyle verilir; Türkçesi ayrı alanda bulunur.
@@ -36,8 +36,9 @@ kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 | `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` | HTML | İnsan | Önerileri ve OpenAlex/PubMed/Europe PMC/Crossref tarama kapsamını gösteren çevrimdışı rapor |
 | `00_konu_basligi_kesfi/01_yontem_tasarimi.json` | JSON | Ajan | Kullanıcının seçtiği başlık için varsayımları açık yöntem/tasarım önerisi, örneklem, ölçüm, analiz ve etik plan |
 | `00_konu_basligi_kesfi/01_yontem_tasarimi.html` | HTML | İnsan | Aynı tasarımın karar noktaları ve sınırlılıklarını gösteren çevrimdışı rapor |
-| `01_kaynak_kesfi/01_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları ve her kaynak için katkı/sınır analizi |
-| `01_kaynak_kesfi/01_fulltext_listesi.json` | JSON | Ajan | Aynı verinin şemalı hâli |
+| `01_kaynak_kesfi/00_kaynak_listeleri.html` | HTML | İnsan | Aynı klasördeki bir veya daha fazla araştırma kaynak listesine giriş sayfası |
+| `01_kaynak_kesfi/01_fulltext_listesi.html` veya `<sira>_<arastirma-kisa-adi>_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları ve her kaynak için katkı/sınır analizi |
+| `01_kaynak_kesfi/01_fulltext_listesi.json` veya `<sira>_<arastirma-kisa-adi>_fulltext_listesi.json` | JSON | Ajan | İlgili HTML listesinin şemalı verisi |
 | `02_bolum_taslagi/taslak/02_bolum_taslagi.json` | JSON | Ajan | Bölüm metni, Ek 1, Ek 2 ve Ek 4 için chapter-report girdisi |
 | `02_bolum_taslagi/taslak/02_bolum_taslagi.md` | Markdown | İnsan + ajan | Taslak + kanıt eklerinin düzenlenebilir sürümü |
 | `02_bolum_taslagi/taslak/02_bolum_taslagi.html` | HTML | İnsan | Bölüm metni + Ek 1 + iddia–kanıt matrisi + Ek 4 |
@@ -52,7 +53,7 @@ kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 | `03_taslak_denetimi/taslak/05_bolum_raporu.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
 | `03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
-Proje adı önek olarak eklenebilir: `<proje-adi>_01_fulltext_listesi.html`. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
+Birden çok araştırmanın listeleri aynı `01_kaynak_kesfi/` klasöründe tutulur; ayrı araştırma kök klasörlerine dağıtılmaz. Her dosya adı sıra numarası ve araştırma kısa adını içerir. `scripts/build_fulltext_index.py` tüm liste çiftlerinden `00_kaynak_listeleri.html` üretir. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
 
 ## 00 — Konu ve başlık keşfi
 

@@ -91,8 +91,14 @@ akış 1'in arama çerçevesine aktarılabilir.
 ## İş akışı 1 — Kaynak keşfi ve PDF listesi
 
 Başlamadan önce kullanıcıdan proje klasörünün tam yolunu alın. Bu yol olmadan
-dosya oluşturmayın. Aday JSON'u ve `01_fulltext_listesi.html` dosyasını aynı
-projenin `01_kaynak_kesfi/` klasörüne yazın. İlk adımda
+dosya oluşturmayın. Birden çok araştırma seçilmişse her kaynak listesi JSON ve
+HTML çiftini aynı proje kökündeki `01_kaynak_kesfi/` klasörüne
+`<sira>_<arastirma-kisa-adi>_fulltext_listesi.{json,html}` adıyla yazın; her
+araştırma için ayrı proje kökü açmayın. Tek araştırmada
+`01_fulltext_listesi.{json,html}` adları kullanılabilir. Tüm listelerden sonra
+`scripts/build_fulltext_index.py <proje-kökü>/01_kaynak_kesfi` komutuyla
+`00_kaynak_listeleri.html` giriş sayfasını oluşturup kullanıcıya gösterin.
+İlk adımda
 `paperqa_create_workspace(project_directory=...)` çağrısı yaparak proje
 yeni projede 00–03 iş akışı klasörlerini oluşturun. Proje adı klasör adından alınır;
 gerekirse `name` ile açıkça verilebilir. Sonra kullanıcıya 0–3 arasından hangi akışı
@@ -209,8 +215,10 @@ Kurallar:
 ```bash
 cd <repo>
 python3 scripts/build_fulltext_list.py \
-  <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.json \
-  -o <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.html
+  <proje-kökü>/01_kaynak_kesfi/<sira>_<arastirma-kisa-adi>_fulltext_listesi.json \
+  -o <proje-kökü>/01_kaynak_kesfi/<sira>_<arastirma-kisa-adi>_fulltext_listesi.html
+
+python3 scripts/build_fulltext_index.py <proje-kökü>/01_kaynak_kesfi
 ```
 
 Çıktı:

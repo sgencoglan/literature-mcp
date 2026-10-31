@@ -25,8 +25,9 @@ Her yeni proje kullanıcı proje kökünü verince başlar; `paperqa_create_work
 5. `verify_doi_and_publisher`, `doi_provenance`, `journal_rank` ile DOI'yi, yayıncıyı ve quartile'ı doğrula.
 6. Her aday için projedeki olası katkıyı, destekleyebileceği ve destekleyemeyeceği sonuçları, sınırlılıkları ve değerlendirme temelini (metadata/abstract/fulltext/fulltext_pages) belirt. Tam metin veya sayfa görülmediyse bunu ön değerlendirme olarak sun.
 7. Adayları `schemas/fulltext-list.schema.json` biçiminde JSON'a yaz.
-8. Aday JSON'u `01_kaynak_kesfi/` içine yaz; `scripts/build_fulltext_list.py` ile `01_kaynak_kesfi/01_fulltext_listesi.html` üret.
-9. Kaynak başına katkı ve sınır değerlendirmelerinin HTML'de göründüğünü kontrol et. Bu iş akışı burada tamamlanır.
+8. Birden çok seçilmiş araştırma varsa her araştırmanın JSON ve HTML kaynak listesini proje kökündeki aynı `01_kaynak_kesfi/` klasörüne `<sira>_<arastirma-kisa-adi>_fulltext_listesi.json/html` adıyla yaz. Ayrı araştırma proje kökleri oluşturma. Tek araştırmada `01_fulltext_listesi.json/html` adını kullan.
+9. Her listenin HTML'ini `scripts/build_fulltext_list.py` ile üret. Ardından `scripts/build_fulltext_index.py <proje-kökü>/01_kaynak_kesfi` çalıştır ve kullanıcıya açması için `00_kaynak_listeleri.html` dosyasını göster. Bu giriş sayfası aynı klasördeki tüm araştırma listelerine bağlantı verir.
+10. Kaynak başına katkı ve sınır değerlendirmelerinin HTML'de göründüğünü kontrol et. Bu iş akışı burada tamamlanır.
 
 ### İş akışı 2 — PDF'lerden kanıta dayalı taslak
 
@@ -171,8 +172,11 @@ Proje `output_directory` altında:
 00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
 00_konu_basligi_kesfi/01_yontem_tasarimi.json
 00_konu_basligi_kesfi/01_yontem_tasarimi.html
-01_kaynak_kesfi/01_fulltext_listesi.html
+01_kaynak_kesfi/00_kaynak_listeleri.html
+01_kaynak_kesfi/01_fulltext_listesi.html  (tek araştırma)
 01_kaynak_kesfi/01_fulltext_listesi.json
+01_kaynak_kesfi/01_<arastirma-kisa-adi>_fulltext_listesi.html  (çoklu araştırma)
+01_kaynak_kesfi/01_<arastirma-kisa-adi>_fulltext_listesi.json
 02_bolum_taslagi/taslak/02_bolum_taslagi.json
 02_bolum_taslagi/taslak/02_bolum_taslagi.md
 02_bolum_taslagi/taslak/02_bolum_taslagi.html
@@ -187,7 +191,7 @@ Proje `output_directory` altında:
 03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json
 ```
 
-Proje adı dosya adına eklenmek istenirse başta verilir: `<proje-adi>_01_fulltext_listesi.html`. Aynı ada sahip eski dosya varsa üzerine yazmadan önce kullanıcıya sor.
+Birden çok araştırmanın listeleri aynı `01_kaynak_kesfi/` klasöründe tutulur; ayrı araştırma kök klasörlerine dağıtılmaz. Her dosya adı sıra numarası ve araştırma kısa adını içerir. `00_kaynak_listeleri.html` tüm listelere giriş sayfasıdır. Aynı ada sahip eski dosya varsa üzerine yazmadan önce kullanıcıya sor.
 
 ## 9. Doğrulama kontrol listesi
 
@@ -241,6 +245,9 @@ bash scripts/validate_all.sh
 python3 scripts/build_fulltext_list.py \
   <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.json \
   -o <proje-kökü>/01_kaynak_kesfi/01_fulltext_listesi.html
+
+# Bir veya daha fazla kaynak listesi için giriş sayfası
+python3 scripts/build_fulltext_index.py <proje-kökü>/01_kaynak_kesfi
 
 # Altın standart rapor: doğrula + üret + temizlik seçeneği
 .venv/bin/chapter-report build <proje-kökü>/03_taslak_denetimi/taslak/rapor.json --check
