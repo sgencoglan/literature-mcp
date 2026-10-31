@@ -10,7 +10,7 @@ _Düzeltilmiş taslak — **ornek-uzaktan-calisma** · Kırmızı zemin: önceki
 
 Uzaktan çalışma, çalışanların iş ile günlük yaşam arasındaki sınırları yeniden kurmasını gerektirir. **Bu düzenin refah üzerindeki etkisi tek yönlü değildir; özerklik ve esneklik artışı ile dijital erişilebilirlik ve izolasyon aynı süreçte ortaya çıkabilir (Demir, 2024).**
 
-**Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.** **Bununla birlikte sınır yönetimi becerileri, iş–aile çatışması ve tükenme arasındaki ilişkiyi anlamak için daha güvenilir bir çerçeve sunar (Kaya & Yılmaz, 2023).**
+**İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya & Yılmaz, 2023).**
 
 Bu bölümün amacı, uzaktan çalışma düzenlerinde çalışan refahını destekleyen koşulları tartışmak ve yöneticilere uygulanabilir bir çerçeve sunmaktır. **Yönetici desteğinin tükenme üzerindeki rolü, bireysel dayanıklılık kadar örgütsel tasarımın da dikkate alınması gerektiğini göstermektedir (Arslan vd., 2025).**
 
@@ -48,13 +48,13 @@ Kırmızı ile işaretlenen her değişiklik için sırasıyla yazarın taslakta
 
 **Türkçesi:** “Sınır yönetimi, iş–aile çatışmasındaki ek varyansı açıklamış; ancak işten ayrılma niyeti modelde sonuç değişkeni olarak yer almamıştır.”
 
-**Yeniden yazılan cümle:** **“Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.”**
+**Yeniden yazılan cümle:** **“İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya & Yılmaz, 2023).”**
 
 **Düzeltme notu — 1. cümle**
 
-**Ne değişti:** Doğrudan nedensellik iddiası kaldırıldı; kaynağın ölçmediği sonuç için temkinli bir ifade kullanıldı.
+**Ne değişti:** İşten ayrılma niyeti iddiası çıkarıldı; paragraf, kaynağın gerçekten incelediği iş–aile çatışması ve sınır yönetimi ilişkisine yöneltildi.
 
-**Neden:** Kaynakta işten ayrılma niyeti ölçülmemiş. Sınır yönetimi bulgusu farklı bir sonuç değişkenine ait.
+**Neden:** Kaynak işten ayrılma niyetini ölçmemiş, ancak sınır yönetiminin iş–aile çatışmasını açıklamadaki katkısını bildirmiştir. Kanıt boşluğu ana metne taşınmadı; gerekçe bu notta açıklandı.
 
 ---
 

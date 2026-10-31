@@ -53,7 +53,7 @@
     "rewritten_sentence": {
       "type": "string",
       "minLength": 1,
-      "description": "Kanıta uygun yeniden yazım; HTML'de kırmızı."
+      "description": "Kanıta uygun, paragraf bağlamında doğal ve doğrudan kullanılabilir yeniden yazım; kanıt sınırlılığı açıklaması note alanına yazılır. HTML'de kırmızı."
     },
     "note": {
       "type": "string",

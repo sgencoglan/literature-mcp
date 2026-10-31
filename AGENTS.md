@@ -94,6 +94,9 @@ Bu dosya, bu projede çalışan yapay zekâ ajanları için **bağlayıcı** kur
 - `source_sentence` birebir PDF'ten alınmış olmalı; sayfa numarası verilmeli.
 - `source_translation` kaynak cümlesinin Türkçesi olmalı; yorum katılmamalı.
 - `rewritten_sentence` yalnızca kanıtın desteklediği kadarını söylemeli; abartıyı kaldırmalı.
+- `rewritten_sentence`, bölüm paragrafına doğrudan alınabilecek doğal ve bağlama uygun bir cümle olmalı. “Kaynaklar bunu göstermiyor”, “kanıt bulunamadı” gibi denetim açıklamaları ana metne değil `note`, iddia–kanıt matrisi veya sınırlılıklara yazılır.
+- İddianın tamamı desteklenmiyorsa yalnızca desteklenen kısmı, paragrafın anlamlı akışını koruyarak yeniden kur. Desteklenen bir önerme kalmıyorsa iddiayı ana metinden çıkar; boşluğu rapor notunda açıkla. Kanıt boşluğunu yeni bir iddiayla veya yapay bir geçiş cümlesiyle doldurma.
+- Düzeltmeden sonra cümleyi önceki ve sonraki cümleyle birlikte oku: gönderimi belirsiz zamir, kopuk bağlaç, yinelenen fikir veya paragrafın amacından sapan bir cümle bırakma.
 - `evidence_status`: `supported`, `partially_supported`, `contradicted`, `not_found`.
 - Ek 2 kaynak denetiminde her kaynak için DOI, yayıncı, Q, atıf, erişim ve kullanım kararı bulunmalı.
 - İddia–kanıt matrisinde her iddia için kaynak, sayfa, kısa kanıt, destek düzeyi ve karar bulunmalı.

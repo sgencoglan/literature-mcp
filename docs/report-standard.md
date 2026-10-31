@@ -10,6 +10,7 @@ bir teslim üretmektir.
 1. **Düzeltilmiş bölüm metni**
    - Yalnızca değişen/eklenen cümleler kırmızı zeminle işaretlenir.
    - Paragrafın tamamı, başlık, kaynakça veya tablo kırmızıya boyanmaz.
+   - Kırmızı cümleler, rapor açıklaması değil, paragrafta kullanılabilecek son metin önerisidir. Önceki ve sonraki cümlelerle birlikte okunduğunda doğal akmalı ve paragrafın amacına hizmet etmelidir.
    - Metnin üstünde opsiyonel **kaynak politikası / yöntem notu** kutusu
      (`notice`) yer alabilir.
 2. **Ek 1 — Değişikliklerin kaynak cümleleriyle karşılaştırması**
@@ -46,6 +47,9 @@ bir teslim üretmektir.
 - `not_found` / `contradicted` iddialar saklanmaz; gerekçesi ve kararı yazılır.
 - Aynı DOI kaynak envanterinde birden fazla kez listelenmez.
 - Q değeri, atıf sayısı veya dergi prestiji tek başına kanıt gücü yapmaz.
+- Kanıtın sınırlarını bölüm metninde hakem notu gibi anlatmayın. “Bu kaynak X'i göstermemektedir” türü açıklamalar `note`, iddia–kanıt matrisi veya sınırlılıklar bölümüne aittir.
+- Kısmi destek varsa iddiayı desteklenen kapsamda, metnin anlamlı akışını koruyarak yeniden yazın. İddianın çekirdeği desteklenmiyorsa onu ana metinden çıkarın veya dayanağı olan başka bir önermeyle değiştirin; kanıt boşluğunu metne “kanıt yok” cümlesi ekleyerek kapatmayın.
+- Her öneriyi paragraf bağlamında kontrol edin: konuya katkısı, atıf uyumu, önceki/sonraki cümleye geçişi ve yinelenen fikir olup olmadığı. Yalnızca dilbilgisel olarak doğru olması yeterli değildir.
 
 ## Teslim güvenliği
 

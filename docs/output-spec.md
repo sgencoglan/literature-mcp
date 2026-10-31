@@ -100,7 +100,7 @@ Aday alanları:
 | `source_translation` | Kaynak cümlesinin Türkçesi |
 | `source_doi` | DOI |
 | `source_page` | Sayfa numarası |
-| `rewritten_sentence` | Yeniden yazılan cümle |
+| `rewritten_sentence` | Paragrafta doğrudan kullanılabilecek, bağlama uygun yeniden yazım; kanıt boşluğunu açıklayan denetçi notu değil |
 | `note` | Gerekçe, sınırlılık, dikkat |
 | `evidence_status` | `supported`, `partially_supported`, `contradicted`, `not_found` |
 

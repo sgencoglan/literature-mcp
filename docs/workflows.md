@@ -278,6 +278,9 @@ Kurallar:
 - `source_sentence` birebir alıntıdır; düzeltme veya özet değildir.
 - `source_translation` yorum katmaz.
 - `rewritten_sentence` kanıtın izin verdiği kadarını söyler; abartı, nedensellik ve genelleme kaldırılır.
+- `rewritten_sentence` paragraf içinde doğrudan kullanılabilir, doğal ve konuyla ilgili bir cümle olmalıdır. “Kaynak bunu göstermiyor” veya “bu iddia desteklenmiyor” gibi denetçi açıklamalarını ana metne koymayın; bunları `note` alanında ve iddia–kanıt matrisinde belirtin.
+- İddianın bir bölümü destekleniyorsa desteklenen anlamı koruyarak yeniden kurun. İddianın çekirdeği kanıtsızsa ana metinden çıkarın veya aynı paragraf amacına hizmet eden, kaynakla destekli bir önerme kullanın; destek boşluğunu yapay bir geçiş cümlesiyle doldurmayın.
+- Kartı tamamlamadan önce önerilen cümleyi paragrafın tamamında okuyun. Bağlaçların, zamirlerin ve atıfların akışa uyduğunu; cümlenin paragrafın işlevine katkı verdiğini kontrol edin.
 - HTML'de yalnızca `rewritten_sentence` kırmızı; kaynak cümlesi ve çevirisi normal renktedir.
 
 ### Adım 6: Ek 2 kaynak denetimi

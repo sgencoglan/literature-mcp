@@ -33,11 +33,7 @@
       {
         "segments": [
           {
-            "text": "Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez. ",
-            "changed": true
-          },
-          {
-            "text": "Bununla birlikte sınır yönetimi becerileri, iş–aile çatışması ve tükenme arasındaki ilişkiyi anlamak için daha güvenilir bir çerçeve sunar (Kaya & Yılmaz, 2023).",
+            "text": "İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya & Yılmaz, 2023).",
             "changed": true
           }
         ]
@@ -98,12 +94,12 @@
           "quote_language": "en"
         }
       ],
-      "rewritten_sentence": "Çalışanların işten ayrılma niyeti üzerinde uzaktan çalışmanın doğrudan ve güçlü bir etkisi olduğu söylenemez.",
+      "rewritten_sentence": "İş–aile çatışmasını değerlendirirken sınır yönetimi de dikkate alınmalıdır (Kaya & Yılmaz, 2023).",
       "notes": [
         {
           "label": "Düzeltme notu — 1. cümle",
-          "what": "Doğrudan nedensellik iddiası kaldırıldı; kaynağın ölçmediği sonuç için temkinli bir ifade kullanıldı.",
-          "why": "Kaynakta işten ayrılma niyeti ölçülmemiş. Sınır yönetimi bulgusu farklı bir sonuç değişkenine ait."
+          "what": "İşten ayrılma niyeti iddiası çıkarıldı; paragraf, kaynağın gerçekten incelediği iş–aile çatışması ve sınır yönetimi ilişkisine yöneltildi.",
+          "why": "Kaynak işten ayrılma niyetini ölçmemiş, ancak sınır yönetiminin iş–aile çatışmasını açıklamadaki katkısını bildirmiştir. Kanıt boşluğu ana metne taşınmadı; gerekçe bu notta açıklandı."
         }
       ],
       "evidence_status": "not_found"
