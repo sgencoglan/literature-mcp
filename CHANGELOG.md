@@ -1,5 +1,12 @@
 # Değişiklik Günlüğü
 
+## v2.4.1 — 2026-10-31
+
+### Düzeltildi
+
+- Proje kökü içinde tutulan indeksler için çakışma testleri, aynı çalışma
+  alanını kullanan projelerle doğrulanacak şekilde güncellendi.
+
 ## v2.4.0 — 2026-10-31
 
 ### Eklendi

@@ -242,20 +242,27 @@ class ProjectRegistryTests(unittest.TestCase):
         second = self.root / "p2"
         first.mkdir()
         second.mkdir()
-        self._register("p1", first)
+        workspace = self.root / "workspace"
+        workspace.mkdir()
+        self._register("p1", first, output_directory=str(workspace))
         with self.assertRaisesRegex(ValueError, "çakışması"):
-            self._register("p2", second, index_name="p1")
+            self._register(
+                "p2", second, output_directory=str(workspace), index_name="p1"
+            )
 
     def test_nested_index_path_is_rejected(self) -> None:
         first = self.root / "p1"
         second = self.root / "p2"
         first.mkdir()
         second.mkdir()
-        self._register("p1", first)
-        nested_dir = self.root / "indexes" / "p1"
+        workspace = self.root / "workspace"
+        workspace.mkdir()
+        self._register("p1", first, output_directory=str(workspace))
+        nested_dir = workspace / ".literature-mcp" / "indexes" / "p1"
         with self.assertRaisesRegex(ValueError, "iç içe"):
             self._register(
-                "p2", second, index_directory=str(nested_dir), index_name="sub"
+                "p2", second, output_directory=str(workspace),
+                index_directory=str(nested_dir), index_name="sub"
             )
 
     def test_register_rejects_unsafe_index_name(self) -> None:

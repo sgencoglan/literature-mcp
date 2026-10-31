@@ -130,4 +130,4 @@ _Durum işaretleri: ✅ destekliyor · 🟡 kısmi/nüanslı · 🔴 atıf–idd
 2. Kaya, B.; Yılmaz, C. (2023). *Sınır yönetimi ve iş–aile çatışması*. Örnek Çalışma Yaşamı Dergisi. [10.5555/ornek.2023.002](https://doi.org/10.5555/ornek.2023.002)
 3. Arslan, D.; Öz, E.; Tan, F. (2025). *Yönetici desteği, dayanıklılık ve tükenme*. Örnek Örgütsel Davranış Dergisi. [10.5555/ornek.2025.003](https://doi.org/10.5555/ornek.2025.003)
 
-_literature-mcp · chapter-report v2.4.0 · Sentetik örnek; gerçek kaynak değildir._
+_literature-mcp · chapter-report v2.4.1 · Sentetik örnek; gerçek kaynak değildir._

@@ -1,6 +1,6 @@
 [project]
 name = "literature-report-kit"
-version = "2.4.0"
+version = "2.4.1"
 description = "Altın standart kitap bölümü raporu üreteci: düzeltilmiş metin, değişiklik kartları ve sayfa doğrulamalı kanıt matrisi."
 readme = "README.md"
 license = { text = "MIT" }
