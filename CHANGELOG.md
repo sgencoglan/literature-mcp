@@ -1,5 +1,14 @@
 # Değişiklik Günlüğü
 
+## Geliştirme aşamasında
+
+### Düzeltildi
+
+- `chapter-report build`, HTML, Markdown veya manifest hedeflerinden biri
+  mevcut olduğunda diğer çıktı dosyalarını yazmadan önce durur. Çıktı yolları
+  çakışıyorsa ya da manifeste eklenecek dosya manifest klasörünün dışındaysa
+  da üretim başlamadan hata verir.
+
 ## v2.3.0 — 2026-10-28
 
 ### Eklendi

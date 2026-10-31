@@ -73,29 +73,70 @@ def _cmd_build(args: argparse.Namespace) -> int:
         return 0
 
     output = Path(args.output)
-    if output.exists() and not args.force:
-        print(f"HATA: çıktı zaten var: {output} (üzerine yazmak için --force)", file=sys.stderr)
-        return 2
+    markdown_path = Path(args.markdown) if args.markdown else None
+    manifest = Path(args.manifest) if args.manifest else output.with_name(output.stem + ".manifest.json")
+
+    # Check every destination before writing any output. Otherwise an existing
+    # Markdown or manifest file can make the command fail after HTML was already
+    # written, leaving an untracked partial build.
+    destinations: list[tuple[Path, str]] = [(output, "HTML")]
+    if markdown_path:
+        destinations.append((markdown_path, "Markdown"))
+    destinations.append((manifest, "manifest"))
+    resolved_destinations: dict[Path, str] = {}
+    for path, label in destinations:
+        resolved = path.resolve()
+        previous = resolved_destinations.get(resolved)
+        if previous:
+            print(
+                f"HATA: {previous} ve {label} aynı dosyaya yazamaz: {path}",
+                file=sys.stderr,
+            )
+            return 2
+        resolved_destinations[resolved] = label
+        if path.exists() and not args.force:
+            print(
+                f"HATA: {label} çıktısı zaten var: {path} (üzerine yazmak için --force)",
+                file=sys.stderr,
+            )
+            return 2
+
+    manifest_root = manifest.parent.resolve()
+    manifest_files = [output] + ([markdown_path] if markdown_path else [])
+    for raw in args.artifact or []:
+        for part in str(raw).split(","):
+            part = part.strip()
+            if part:
+                artifact = Path(part)
+                if artifact.exists():
+                    manifest_files.append(artifact)
+    for path in manifest_files:
+        resolved = path.resolve()
+        try:
+            resolved.relative_to(manifest_root)
+        except ValueError:
+            print(
+                f"HATA: manifeste eklenecek dosya manifest klasörü dışında: {path}",
+                file=sys.stderr,
+            )
+            return 2
+        if path.exists() and not path.is_file():
+            print(f"HATA: çıktı dosya değil: {path}", file=sys.stderr)
+            return 2
+
+    markdown_text = render_markdown(data) if markdown_path else None
+
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(html_text, encoding="utf-8")
     print(f"HTML yazıldı: {output} ({len(html_text.encode('utf-8'))} bayt)")
 
     files: list[tuple[str | Path, str]] = [(output, "html")]
-    if args.markdown:
-        markdown_path = Path(args.markdown)
-        if markdown_path.exists() and not args.force:
-            print(
-                f"HATA: Markdown çıktısı zaten var: {markdown_path} (üzerine yazmak için --force)",
-                file=sys.stderr,
-            )
-            return 2
+    if markdown_path and markdown_text is not None:
         markdown_path.parent.mkdir(parents=True, exist_ok=True)
-        markdown_text = render_markdown(data)
         markdown_path.write_text(markdown_text, encoding="utf-8")
         print(f"Markdown yazıldı: {markdown_path} ({len(markdown_text.encode('utf-8'))} bayt)")
         files.append((markdown_path, "markdown"))
 
-    manifest = Path(args.manifest) if args.manifest else output.with_name(output.stem + ".manifest.json")
     for raw in args.artifact or []:
         for part in str(raw).split(","):
             part = part.strip()
@@ -169,7 +210,7 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--schema", help="JSON Schema yolu")
     build.add_argument("--strict", action="store_true", help="Uyarıları da hata say")
     build.add_argument("--check", action="store_true", help="Yalnızca doğrula; HTML yazma")
-    build.add_argument("--force", action="store_true", help="Mevcut HTML'in üzerine yaz")
+    build.add_argument("--force", action="store_true", help="Mevcut HTML, Markdown ve manifest çıktılarının üzerine yaz")
     build.add_argument("--cleanup", choices=["keep", "ask", "intermediate", "all"], default="keep")
     build.add_argument("--dry-run", action="store_true", help="Temizlikte yalnızca listele")
     build.add_argument("--yes", action="store_true", help="Temizlikte onay sorma")
