@@ -1,0 +1,74 @@
+{
+  "project": "ornek-uzaktan-calisma",
+  "title": "Konu, çalışma başlığı ve amaç keşfi",
+  "topic": "Uzaktan çalışma ve çalışan refahı",
+  "generated_at": "2026-10-31",
+  "scope": "Kurgusal biçim örneği; gerçek veri tabanı araması değildir.",
+  "database_searches": [
+    {
+      "database": "openalex",
+      "query": "remote work employee wellbeing parents boundary management",
+      "searched_at": "2026-10-31",
+      "status": "ok",
+      "result_count": 125,
+      "note": "Sayı ve sorgu yalnızca örnek amaçlıdır."
+    },
+    {
+      "database": "pubmed",
+      "query": "remote work AND employee wellbeing",
+      "searched_at": "2026-10-31",
+      "status": "ok",
+      "result_count": 18,
+      "note": "Tıp ve sağlık odağı nedeniyle konu kapsamı sınırlı olabilir."
+    },
+    {
+      "database": "europepmc",
+      "query": "remote work AND employee wellbeing",
+      "searched_at": "2026-10-31",
+      "status": "ok",
+      "result_count": 22,
+      "note": "Sayı yalnızca örnektir."
+    },
+    {
+      "database": "crossref",
+      "query": "remote work employee wellbeing parents",
+      "searched_at": "2026-10-31",
+      "status": "ok",
+      "result_count": 143,
+      "note": "Sayı yalnızca örnektir."
+    }
+  ],
+  "proposals": [
+    {
+      "rank": 1,
+      "proposed_title": "Uzaktan Çalışan Ebeveynlerde Sınır Yönetimi ve Psikolojik İyi Oluş: Yönetici Desteğinin Rolü",
+      "research_question": "Uzaktan çalışan ebeveynlerde iş-aile sınır yönetimi ile psikolojik iyi oluş arasındaki ilişki yönetici desteği düzeyine göre değişiyor mu?",
+      "aim": "Uzaktan çalışan ebeveynlerde sınır yönetimi, yönetici desteği ve psikolojik iyi oluş arasındaki ilişkileri incelemek.",
+      "objectives": [
+        "Sınır yönetimi ile psikolojik iyi oluş arasındaki ilişkiyi belirlemek.",
+        "Yönetici desteğinin bu ilişkideki düzenleyici rolünü değerlendirmek."
+      ],
+      "population_context": "Uzaktan çalışan ve bakım sorumluluğu bulunan yetişkinler; örneklem erişimi ayrıca doğrulanmalı.",
+      "suggested_design": "Ölçüm zamanları ve ortak yöntem yanlılığı dikkate alınarak boylamsal anket tasarımı değerlendirilebilir.",
+      "gap_type": "population_context",
+      "novelty_opportunity": "Ebeveynlik/bakım sorumluluğu bağlamını sınır yönetimi ve yönetici desteğiyle birlikte incelemek olası bir özgün katkı sağlayabilir.",
+      "novelty_signal": "moderate",
+      "closest_studies": [
+        {
+          "title": "Kurgusal örnek: Uzaktan çalışma ve sınır yönetimi",
+          "doi": "10.5555/example.2024.001",
+          "database": "OpenAlex",
+          "relevance": "Başlık ve konu bakımından yakın bir çalışma örneği.",
+          "limitation": "Sentetik kayıt; gerçek yayın değildir."
+        }
+      ],
+      "feasibility_notes": "Bakım sorumluluğu ve çalışma biçimini ölçen geçerli ölçekler ile örnekleme erişimi önceden kontrol edilmelidir.",
+      "ranking_rationale": "Konu uyumu, sınanabilir ilişki ve tanımlanabilir örneklem bakımından ilk sırada; özgünlük sinyali yalnızca ön taramaya dayalıdır."
+    }
+  ],
+  "limitations": [
+    "Bu örnek kurgusaldır; veritabanı sayıları ve DOI gerçek arama sonucu değildir.",
+    "OpenAlex, PubMed, Europe PMC ve Crossref taraması kapsamlı sistematik derleme veya mutlak özgünlük kanıtı oluşturmaz."
+  ],
+  "next_step": "Önerilen başlığı seçip kapsamı netleştirdikten sonra 1. iş akışında DOI doğrulaması ve PDF listesi oluşturun."
+}

@@ -1231,7 +1231,7 @@ async def paperqa_create_workspace(
     project_directory: str,
     name: str | None = None,
 ) -> dict[str, Any]:
-    """Proje kökünde üç iş akışı klasörünü açar; henüz akış/proje kaydı seçmez.
+    """Proje kökünde 00–03 iş akışı klasörlerini açar; henüz akış/proje kaydı seçmez.
 
     Var olan dosyaları silmez veya taşımaz. Akış 2 ve 3 için PDF klasörlerini,
     workflow'a göre ayrılmış manifestler ve indeksler için iç klasörleri açar.
@@ -1247,6 +1247,7 @@ async def paperqa_create_workspace(
             "Proje adı 2-61 karakter olmalı ve yalnızca harf, rakam, '.', '_', '-' içermelidir."
         )
     paths = {
+        "topic_discovery": root / "00_konu_basligi_kesfi",
         "source_discovery": root / "01_kaynak_kesfi",
         "draft": root / "02_bolum_taslagi",
         "draft_fulltext": root / "02_bolum_taslagi" / "fulltext",
@@ -1271,13 +1272,15 @@ async def paperqa_create_workspace(
     return {
         "project_name": name,
         "project_directory": str(root),
-        "next_step": "Kullanıcıya hangi iş akışını istediğini sor; seçim gelmeden devam etme.",
+        "next_step": "Kullanıcıya 0–3 arasındaki iş akışlarından hangisini istediğini sor; seçim gelmeden devam etme.",
         "workflow_choices": [
+            "0 — Konu, çalışma başlığı ve amaç keşfi",
             "1 — Kaynak keşfi ve PDF listesi",
             "2 — PDF'lerden sayfa doğrulamalı bölüm taslağı",
             "3 — Mevcut taslağı PDF kanıtlarıyla denetleme",
         ],
         "workflow_directories": {
+            "0_topic_discovery": str(paths["topic_discovery"]),
             "1_source_discovery": str(paths["source_discovery"]),
             "2_draft": str(paths["draft"]),
             "3_draft_audit": str(paths["draft_audit"]),

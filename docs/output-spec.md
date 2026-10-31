@@ -4,10 +4,10 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 
 ## Genel kurallar
 
-- **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile üç iş akışı klasörü açın.
-- **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 1, 2 veya 3 seçmesini isteyin; seçimden önce arama veya dosya işleme yapmayın.
-- **Akış klasörleri:** `01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/`. Her çıktıyı ilgili klasöre yazın. PDF'ler akış 2 ve 3 için ilgili klasörün `fulltext/` altına konur.
-- **Ana dosyalar:** İş akışı 1 `01_kaynak_kesfi/01_fulltext_listesi.html` ve her kaynak için katkı/sınır değerlendirmesi; iş akışı 2 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren chapter-report HTML/Markdown; iş akışı 3 bağlam değerlendirmesi + Ek 1 + Ek 2 + Ek 3 + Ek 4 içeren `05_bolum_raporu.html` üretir.
+- **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile 00–03 akış klasörlerini açın.
+- **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 0, 1, 2 veya 3 seçmesini isteyin; seçimden önce arama veya PDF işleme yapmayın.
+- **Akış klasörleri:** `00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/`. Her çıktıyı ilgili klasöre yazın. PDF'ler akış 2 ve 3 için ilgili klasörün `fulltext/` altına konur.
+- **Ana dosyalar:** İş akışı 0 `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` ve JSON öneri raporu; iş akışı 1 `01_kaynak_kesfi/01_fulltext_listesi.html` ve her kaynak için katkı/sınır değerlendirmesi; iş akışı 2 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren chapter-report HTML/Markdown; iş akışı 3 bağlam değerlendirmesi + Ek 1 + Ek 2 + Ek 3 + Ek 4 içeren `05_bolum_raporu.html` üretir.
 - **PaperQA kaynakları:** `output_directory` proje köküdür. Akış 2 PDF'leri `02_bolum_taslagi/fulltext/`, akış 3 PDF'leri `03_taslak_denetimi/fulltext/` altındadır. Her akış ayrı proje adı, manifest ve indeks kullanır; bunlar `<proje-kökü>/.literature-mcp/` altında tutulur.
 
 - **Dil:** Teslim Türkçedir. İngilizce kaynak cümlesi özgün hâliyle verilir; Türkçesi ayrı alanda bulunur.
@@ -22,7 +22,8 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 ## Dosya adları
 
 Proje kökü `paperqa_create_workspace` tarafından başlatılır. İş akışları
-`01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/` altına yazılır;
+`00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/`,
+`03_taslak_denetimi/` altına yazılır;
 PDF'ler ilgili akışın `fulltext/`, taslaklar ve raporlar `taslak/` altındadır. Akış 2 ve 3'ün manifesti ve
 indeksi `.literature-mcp/` altında birbirinden ayrı tutulur.
 
@@ -31,6 +32,8 @@ kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 
 | Dosya | Biçim | Kime | İçerik |
 |---|---|---|---|
+| `00_konu_basligi_kesfi/00_konu_basligi_kesfi.json` | JSON | Ajan | Veri tabanı sorgu kaydı, sıralı başlık/amaç önerileri, boşluk sinyali ve sınırlılıklar |
+| `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` | HTML | İnsan | Önerileri ve OpenAlex/PubMed/Europe PMC/Crossref tarama kapsamını gösteren çevrimdışı rapor |
 | `01_kaynak_kesfi/01_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları ve her kaynak için katkı/sınır analizi |
 | `01_kaynak_kesfi/01_fulltext_listesi.json` | JSON | Ajan | Aynı verinin şemalı hâli |
 | `02_bolum_taslagi/taslak/02_bolum_taslagi.json` | JSON | Ajan | Bölüm metni, Ek 1, Ek 2 ve Ek 4 için chapter-report girdisi |
@@ -48,6 +51,20 @@ kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
 | `03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
 Proje adı önek olarak eklenebilir: `<proje-adi>_01_fulltext_listesi.html`. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
+
+## 00 — Konu ve başlık keşfi
+
+Şema: [`../schemas/topic-discovery.schema.json`](../schemas/topic-discovery.schema.json).
+Varsayılan veri tabanları OpenAlex, PubMed, Europe PMC ve Crossref'tir. JSON,
+her veri tabanı için sorgu, durum, bulunan kayıt sayısı ve varsa uyarıyı;
+her öneri için başlık, araştırma sorusu, genel/özel amaçlar, hedef grup,
+önerilen desen, olası boşluk türü, en yakın çalışmalar, yapılabilirlik ve
+sıralama gerekçesini taşır. `novelty_signal` yalnızca ön taramada görülen
+boşluk sinyalini belirtir; kesin özgünlük iddiası değildir.
+
+`scripts/build_topic_discovery.py`, JSON'u tek dosyalık çevrimdışı HTML'e
+çevirir. Arama başarısızlıkları ve kapsam dışı kalabilecek alan-özel veri
+tabanları raporda görünür olmalıdır.
 
 ## 01 — Fulltext listesi
 

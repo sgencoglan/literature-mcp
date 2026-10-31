@@ -45,6 +45,7 @@ from jsonschema import Draft202012Validator
 root = Path(".")
 pairs = [
     ("schemas/fulltext-list.schema.json", "examples/fulltext-list.example.json"),
+    ("schemas/topic-discovery.schema.json", "examples/topic-discovery.example.json"),
     ("schemas/change-card.schema.json", "examples/change-card.example.json"),
     ("schemas/claim-evidence.schema.json", "examples/claim-evidence.example.json"),
     ("schemas/chapter-report.schema.json", "examples/chapter-report.example.json"),
@@ -115,6 +116,25 @@ fi
 note "Fulltext üreticisi"
 if ! "$PY" scripts/build_fulltext_list.py examples/fulltext-list.example.json --check; then
   bad "fulltext örneği doğrulanamadı"
+fi
+
+note "Konu keşfi üreticisi"
+if ! "$PY" scripts/build_topic_discovery.py examples/topic-discovery.example.json --check; then
+  bad "konu keşfi örneği doğrulanamadı"
+fi
+if ! "$PY" - <<'PY'
+import json
+from pathlib import Path
+from scripts.build_topic_discovery import render
+
+data = json.loads(Path("examples/topic-discovery.example.json").read_text(encoding="utf-8"))
+expected = Path("examples/topic-discovery.example.html").read_text(encoding="utf-8")
+if render(data) != expected:
+    raise SystemExit("examples/topic-discovery.example.html güncel değil; yeniden üretin")
+print("OK: konu keşfi HTML örneği güncel")
+PY
+then
+  bad "konu keşfi HTML örneği kaynakla uyuşmuyor"
 fi
 
 note "Git izleme kontrolü"

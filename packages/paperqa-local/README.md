@@ -10,7 +10,7 @@ ayrı manifest CSV'si ve ayrı Tantivy indeksi kullanır.
 
 | Araç | Görev |
 |---|---|
-| `paperqa_create_workspace` | Seçilen proje kökünde üç iş akışı klasörünü ve 2/3 için ayrı PDF klasörlerini açar; kayıt veya seçim yapmaz |
+| `paperqa_create_workspace` | Seçilen proje kökünde 00–03 iş akışı klasörlerini ve 2/3 için ayrı PDF klasörlerini açar; kayıt veya seçim yapmaz |
 | `paperqa_projects` | Kayıtlı projeleri ve durumlarını listeler |
 | `paperqa_register_project` | PDF klasörünü kaydeder; kullanıcı proje klasörü olan `output_directory` zorunludur |
 | `paperqa_build_index` | Manifestteki dosyalardan proje indeksini kurar/günceller; `rebuild` öncesi yedek alır |
@@ -51,12 +51,14 @@ paperqa_create_workspace(
 Proje adı klasör adından alınır; gerekirse `name="example-project"` ile
 verilebilir.
 
-Araç `01_kaynak_kesfi/`, `02_bolum_taslagi/` ve `03_taslak_denetimi/`
+Araç `00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/` ve `03_taslak_denetimi/`
 klasörlerini; PDF'ler için `02_bolum_taslagi/fulltext/` ve
 `03_taslak_denetimi/fulltext/` klasörlerini oluşturur. Var olan dosyaları silmez
 veya taşımaz, PaperQA projesi kaydetmez. Her iş akışında PDF'ler `fulltext/`,
-taslak dosyaları ve raporlar `taslak/` altında tutulur. Araçtan sonra kullanıcıya 1, 2 veya
-3. iş akışından hangisini yapmak istediğini sorun. Akış 2 veya 3 seçilince
+taslak dosyaları ve raporlar `taslak/` altında tutulur. Araçtan sonra kullanıcıya 0, 1, 2 veya
+3. iş akışından hangisini yapmak istediğini sorun. Akış 0 konu/başlık/amaç
+keşfidir; varsayılan OpenAlex, PubMed, Europe PMC, Crossref taramasını
+`00_konu_basligi_kesfi/` içinde raporlar. Akış 2 veya 3 seçilince
 yalnızca o akışın PDF klasörünü aracın döndürdüğü ayrı proje adıyla kaydedin.
 
 ### llama.cpp (önerilen)

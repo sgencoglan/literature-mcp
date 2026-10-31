@@ -1,6 +1,69 @@
 # İş Akışları
 
-Bu belge üç iş akışını adım adım tanımlar. Araç adları MCP araç adlarıdır; insanlar için parantez içinde ne işe yaradığı yazılmıştır.
+Bu belge 0–3 arasındaki dört iş akışını adım adım tanımlar. Araç adları MCP araç adlarıdır; insanlar için parantez içinde ne işe yaradığı yazılmıştır.
+
+## İş akışı 0 — Konu, çalışma başlığı ve amaç keşfi
+
+Bu akış 1. iş akışından önce veya bağımsız çalışır. Kullanıcı konu alanını,
+hedef grubu/bağlamı ve varsa ilgi duyduğu sonuçları verir. MCP mevcut proje
+kökünde `00_konu_basligi_kesfi/` klasörüne sıralı öneriler ve veri tabanı
+tarama kayıtlarını içeren JSON ve HTML üretir.
+
+### Adım 1: Araştırma çerçevesini al
+
+Şu bilgileri netleştirin: geniş konu, hedef grup/bağlam, hedeflenen problem veya
+sonuç, coğrafi/kültürel kapsam, tercih edilen çalışma türü ve uygulanabilirlik
+kısıtları. Belirsiz kalan başlıkları soru olarak sorun; kullanıcı adına konu
+seçmeyin.
+
+### Adım 2: Varsayılan veri tabanlarında tarama yap
+
+Varsayılan veri tabanları `OpenAlex`, `PubMed`, `Europe PMC` ve `Crossref`tir.
+Konuyu eş anlamlılar ve alt temalara ayırın; her veritabanı için
+`search_literature(query=..., sources=["openalex", "pubmed", "europepmc", "crossref"], priority_only=false, limit=...)`
+çağrısını kullanın. Konu tıpla sınırlı değilse PubMed/Europe PMC sonuçlarının
+alan kapsamını özellikle not edin. Her sorgu için dönen `sources_status`, sonuç
+sayısı, tarih ve hata/not bilgisini raporlayın; başarısız bir kaynağı aranmış
+gibi göstermeyin. Sonuç kayıtlarının `sources` alanını kullanarak hangi
+veritabanlarında görünmüş olduklarını ayırın.
+
+Arama boyutları gerektiğinde şunları kapsar: güncel kapsam/derlemeler,
+hedef grup/bağlam, temel kavramlar ve ölçümler, olası mekanizmalar/sonuçlar,
+çalışma tasarımları ve çelişkili bulgular. Tarama, mutlak yenilik kanıtı veya
+sistematik derleme değildir. Mevcut varsayılan MCP veritabanları dışındaki
+alan-özel kaynakların (ör. ERIC, PsycINFO, Scopus veya Web of Science)
+gerekebileceğini sınırlılık olarak belirtin.
+
+### Adım 3: Başlık ve amaç önerilerini sırala
+
+Her öneri için sınanabilir araştırma sorusu, genel amaç ve özel amaçlar,
+popülasyon/bağlam, uygulanabilir çalışma deseni, olası boşluk türü, en yakın
+bulunan çalışmalar ve DOI'leri, yapılabilirlik notu ve sıralama gerekçesi
+verin. Sıralamada konu uyumu, literatürde görülen boşluk sinyali, yöntemsel
+uygulanabilirlik ve veri/örnekleme erişimini gerekçelendirin.
+
+“Özgün” veya “daha önce hiç çalışılmadı” diye kesin hüküm vermeyin. Bunun
+yerine özgünlük fırsatını zayıf/orta/belirgin arama sinyali olarak niteleyin,
+hangi en yakın çalışmalarla karşılaştırıldığını gösterin ve sistematik tarama,
+atıf zinciri incelemesi ve alan uzmanı doğrulaması gerektiğini açıkça belirtin.
+Bu aşamada DOI'ler konu sinyalini destekler; PDF sayfası doğrulanmış kanıt
+olarak sunulmaz.
+
+### Adım 4: Keşif raporunu kaydet
+
+`schemas/topic-discovery.schema.json` biçiminde
+`00_konu_basligi_kesfi/00_konu_basligi_kesfi.json` oluşturun. Tüm veri tabanı
+aramalarını, sorguları ve durumlarını ekleyin; en az bir öneriyi sıralı olarak
+verin ve sınırlılıkları yazın. Ardından:
+
+```bash
+python3 scripts/build_topic_discovery.py \
+  <proje-kökü>/00_konu_basligi_kesfi/00_konu_basligi_kesfi.json \
+  -o <proje-kökü>/00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
+```
+
+Kullanıcı önerilerden birini seçip kapsamını onayladıktan sonra, seçilen
+başlık/amaç 1. iş akışına başlangıç olarak aktarılabilir.
 
 ## İş akışı 1 — Kaynak keşfi ve PDF listesi
 
@@ -8,8 +71,8 @@ Başlamadan önce kullanıcıdan proje klasörünün tam yolunu alın. Bu yol ol
 dosya oluşturmayın. Aday JSON'u ve `01_fulltext_listesi.html` dosyasını aynı
 projenin `01_kaynak_kesfi/` klasörüne yazın. İlk adımda
 `paperqa_create_workspace(project_directory=...)` çağrısı yaparak proje
-kökünde üç iş akışı klasörünü oluşturun. Proje adı klasör adından alınır;
-gerekirse `name` ile açıkça verilebilir. Sonra kullanıcıya üç akıştan hangisini
+yeni projede 00–03 iş akışı klasörlerini oluşturun. Proje adı klasör adından alınır;
+gerekirse `name` ile açıkça verilebilir. Sonra kullanıcıya 0–3 arasından hangi akışı
 yapacağını sorun; seçim gelmeden arama, PDF işleme veya raporlama yapmayın.
 
 ### Adım 1: Kapsamı netleştir

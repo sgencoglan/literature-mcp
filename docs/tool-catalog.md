@@ -53,7 +53,7 @@ PaperQA2 indeksleri üzerinde çalışır. `paperqa_search` ve `paperqa_read_pag
 
 | Araç | Amaç | Zorunlu girdi | İsteğe bağlı | Çıktı | LLM |
 |---|---|---|---|---|---|
-| `paperqa_create_workspace` | Seçilen proje kökünde üç akış klasörü açar; kayıt veya akış seçimi yapmaz | `project_directory` | `name` | Akış klasörleri + akışa özel proje adları | Hayır |
+| `paperqa_create_workspace` | Seçilen proje kökünde 00–03 akış klasörlerini açar; kayıt veya akış seçimi yapmaz | `project_directory` | `name` | Akış klasörleri + akışa özel proje adları | Hayır |
 | `paperqa_projects` | Kayıtlı projeleri listeler | — | — | Proje + indeks durumu | Hayır |
 | `paperqa_register_project` | PDF klasörünü kaydeder; kullanıcı proje klasörü olan `output_directory` zorunludur | `name`, `paper_directory`, `output_directory` | `title`, `description`, `include_subdirectories`, `include_files_without_doi`, `refresh_manifest`, `enrich_metadata`, `index_directory`, `index_name` | Proje kaydı + proje klasöründeki manifest | Hayır |
 | `paperqa_build_index` | Manifest → PaperQA2 indeksi | `project` | `rebuild` | İndeks | Hayır (embedding) |

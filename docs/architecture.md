@@ -1,6 +1,6 @@
 # Mimari
 
-Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırlarını tanımlar. İnsanlar için özet: üç iş akışı iki MCP sunucusunu, ortak proje kaydını, altın standart rapor üretecini ve dosya tabanlı çıktıları kullanır.
+Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırlarını tanımlar. İnsanlar için özet: dört iş akışı iki MCP sunucusunu, ortak proje kaydını, rapor üreteçlerini ve dosya tabanlı çıktıları kullanır.
 
 ## Bileşenler
 
@@ -54,7 +54,7 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 - `paperqa_ask` yerel llama.cpp sunucusunu kullanır. Varsayılan model Qwen2.5-3B-Instruct Q4_K_M'dir. CPU'da yavaştır ve 3B model bile atıf hatası yapabilir; çıktısı **taslaktır**, kanıt değildir. 7B model bu donanım sınıfında önerilmez.
 - `paperqa_ask`, sunucu kapalıysa llama.cpp'yi otomatik başlatır (`PAPERQA_AUTO_START=1`), model hazır olana kadar bekler ve yalnızca kendi başlattığı sunucuyu `PAPERQA_AUTO_STOP_IDLE` saniye sonra durdurur. Elle başlatılan sunucuya dokunmaz; çökme sonrası kalan sunucu pid dosyasından sahiplenilir.
 - `paperqa_llm_status` arka ucun erişilebilirliğini, yüklü modelleri ve otomatik yaşam döngüsü durumunu (`auto_start`, `auto_stop_idle_seconds`, `managed`, `managed_pid`) raporlar; sunucuyu başlatmaz.
-- `paperqa_create_workspace`, seçilen proje kökünde üç akış klasörü açar. `paperqa_register_project` proje kökü olan `output_directory` yolunu zorunlu ister. `export_review(project=...)` ve rapor üretimi bu kökü kullanır.
+- `paperqa_create_workspace`, seçilen proje kökünde 00–03 akış klasörlerini açar. `paperqa_register_project` proje kökü olan `output_directory` yolunu zorunlu ister. `export_review(project=...)` ve rapor üretimi bu kökü kullanır.
 - İndeks üyeliği manifest ile sabittir. Klasöre sonradan bırakılan PDF, manifeste eklenmedikçe indekse girmez.
 - Manifest yolları proje klasörüne göre doğrulanır; mutlak yol, `..` kaçışı ve çift kayıt reddedilir. `paperqa_status` manifest–indeks uyuşmazlıklarını ve `healthy` durumunu raporlar. Aynı veya iç içe indeks yolu kullanan projeler reddedilir.
 - `paperqa_build_index(rebuild=True)` eski indeksi `.bak-*` klasörüne taşır; çökme durumunda geri getirir, kısmi başarısızlıkta yedeği korur.
@@ -63,6 +63,7 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 
 - **1 CLI:** `chapter-report`.
 - Düzeltilmiş bölüm metni + Ek 1 + Ek 2 + Ek 4'ü; iş akışı 3'te ayrıca bağlam değerlendirmesi + Ek 3 kaynak önerilerini tek dosyalık HTML'e yazar.
+- `scripts/build_topic_discovery.py`, JSON tarama kaydı ve sıralı araştırma önerilerini çevrimdışı HTML'e çevirir.
 - Kalite kapısı: DOI/sayfa/alıntı/çeviri zorunluluğu, yerel yol yasağı, HTML dengesi.
 - Manifest tabanlı temizlik: yalnızca üretilmiş dosyaları siler; PDF/indeks/registry'ye dokunmaz.
 - Tasarım tek CSS dosyasındadır: `packages/report-kit/src/report_kit/templates/chapter-report.css`.
@@ -87,11 +88,18 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 
 ### Başlangıç ve iş akışı 1 — Kaynak keşfi ve PDF listesi
 
-Kullanıcı proje kökünü verir; `paperqa_create_workspace` üç akış klasörünü
-oluşturur. Ajan ardından 1/2/3 seçimini sorar ve yalnızca seçilen akışı
-başlatır. Akış 1 kaynak listesi `01_kaynak_kesfi/` içine yazılır.
+Kullanıcı proje kökünü verir; `paperqa_create_workspace` 00–03 akış klasörlerini
+oluşturur. Ajan ardından 0/1/2/3 seçimini sorar ve yalnızca seçilen akışı
+başlatır. Akış 0 başlık/amaç önerilerini, akış 1 kaynak listesini üretir.
 
 ```text
+Araştırma konusu
+   │
+   ├─ search_literature
+   │      └─ OpenAlex + PubMed + Europe PMC + Crossref
+   ├─ olası boşluklar + başlık/amaç önerileri
+   │      └─ 00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
+   │
 Soru/kapsam
    │
    ├─ deep_research / search_literature

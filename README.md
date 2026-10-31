@@ -10,13 +10,22 @@ Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut tasl
 ## Ne çözer?
 
 Kullanıcı önce proje klasörünün yolunu verir. `paperqa_create_workspace` bu
-klasörde üç iş akışı klasörünü açar; ardından MCP hangi akışın yapılacağını
+klasörde 00–03 iş akışı klasörlerini açar; ardından MCP hangi akışın yapılacağını
 sorar. Yalnızca seçimden sonra ilgili arama veya dosya işleme başlar. PDF,
 manifest ve indeks proje kökünde kalır.
 
-Başlangıç sırası: proje kökünü al → `paperqa_create_workspace` ile üç klasörü
-aç → kullanıcıya “1 Kaynak keşfi, 2 PDF’lerden bölüm taslağı, 3 Mevcut
-taslağı denetleme” seçeneklerini sor → seçilen akışın girdilerini işle.
+Başlangıç sırası: proje kökünü al → `paperqa_create_workspace` ile dört akış
+klasörünü aç → kullanıcıya “0 Konu/başlık keşfi, 1 Kaynak keşfi, 2 PDF’lerden
+bölüm taslağı, 3 Mevcut taslağı denetleme” seçeneklerini sor → seçilen akışın
+girdilerini işle.
+
+0. **Konu, çalışma başlığı ve amaç keşfi:** varsayılan OpenAlex, PubMed,
+   Europe PMC ve Crossref aramalarından konu sinyalleri ve en yakın çalışmaları
+   çıkar → olası araştırma boşluklarına dayalı başlık/amaç önerilerini sırala →
+   `00_konu_basligi_kesfi/` içine JSON ve tek dosyalık HTML raporu yaz.
+
+Şema ve HTML üreticisi: [`topic-discovery.schema.json`](schemas/topic-discovery.schema.json),
+[`build_topic_discovery.py`](scripts/build_topic_discovery.py).
 
 1. **Kaynak keşfi ve PDF listesi:** Literatür taraması → DOI ve yayıncı
    doğrulama → `01_kaynak_kesfi/` içine fulltext indirme listesi (HTML).
@@ -213,18 +222,29 @@ python3 scripts/build_fulltext_list.py \
 
 ## İş akışı 1 — Kaynak keşfi ve PDF listesi
 
+### Öncesi: İş akışı 0 — Konu/başlık keşfi
+
+Konu henüz net değilse 0. akışta OpenAlex, PubMed, Europe PMC ve Crossref
+taranır; sorgu kapsamı ve veri tabanı durumları kaydedilir. Olası çalışma
+başlıkları, araştırma soruları, amaçlar, yakın çalışmalar ve uygulanabilirlik
+gerekçeleriyle sıralanır. Özgünlük, bu taramada görülen boşluk sinyali olarak
+ifade edilir; kesin yenilik iddiası değildir. Raporlar
+`00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` ve `.json` olarak yazılır.
+Seçilen öneri, kullanıcı onayından sonra akış 1'in arama çerçevesi olur.
+
 Başlamadan önce kullanıcıdan proje klasörünün yolunu alın. Bu klasör yoksa
 kullanıcının verdiği tam yolda oluşturun; mevcut çalışma dizinini veya rastgele
 geçici bir klasörü çıktı konumu olarak seçmeyin.
 
 Ardından `paperqa_create_workspace(project_directory)` çağrısıyla proje
-kökünde `01_kaynak_kesfi/`, `02_bolum_taslagi/` ve `03_taslak_denetimi/`
+kökünde `00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/` ve `03_taslak_denetimi/`
 klasörlerini oluşturun. Proje adı klasör adından alınır; istenirse `name`
-parametresiyle açıkça verilebilir. Ardından kullanıcıya 1, 2 veya 3. iş
+parametresiyle açıkça verilebilir. Ardından kullanıcıya 0, 1, 2 veya 3. iş
 akışını seçmesini sorun; seçimden önce kaynak araması ya da PDF işleme yapmayın.
 
 ```text
 <proje-kökü>/
+├── 00_konu_basligi_kesfi/ # İş akışı 0: başlık/amaç önerileri
 ├── 01_kaynak_kesfi/       # İş akışı 1
 ├── 02_bolum_taslagi/      # PDF'ler fulltext/, çıktılar taslak/ altında
 ├── 03_taslak_denetimi/    # Taslak taslak/, PDF'ler fulltext/ altında
@@ -232,6 +252,14 @@ akışını seçmesini sorun; seçimden önce kaynak araması ya da PDF işleme 
 ```
 
 ```text
+Konu/araştırma çerçevesi
+  → search_literature (OpenAlex + PubMed + Europe PMC + Crossref)
+  → en yakın çalışmalar, olası boşluklar ve yapılabilirlik değerlendirmesi
+  → sıralı başlık + araştırma sorusu + amaç önerileri
+  → schemas/topic-discovery.schema.json
+  → scripts/build_topic_discovery.py
+  → <proje-kökü>/00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
+
 Konu/kapsam
   → deep_research / search_literature
   → search_all / search_sciencedirect / search_pubmed / search_europepmc

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-10-30T04:51:10+00:00",
+  "generated_at": "2026-10-31T18:28:06+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
@@ -667,17 +667,29 @@
       "tools": [
         {
           "name": "paperqa_create_workspace",
-          "description": "Kullanıcının seçtiği proje kökünde üç iş akışı klasörünü oluşturur. İş akışı seçimini veya PaperQA proje kaydını yapmaz. Var olan dosyaları silmez veya taşımaz. PDF klasörleri 02_bolum_taslagi/fulltext ve 03_taslak_denetimi/fulltext; taslak klasörleri her iki akışta taslak/ altındadır.",
+          "description": "Proje kökünde 00–03 iş akışı klasörlerini açar; henüz akış/proje kaydı seçmez.\n\nVar olan dosyaları silmez veya taşımaz. Akış 2 ve 3 için PDF klasörlerini,\nworkflow'a göre ayrılmış manifestler ve indeksler için iç klasörleri açar.\n",
           "input_schema": {
             "properties": {
-              "project_directory": { "title": "Project Directory", "type": "string" },
+              "project_directory": {
+                "title": "Project Directory",
+                "type": "string"
+              },
               "name": {
-                "anyOf": [{ "type": "string" }, { "type": "null" }],
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "default": null,
                 "title": "Name"
               }
             },
-            "required": ["project_directory"],
+            "required": [
+              "project_directory"
+            ],
             "title": "paperqa_create_workspaceArguments",
             "type": "object"
           }
@@ -693,7 +705,7 @@
         },
         {
           "name": "paperqa_register_project",
-          "description": "Bir PDF klasörünü izole projeye kaydeder. Kullanıcının seçtiği proje klasörü ``output_directory`` olarak zorunludur; yeni manifest ve indeks de bu klasörün ``.literature-mcp/`` altına yazılır.\n\n- DOI, dosya adından veya ilk iki sayfadan algılanır.\n- Metadata Crossref (yedek: OpenAlex) ile zenginleştirilir.\n- Mevcut manifest ``refresh_manifest=True`` verilmedikçe korunur.\n- DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz.\n- İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.\n",
+          "description": "Bir PDF klasörünü izole proje olarak kaydeder ve manifest CSV üretir.\n\n- DOI, dosya adından (``10.1007s...pdf`` gibi) veya ilk iki sayfadan algılanır.\n- Metadata Crossref (yedek: OpenAlex) ile zenginleştirilir; API anahtarı gerekmez.\n- Mevcut manifest ``refresh_manifest=True`` verilmedikçe korunur.\n- Kayıtlı bir projenin klasörü veya alt klasör taraması değiştirilecekse\n  ``refresh_manifest=True`` zorunludur; aksi hâlde eski manifest yeni\n  klasörle karışır.\n- DOI'si olmayan dosyalar varsayılan olarak manifeste alınmaz\n  (``include_files_without_doi=True`` ile dahil edilir).\n- Aynı DOI'ye çözülen ikinci dosya manifeste alınmaz; ``skipped_duplicate_doi``\n  alanında raporlanır.\n- Kullanıcının proje klasörü ``output_directory`` olarak zorunludur.\n  Ana çıktılar burada, yeni manifest ve indeks ise buradaki\n  ``.literature-mcp/`` alt klasöründe tutulur.\n- İndeks kurmak ayrı bir adımdır: ``paperqa_build_index``.\n",
           "input_schema": {
             "properties": {
               "name": {
@@ -702,6 +714,10 @@
               },
               "paper_directory": {
                 "title": "Paper Directory",
+                "type": "string"
+              },
+              "output_directory": {
+                "title": "Output Directory",
                 "type": "string"
               },
               "title": {
@@ -771,10 +787,6 @@
                 ],
                 "default": null,
                 "title": "Index Name"
-              },
-              "output_directory": {
-                "type": "string",
-                "title": "Output Directory"
               }
             },
             "required": [
@@ -918,7 +930,7 @@
         },
         {
           "name": "paperqa_ask",
-          "description": "Proje indeksi üzerinde yerel LLM'e soru sorar (taslak cevap).\n\nYerel llama.cpp sunucusunu kullanır. Sunucu kapalıysa MCP onu otomatik\nbaşlatır ve yalnızca kendisi başlattıysa boşta kalınca durdurur\n(``PAPERQA_AUTO_START`` / ``PAPERQA_AUTO_STOP_IDLE``). CPU'da yavaştır ve\nküçük modeller atıf hatası yapabilir. Cevabı taslak kabul edin; kaynak\ncümlelerini kopyalamadan bulguları bağlama uygun özgün ifadelerle yazın.\nHer iddiayı ``paperqa_search`` veya ``paperqa_read_pages`` ile doğrulayın.\nAraç, bu yazım biçimini garanti etmez.\n",
+          "description": "Proje indeksi üzerinde yerel LLM'e soru sorar (taslak cevap).\n\nYerel llama.cpp sunucusunu kullanır. Sunucu kapalıysa MCP onu otomatik\nbaşlatır ve yalnızca kendisi başlattıysa boşta kalınca durdurur\n(``PAPERQA_AUTO_START`` / ``PAPERQA_AUTO_STOP_IDLE``). CPU'da yavaştır ve\nküçük modeller atıf hatası yapabilir. Cevabı taslak kabul edin; kaynak\ncümlelerini aynen kopyalamak yerine bulguları paragraf bağlamına uygun\nözgün ifadelerle yazın. Her iddiayı ``paperqa_search`` veya\n``paperqa_read_pages`` ile doğrulayın. Araç, bu yazım biçimini garanti etmez.\n",
           "input_schema": {
             "properties": {
               "project": {

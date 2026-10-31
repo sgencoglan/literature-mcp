@@ -4,7 +4,16 @@ Bu dosya, bu projede çalışan yapay zekâ ajanları için **bağlayıcı** kur
 
 ## 1. Görev tanımı
 
-Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperqa_create_workspace` üç akış klasörünü açar; ardından kullanıcıya 1, 2 veya 3. iş akışından hangisini yapmak istediği sorulur. Seçim gelmeden arama, PDF işleme veya rapor üretme.
+Her yeni proje kullanıcı proje kökünü verince başlar; `paperqa_create_workspace` 00–03 akış klasörlerini açar; ardından kullanıcıya 0, 1, 2 veya 3. akıştan hangisini istediğini sor. Seçim gelmeden arama veya PDF işleme yapma.
+
+### İş akışı 0 — Konu, çalışma başlığı ve amaç keşfi
+
+1. Kullanıcının konu çerçevesini, hedef grubu/bağlamı, ilgili sonuçları ve uygulanabilirlik kısıtlarını netleştir.
+2. Varsayılan OpenAlex, PubMed, Europe PMC ve Crossref kaynaklarında eş anlamlılar ve alt temalarla tara. `search_literature` çağrılarında `sources=["openalex", "pubmed", "europepmc", "crossref"]`, `priority_only=false` kullan.
+3. Her sorgu ve her veritabanı için `sources_status`, kayıt sayısı ve hata/not bilgisini kaydet. Aranmayan veya başarısız kaynağı başarılı gibi işaretleme; kısıtlı kapsamlı kaynakları (PubMed/Europe PMC gibi) belirt.
+4. En yakın bulunan yayınlara ve kapsanmayan bağlam/örneklem/yöntem/sonuçlara dayalı sıralı çalışma başlığı, araştırma sorusu, genel ve özel amaçlar, önerilen desen, yapılabilirlik ve sıralama gerekçesi ver.
+5. Mutlak özgünlük iddiasında bulunma. `novelty_signal` zayıf/orta/belirgin boşluk sinyalidir; tam yenilik değerlendirmesi sistematik tarama, atıf zinciri ve alan uzmanı doğrulaması gerektirir.
+6. `schemas/topic-discovery.schema.json` uyumlu `00_konu_basligi_kesfi/00_konu_basligi_kesfi.json` üret ve `scripts/build_topic_discovery.py` ile HTML'e dönüştür. Kullanıcı öneri seçip kapsamı onaylayınca akış 1'e aktar.
 
 ### İş akışı 1 — Kaynak keşfi ve PDF listesi
 
@@ -85,7 +94,7 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 | `analysis_updates` | Kayıtlı denetim verisini okuma | Yeni analiz üretme |
 | `export_review` | Markdown/CSV/JSON rapor | HTML teslim (ayrıca üretilir) |
 | `list_projects` / `library_status` | Proje ve PDF envanteri | Arama |
-| `paperqa_create_workspace` | Seçilen proje kökünde üç akış klasörünü açma; kayıt/akış seçimi yapmaz | Kullanıcı proje yolunu vermeden |
+| `paperqa_create_workspace` | Seçilen proje kökünde 00–03 akış klasörlerini açma; kayıt/akış seçimi yapmaz | Kullanıcı proje yolunu vermeden |
 | `paperqa_projects` | Kayıtlı projeler | Arama |
 | `paperqa_register_project` | Yeni PDF klasörünü proje yapma | Mevcut projeyi yeniden kaydetme (gerekmedikçe) |
 | `paperqa_build_index` | Manifest → indeks | Projeler arası indeks karıştırma |
@@ -96,6 +105,7 @@ Her yeni proje üç aşamada başlar: kullanıcı proje kökünü verir; `paperq
 
 ## 4. İş akışı 1 — kabul kriterleri
 
+- Akış 0 kullanıldıysa seçilen ve kullanıcıca onaylanan başlık/amaç arama çerçevesine aktarılmalı.
 - Her adayın DOI'si `verify_doi_and_publisher` ile doğrulanmış olmalı.
 - `doi_provenance` en az bir veritabanında kayıt göstermeli.
 - `journal_rank` Q1–Q4 veya açık `not_found` döndürmeli.
@@ -156,6 +166,8 @@ kaydında `output_directory` zorunludur; `chapter-report build -o ...` ve
 Proje `output_directory` altında:
 
 ```text
+00_konu_basligi_kesfi/00_konu_basligi_kesfi.json
+00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
 01_kaynak_kesfi/01_fulltext_listesi.html
 01_kaynak_kesfi/01_fulltext_listesi.json
 02_bolum_taslagi/taslak/02_bolum_taslagi.json
@@ -185,6 +197,7 @@ Teslimden önce:
 - [ ] HTML'de düzenlenen metin kırmızı, anlamlı MCP eklemeleri mavi/yeşil ve renk lejantı mevcut.
 - [ ] Kaynak listesi ve raporlarda Ek 4 kaynak katkısı/sınır değerlendirmeleri mevcut.
 - [ ] İş akışı 3'te paragraf/makale bağlamı değerlendirmesi ve Ek 3 kaynak önerileri mevcut.
+- [ ] İş akışı 0'da dört varsayılan veri tabanı durumu, en yakın çalışmalar ve özgünlük sınırlılığı raporlanmış.
 - [ ] Yerel PDF yolu / `file://` linki yok.
 - [ ] DOI linkleri `https://doi.org/...`.
 - [ ] CSV UTF-8 (BOM'lu) ve başlık satırı doğru.
