@@ -2,14 +2,16 @@
 """Fulltext indirme listesini tek dosyalık HTML'e çevirir.
 
 Girdi: schemas/fulltext-list.schema.json biçiminde JSON.
-Çıktı: yazdırılabilir, çevrimdışı, tıklanabilir DOI/yayıncı linkleri içeren HTML.
+Çıktı: yazdırılabilir, çevrimdışı, tıklanabilir DOI/yayıncı düğmeleri ve kısa
+düz metin DOI içeren HTML. ``fulltext/`` klasörlerinde PDF'i bulunan
+kaynakların “İndirildi” kutusu otomatik işaretlenir.
 
 Standart kütüphane dışında bağımlılık yoktur.
 
 Kullanım:
     python3 scripts/build_fulltext_list.py \
-        <project-root>/01_kaynak_kesfi/01_fulltext_listesi.json \
-        -o <project-root>/01_kaynak_kesfi/01_fulltext_listesi.html
+        <project-root>/03_kaynak_kesfi/01_fulltext_listesi.json \
+        -o <project-root>/03_kaynak_kesfi/01_fulltext_listesi.html
     python3 scripts/build_fulltext_list.py adaylar.json --check
 """
 
@@ -20,10 +22,18 @@ import html
 import json
 import re
 import sys
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote, urlparse
+
+try:  # scripts/ içinden çalışırken
+    from project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
+    from output_naming import add_timestamp, add_timestamp_argument
+except ImportError:  # python -m scripts.build_fulltext_list
+    from scripts.project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
+    from scripts.output_naming import add_timestamp, add_timestamp_argument
 
 PRIORITY_ORDER = ["A", "B", "C"]
 PRIORITY_LABEL = {
@@ -139,7 +149,41 @@ def validate(data: Any) -> List[str]:
             if url and not safe_http_url(url):
                 errors.append(f"{path}.{key}: yalnızca http(s) adresi olmalı.")
 
+        score = item.get("score")
+        if score is not None and (
+            not isinstance(score, (int, float)) or isinstance(score, bool)
+        ):
+            errors.append(f"{path}.score: 0–1 arası sayı veya null olmalı.")
+
     return errors
+
+
+def _doi_database_link(doi: str) -> Tuple[Optional[str], Optional[str]]:
+    """DOI ön ekine göre yayıncı/veritabanı linkini türet.
+
+    JSON'da ``publisher_url`` yoksa bile beş öncelikli platformdan biri
+    tanınabiliyorsa "veritabanı" düğmesi gösterilir.
+    """
+    prefix = doi.split("/", 1)[0].lower() if "/" in doi else ""
+    if prefix == "10.1097":
+        return "Ovid LWW", f"https://doi.org/{doi}"
+    if prefix == "10.1016":
+        return "ScienceDirect", f"https://doi.org/{doi}"
+    if prefix == "10.1007":
+        return "SpringerLink", f"https://link.springer.com/article/{doi}"
+    if prefix in {"10.1111", "10.1002"}:
+        return "Wiley", f"https://onlinelibrary.wiley.com/doi/{doi}"
+    if prefix == "10.1080":
+        return "Taylor & Francis", f"https://www.tandfonline.com/doi/full/{doi}"
+    if prefix == "10.3102":
+        return "SAGE (AERA)", f"https://journals.sagepub.com/doi/{doi}"
+    if prefix == "10.1177":
+        return "SAGE", f"https://journals.sagepub.com/doi/{doi}"
+    if prefix == "10.4073":
+        return "Wiley (Campbell)", f"https://onlinelibrary.wiley.com/doi/{doi}"
+    if prefix == "10.1186":
+        return "SpringerLink (BMC)", f"https://link.springer.com/article/{doi}"
+    return None, None
 
 
 def derive_publisher_url(item: Dict[str, Any]) -> Optional[str]:
@@ -152,10 +196,86 @@ def derive_publisher_url(item: Dict[str, Any]) -> Optional[str]:
             url = safe_http_url(links.get(key))
             if url:
                 return url
-    return safe_http_url(item.get("preferred_url"))
+    url = safe_http_url(item.get("preferred_url"))
+    if url:
+        return url
+    _label, derived = _doi_database_link(str(item.get("doi") or ""))
+    return derived
 
 
-def render_rows(candidates: List[Dict[str, Any]]) -> str:
+def project_root_from_input(input_path: Path) -> Path:
+    """İş akışı klasöründen proje kökünü çıkar; bulunamazsa girdi klasörünü döndür."""
+    for parent in [input_path.parent, *input_path.parents]:
+        if parent.name in set(WORKFLOW_DIRECTORIES.values()):
+            return parent.parent
+    return input_path.parent
+
+
+def doi_filename_keys(doi: str) -> List[str]:
+    """İndirici dosya adındaki DOI parçası için olası anahtarları üret."""
+    variants = {
+        doi.replace("/", "_"),
+        doi.replace("/", ""),
+        doi.replace("/", "-"),
+    }
+    keys: List[str] = []
+    for value in variants:
+        text = unicodedata.normalize("NFKD", value)
+        text = text.encode("ascii", "ignore").decode("ascii")
+        key = re.sub(r"[^A-Za-z0-9._-]+", "-", text).strip("-._")[:110]
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
+def detect_downloaded_dois(
+    data: Dict[str, Any],
+    input_path: Path,
+    fulltext_dirs: Optional[List[Path]] = None,
+) -> set[str]:
+    """JSON alanlarından ve fulltext klasörlerindeki PDF adlarından indirilen DOI'leri bul."""
+    candidates = data.get("candidates") or []
+    dirs = list(fulltext_dirs or [])
+    if not dirs:
+        root = project_root_from_input(input_path)
+        dirs = [
+            *[
+                fulltext_dir(root, key)
+                for key in ("3", "4", "5")
+            ],
+        ]
+
+    pdf_names: List[str] = []
+    for directory in dirs:
+        if directory.is_dir():
+            pdf_names.extend(path.name for path in directory.glob("*.pdf"))
+
+    found: set[str] = set()
+    for item in candidates:
+        if not isinstance(item, dict):
+            continue
+        doi = str(item.get("doi") or "").strip()
+        if not doi:
+            continue
+        if item.get("oa_downloaded") is True:
+            found.add(doi)
+            continue
+        local_file = str(item.get("oa_local_file") or "").strip()
+        if local_file:
+            for directory in dirs:
+                if (directory / local_file).is_file():
+                    found.add(doi)
+                    break
+            if doi in found:
+                continue
+        keys = doi_filename_keys(doi)
+        if keys and any(key in name for key in keys for name in pdf_names):
+            found.add(doi)
+    return found
+
+
+def render_rows(candidates: List[Dict[str, Any]], downloaded_dois: Optional[set[str]] = None) -> str:
+    downloaded_dois = downloaded_dois or set()
     rows: List[str] = []
     for index, item in enumerate(candidates, start=1):
         doi = str(item["doi"])
@@ -173,29 +293,48 @@ def render_rows(candidates: List[Dict[str, Any]]) -> str:
         access = item.get("access") or ("Açık erişim" if open_access else "Kurum erişimi")
 
         publisher_url = derive_publisher_url(item)
+        publisher_label = str(item.get("publisher") or "")
+        if not safe_http_url(item.get("publisher_url")):
+            derived_label, _derived_url = _doi_database_link(str(doi))
+            if derived_label:
+                publisher_label = derived_label
         oa_pdf_url = safe_http_url(item.get("oa_pdf_url"))
         doi_url = doi_href(doi)
+        downloaded = doi in downloaded_dois
 
         q_class = str(quartile).lower() if quartile in {"Q1", "Q2", "Q3", "Q4"} else "q-none"
         citations_text = "—" if citations is None else f"{citations:,}".replace(",", ".")
         oa_badge = '<span class="badge oa">OA</span>' if open_access else '<span class="badge closed">Kapalı</span>'
+        downloaded_badge = '<div><span class="badge done">PDF indirildi</span></div>' if downloaded else ""
 
-        links = [f'<a class="btn doi" href="{esc(doi_url)}" target="_blank" rel="noopener">DOI</a>']
+        links = [
+            '<div class="button-row">',
+            f'<a class="btn doi" href="{esc(doi_url)}" target="_blank" rel="noopener">DOI</a>',
+        ]
         if publisher_url:
             links.append(
                 f'<a class="btn pub" href="{esc(publisher_url)}" target="_blank" rel="noopener">'
-                f'{esc(publisher)}</a>'
+                f'{esc(publisher_label or publisher)}</a>'
             )
         if oa_pdf_url:
+            oa_label = "OA PDF (indirildi)" if downloaded else "OA PDF"
             links.append(
-                f'<a class="btn oa" href="{esc(oa_pdf_url)}" target="_blank" rel="noopener">OA PDF</a>'
+                f'<a class="btn oa" href="{esc(oa_pdf_url)}" target="_blank" rel="noopener">'
+                f'{oa_label}</a>'
             )
+        links.append("</div>")
+        links.append(
+            f'<div class="doi-address"><span class="link-label">doi</span>'
+            f'<span class="plain-url">{esc(doi)}</span></div>'
+        )
 
+        checked_attr = " checked" if downloaded else ""
+        downloaded_attr = ' data-downloaded="1"' if downloaded else ""
         rows.append(
             f"""
       <tr>
         <td class="check">
-          <input type="checkbox" class="dl" data-doi="{esc(doi)}" aria-label="{esc(title)} — indirildi">
+          <input type="checkbox" class="dl" data-doi="{esc(doi)}"{downloaded_attr}{checked_attr} aria-label="{esc(title)} — indirildi">
         </td>
         <td class="num">{index}</td>
         <td class="prio"><span class="badge prio-{esc(priority.lower())}">{esc(PRIORITY_LABEL.get(priority, priority))}</span></td>
@@ -212,8 +351,9 @@ def render_rows(candidates: List[Dict[str, Any]]) -> str:
         <td class="access">
           <div>{oa_badge}</div>
           <div class="muted">{esc(access)}</div>
+          {downloaded_badge}
         </td>
-        <td class="links">{' '.join(links)}</td>
+        <td class="links">{''.join(links)}</td>
       </tr>"""
         )
         basis_labels = {
@@ -227,8 +367,17 @@ def render_rows(candidates: List[Dict[str, Any]]) -> str:
             basis_text += f' · incelenen PDF sayfaları: {esc(item["pages"])}'
         if basis not in {"fulltext", "fulltext_pages"}:
             basis_text += " — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir"
+        score = item.get("score")
+        score_html = ""
+        if isinstance(score, (int, float)) and not isinstance(score, bool):
+            score_html = (
+                f'<p><strong>Kalite skoru:</strong> {float(score):.3f} '
+                '<span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p>'
+            )
         detail_parts = [
             f'<p><strong>Bu çalışmadaki rolü:</strong> {esc(item["project_relevance"])}</p>',
+            f'<p><strong>Neden seçildi:</strong> {esc(rationale)}</p>',
+            score_html,
             "<div><strong>Neyi destekliyor:</strong><ul>" + "".join(f"<li>{esc(value)}</li>" for value in item["supports"]) + "</ul></div>",
             "<div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul>" + "".join(f"<li>{esc(value)}</li>" for value in item["does_not_support"]) + "</ul></div>",
             "<div><strong>Sınırlar ve dikkat noktaları:</strong><ul>" + "".join(f"<li>{esc(value)}</li>" for value in item["limits"]) + "</ul></div>",
@@ -360,7 +509,29 @@ td.src { min-width: 340px; }
 td.journal { min-width: 170px; }
 td.cites { width: 70px; text-align: right; white-space: nowrap; }
 td.access { min-width: 120px; }
-td.links { min-width: 190px; white-space: nowrap; }
+td.links { min-width: 260px; white-space: normal; }
+.link-line, .doi-address { margin: 5px 0; }
+.button-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.link-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.plain-url {
+  display: block;
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--ink);
+}
+.url {
+  display: block;
+  font-size: 12px;
+  word-break: break-all;
+  line-height: 1.4;
+}
 .authors { font-size: 12.5px; color: var(--muted); }
 .title { font-weight: 600; margin: 2px 0 5px; }
 .rationale { font-size: 12.5px; color: var(--muted); }
@@ -384,6 +555,7 @@ td.links { min-width: 190px; white-space: nowrap; }
 .prio-b { background: #fff4d6; color: #7a5200; }
 .prio-c { background: #edf1f5; color: var(--gray); }
 .oa { background: #e2f4ea; color: var(--green); }
+.done { background: #e2f4ea; color: var(--green); }
 .closed { background: #f0f2f4; color: var(--gray); }
 .q1 { background: #e2f4ea; color: var(--green); }
 .q2 { background: #e7f0fa; color: var(--accent); }
@@ -446,8 +618,8 @@ footer {
     <div class="stat"><span class="num">__TOTAL__</span><small>Toplam kaynak</small></div>
     <div class="stat"><span class="num">__OA_COUNT__</span><small>Açık erişim</small></div>
     <div class="stat"><span class="num">__Q1_COUNT__</span><small>Q1 dergi</small></div>
-    <div class="stat"><span class="num" id="stat-done">0</span><small>İndirildi</small></div>
-    <div class="stat"><span class="num" id="stat-left">__TOTAL__</span><small>Kalan</small></div>
+    <div class="stat"><span class="num" id="stat-done">__DOWNLOADED_COUNT__</span><small>İndirildi</small></div>
+    <div class="stat"><span class="num" id="stat-left">__REMAINING_COUNT__</span><small>Kalan</small></div>
   </section>
   <section class="toolbar no-print">
     <label class="search">Ara
@@ -481,8 +653,10 @@ __ROWS__
 __NOTES__
 </main>
 <footer>
-  Bu liste yalnızca DOI ve yayıncı sayfası bağlantıları içerir; PDF indirmez, ödeme duvarını veya erişim kontrolünü aşmaz.
-  Tam metinleri kendi kurum hesabınızdan indirip proje klasörüne koyun. "İndirildi" işaretleri bu tarayıcıda saklanır.
+  DOI ve yayıncı/veritabanı düğmeleri bağlantıyı yeni sekmede açar; DOI kısa biçimde düz metin olarak gösterilir.
+  OA PDF bağlantısı tıklanabilir açık adrestir.
+  Açık erişimli PDF'leri <code>scripts/download_open_access.py</code> ile proje klasörüne indirebilirsiniz.
+  PDF'i indirilmiş kaynaklar otomatik işaretlenir; diğer "İndirildi" işaretleri bu tarayıcıda saklanır.
 </footer>
 <script>
 const PROJECT = __PROJECT_JS__;
@@ -534,14 +708,18 @@ boxes.forEach(box => box.addEventListener("change", writeState));
 if (filter) filter.addEventListener("input", applyFilter);
 document.getElementById("print").addEventListener("click", () => window.print());
 document.getElementById("clear").addEventListener("click", () => {
-  if (!boxes.some(b => b.checked)) return;
-  if (!window.confirm("Tüm indirildi işaretleri temizlensin mi?")) return;
-  boxes.forEach(box => { box.checked = false; });
+  if (!boxes.some(b => b.checked && b.dataset.downloaded !== "1")) return;
+  if (!window.confirm("İndirilenler korunacak; diğer indirildi işaretleri temizlensin mi?")) return;
+  boxes.forEach(box => {
+    if (box.dataset.downloaded !== "1") box.checked = false;
+  });
   writeState();
 });
 
 const saved = readState();
-boxes.forEach(box => { box.checked = saved.has(box.dataset.doi); });
+boxes.forEach(box => {
+  box.checked = box.dataset.downloaded === "1" || saved.has(box.dataset.doi);
+});
 updateStats();
 </script>
 </body>
@@ -549,9 +727,11 @@ updateStats();
 """
 
 
-def build_html(data: Dict[str, Any]) -> str:
+def build_html(data: Dict[str, Any], downloaded_dois: Optional[set[str]] = None) -> str:
     candidates: List[Dict[str, Any]] = data["candidates"]
+    downloaded_dois = downloaded_dois or set()
     total = len(candidates)
+    downloaded_count = sum(1 for item in candidates if str(item.get("doi")) in downloaded_dois)
     oa_count = sum(1 for item in candidates if item.get("open_access"))
     q1_count = sum(1 for item in candidates if item.get("quartile") == "Q1")
     target = data.get("target_count") or total
@@ -571,9 +751,11 @@ def build_html(data: Dict[str, Any]) -> str:
         "__GENERATED__": esc(generated),
         "__TARGET__": esc(target),
         "__TOTAL__": str(total),
+        "__DOWNLOADED_COUNT__": str(downloaded_count),
+        "__REMAINING_COUNT__": str(total - downloaded_count),
         "__OA_COUNT__": str(oa_count),
         "__Q1_COUNT__": str(q1_count),
-        "__ROWS__": render_rows(candidates),
+        "__ROWS__": render_rows(candidates, downloaded_dois),
         "__NOTES__": notes_html,
         "__PROJECT_JS__": project_js,
     }
@@ -587,6 +769,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("-o", "--output", type=Path, help="Çıktı HTML dosyası")
     parser.add_argument("--check", action="store_true", help="Yalnızca doğrula; HTML üretme")
     parser.add_argument("--force", action="store_true", help="Var olan çıktı dosyasının üzerine yaz")
+    parser.add_argument(
+        "--fulltext-dir",
+        type=Path,
+        action="append",
+        help="İndirilen PDF klasörü; birden çok kez verilebilir (varsayılan: proje akış klasörleri).",
+    )
+    add_timestamp_argument(parser)
     args = parser.parse_args(argv)
 
     if not args.input.is_file():
@@ -614,18 +803,24 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("Hata: --check verilmediyse -o/--output zorunludur.", file=sys.stderr)
         return 2
 
-    if args.output.exists() and not args.force:
+    output = add_timestamp(args.output, enabled=args.timestamp)
+    if output.exists() and not args.force:
         print(
-            f"Hata: çıktı zaten var: {args.output}\n"
+            f"Hata: çıktı zaten var: {output}\n"
             f"Üzerine yazmak için --force kullanın.",
             file=sys.stderr,
         )
         return 2
 
-    html_text = build_html(data)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(html_text, encoding="utf-8")
-    print(f"Yazıldı: {args.output} ({len(html_text):,} bayt, {len(data['candidates'])} aday)")
+    downloaded_dois = detect_downloaded_dois(data, args.input, args.fulltext_dir)
+    html_text = build_html(data, downloaded_dois)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(html_text, encoding="utf-8")
+    print(
+        f"Yazıldı: {output} ({len(html_text):,} bayt, "
+        f"{len(data['candidates'])} aday, {len(downloaded_dois)} indirilmiş)"
+    )
+    print("Not: önceki listeler silinmedi; zaman soneki sayesinde yeni dosya eklendi.")
     return 0
 
 

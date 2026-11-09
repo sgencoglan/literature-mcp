@@ -10,7 +10,7 @@ ayrı manifest CSV'si ve ayrı Tantivy indeksi kullanır.
 
 | Araç | Görev |
 |---|---|
-| `paperqa_create_workspace` | Seçilen proje kökünde 00–03 iş akışı klasörlerini ve 2/3 için ayrı PDF klasörlerini açar; kayıt veya seçim yapmaz |
+| `paperqa_create_workspace` | Seçilen proje kökünde 01–05 iş akışı klasörlerini ve her akış için `fulltext/` alt klasörünü açar; kayıt, akış veya tür seçimi yapmaz |
 | `paperqa_projects` | Kayıtlı projeleri ve durumlarını listeler |
 | `paperqa_register_project` | PDF klasörünü kaydeder; kullanıcı proje klasörü olan `output_directory` zorunludur |
 | `paperqa_build_index` | Manifestteki dosyalardan proje indeksini kurar/günceller; `rebuild` öncesi yedek alır |
@@ -30,12 +30,23 @@ başlattıysa boşta kalınca durdurur.
 
 ## Kurulum
 
+Python 3.10+ gerekir. PaperQA2 indeksi PyTorch ve `sentence-transformers`
+ister. CUDA paketlerini indirmemek için depo kökünden CPU-only kurulum
+betiğini çalıştırın:
+
 ```bash
-cd packages/paperqa-local
-python3 -m pip install "paperqa" mcp pymupdf httpx
+bash scripts/setup_paperqa.sh
+bash scripts/setup_paperqa.sh --check
 ```
 
-Python 3.10+ gerekir.
+Betik önce `https://download.pytorch.org/whl/cpu` indeksinden CPU PyTorch,
+ardından PaperQA2, `sentence-transformers`, MCP, PyMuPDF ve httpx kurar.
+`--check` torch sürümünün CUDA'sız olduğunu ve tüm importların hazır
+olduğunu doğrular. Elle kurulum listesi:
+[`../../requirements-paperqa.txt`](../../requirements-paperqa.txt).
+
+İlk indeks kurulumunda `st-multi-qa-MiniLM-L6-cos-v1` embedding modeli
+indirilir; internet ve disk alanı gerekir.
 
 ## Proje klasörünü başlatma
 
@@ -51,16 +62,16 @@ paperqa_create_workspace(
 Proje adı klasör adından alınır; gerekirse `name="example-project"` ile
 verilebilir.
 
-Araç `00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/` ve `03_taslak_denetimi/`
-klasörlerini; PDF'ler için `02_bolum_taslagi/fulltext/` ve
-`03_taslak_denetimi/fulltext/` klasörlerini oluşturur. Var olan dosyaları silmez
-veya taşımaz, PaperQA projesi kaydetmez. Her iş akışında PDF'ler `fulltext/`,
-taslak dosyaları ve raporlar `taslak/` altında tutulur. Araçtan sonra kullanıcıya 0, 1, 2 veya
-3. iş akışından hangisini yapmak istediğini sorun. Akış 0 konu/başlık/amaç
-keşfidir; varsayılan OpenAlex, PubMed, Europe PMC, Crossref taramasını
-`00_konu_basligi_kesfi/` içinde raporlar. Kullanıcı önerilen başlıklardan
-birini seçtiğinde yöntem/tasarım önerisi de aynı klasöre JSON ve çevrimdışı
-HTML olarak eklenir. Akış 2 veya 3 seçilince
+Araç `01_konu_belirleme/`, `02_yazim_plani/`, `03_kaynak_kesfi/`, `04_taslak/`
+ve `05_analiz/` klasörlerini; her akış için `fulltext/` alt klasörünü oluşturur.
+Var olan dosyaları silmez veya taşımaz, PaperQA projesi kaydetmez. Çıktılar
+doğrudan akış klasörüne yazılır (ayrı `taslak/` alt klasörü yoktur). Araçtan
+sonra kullanıcıya 1–5 arasındaki iş akışlarından hangisini yapmak istediğini
+sorun. Akış 1 konu/başlık/tür seçimidir; varsayılan OpenAlex, Semantic Scholar,
+PubMed, Europe PMC ve Crossref taramasını `01_konu_belirleme/` içinde raporlar.
+Kullanıcı önerilen başlıklardan birini seçtiğinde yöntem/tasarım önerisi de
+aynı klasöre JSON ve çevrimdışı HTML olarak eklenir. Akış 2 ise alt başlık
+iskeletini, akış 3 plana göre kaynak atamasını üretir. Akış 4 veya 5 seçilince
 yalnızca o akışın PDF klasörünü aracın döndürdüğü ayrı proje adıyla kaydedin.
 
 ### llama.cpp (önerilen)

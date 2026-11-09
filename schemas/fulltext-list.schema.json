@@ -4,7 +4,12 @@
   "title": "Fulltext indirme listesi",
   "description": "İş akışı 1 çıktısı. scripts/build_fulltext_list.py bu dosyayı HTML'e çevirir.",
   "type": "object",
-  "required": ["project", "title", "query", "candidates"],
+  "required": [
+    "project",
+    "title",
+    "query",
+    "candidates"
+  ],
   "properties": {
     "project": {
       "type": "string",
@@ -78,10 +83,19 @@
           "type": "string"
         },
         "quartile": {
-          "enum": ["Q1", "Q2", "Q3", "Q4", "-"]
+          "enum": [
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4",
+            "-"
+          ]
         },
         "citations": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 0
         },
         "open_access": {
@@ -98,13 +112,52 @@
           ]
         },
         "publisher_url": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "oa_pdf_url": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "oa_downloaded": {
+          "type": "boolean",
+          "description": "Açık erişimli PDF fulltext klasörüne indirildiyse true."
+        },
+        "oa_local_file": {
+          "type": "string",
+          "description": "İndirilen PDF'in dosya adı (yol değil)."
+        },
+        "oa_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "oa_license": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "oa_host_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "oa_checked_at": {
+          "type": "string"
         },
         "priority": {
-          "enum": ["A", "B", "C"],
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ],
           "description": "A = vazgeçilmez, B = güçlü ikinci halka, C = yedek/bağlam."
         },
         "access": {
@@ -123,28 +176,67 @@
         "supports": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "does_not_support": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "limits": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "assessment_basis": {
-          "enum": ["metadata", "abstract", "fulltext", "fulltext_pages"],
+          "enum": [
+            "metadata",
+            "abstract",
+            "fulltext",
+            "fulltext_pages"
+          ],
           "description": "Tam metin incelenmediyse değerlendirme ön bilgi olarak gösterilir."
         },
-        "pages": { "type": "string", "description": "fulltext_pages için incelenen PDF sayfaları." }
+        "pages": {
+          "type": "string",
+          "description": "fulltext_pages için incelenen PDF sayfaları."
+        },
+        "score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Arama kapsam motorunun 0–1 kalite/ilgi skoru (ön eleme göstergesi)."
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "assessment_basis": { "const": "fulltext_pages" } }, "required": ["assessment_basis"] },
-          "then": { "required": ["pages"] }
+          "if": {
+            "properties": {
+              "assessment_basis": {
+                "const": "fulltext_pages"
+              }
+            },
+            "required": [
+              "assessment_basis"
+            ]
+          },
+          "then": {
+            "required": [
+              "pages"
+            ]
+          }
         }
       ],
       "additionalProperties": true

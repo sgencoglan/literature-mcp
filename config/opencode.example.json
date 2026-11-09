@@ -43,7 +43,11 @@
           "PAPER_LIBRARY_DIR": "<home>/Documents/papers",
           "REVIEW_OUTPUT_DIR": "<home>/Documents/reviews",
           "JOURNAL_RANK_CSV": "<repo>/packages/sciencedirect-meta/data/scimagojr_2024.csv.gz",
-          "CROSSREF_MAILTO": "<email>"
+          "CROSSREF_MAILTO": "<email>",
+          "OPENALEX_API_KEY": "<openalex-api-key>",
+          "PUBMED_API_KEY": "<pubmed-api-key>",
+          "SEMANTIC_SCHOLAR_API_KEY": "<semantic-scholar-api-key>",
+          "NCBI_EMAIL": "<email>"
         }
       },
       "paperqa-local": {

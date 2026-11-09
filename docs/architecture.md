@@ -11,7 +11,7 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ MCP                           │ MCP
 ┌───────────────▼───────────────┐   ┌───────────▼─────────────────────┐
-│ sciencedirect-meta (19 araç)  │   │ paperqa-local (9 araç)          │
+│ sciencedirect-meta (22 araç)  │   │ paperqa-local (10 araç)         │
 │ • DOI/metadata arama          │   │ • proje kaydı + manifest        │
 │ • DOI doğrulama, provenance   │   │ • PaperQA2 indeksi              │
 │ • journal quartile (SCImago)  │   │ • semantik arama (LLM'siz)      │
@@ -40,21 +40,23 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 
 ### sciencedirect-meta
 
-- **6 DOI/link aracı:** `search_sciencedirect`, `search_pubmed`, `search_europepmc`, `search_all`, `get_article`, `get_links`.
+- **9 DOI/link aracı:** `search_sciencedirect`, `search_pubmed`, `search_europepmc`, `search_semantic_scholar`, `search_arxiv`, `search_clinicaltrials`, `search_all`, `get_article`, `get_links`.
 - **13 araştırma/yerel araç:** `list_projects`, `project_audit`, `search_literature`, `deep_research`, `verify_doi_and_publisher`, `doi_provenance`, `journal_rank`, `read_paper`, `compare_studies`, `evidence_check`, `export_review`, `analysis_updates`, `library_status`.
-- Açık metadata kaynaklarını kullanır (OpenAlex, PubMed, Europe PMC, Crossref). ScienceDirect sitesine istek atmaz; Elsevier PII linklerini Crossref üzerinden çözer.
+- Açık metadata kaynaklarını kullanır (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, ClinicalTrials.gov). ScienceDirect sitesine istek atmaz; Elsevier PII linklerini Crossref üzerinden çözer.
+- `search_all`, `search_literature` ve `deep_research` cevapları relevance/quality `score`, kaynak bazlı `coverage` ve `evidence_scarcity` alanlarını taşır. Coverage raporu `scripts/build_search_coverage.py` ile `03_kaynak_kesfi/01_arama_kapsam_raporu_*` olarak yazılır.
+- Dış kaynak hataları diğer kaynakları etkilemez; her kaynak kendi `sources_status`/`coverage` satırında raporlanır.
 - LLM çağırmaz. Tüm çıktılar deterministiktir; ağ erişimi kesildiğinde yerel araçlar (`read_paper`, `journal_rank`, `analysis_updates`, `library_status`, `export_review`) çalışmaya devam eder.
 - Dergi quartile verisi yerel `data/scimagojr_2024.csv.gz` dosyasından okunur;
   dosya `scripts/fetch_scimago.sh` ile indirilir.
 
 ### paperqa-local
 
-- **9 araç:** `paperqa_create_workspace`, `paperqa_projects`, `paperqa_register_project`, `paperqa_build_index`, `paperqa_status`, `paperqa_search`, `paperqa_read_pages`, `paperqa_llm_status`, `paperqa_ask`.
+- **10 araç:** `paperqa_create_workspace`, `paperqa_promote_fulltext`, `paperqa_projects`, `paperqa_register_project`, `paperqa_build_index`, `paperqa_status`, `paperqa_search`, `paperqa_read_pages`, `paperqa_llm_status`, `paperqa_ask`.
 - `paperqa_search` ve `paperqa_read_pages` LLM çağırmaz; embedding tabanlı arama ve PyMuPDF sayfa çıkarımı yapar.
 - `paperqa_ask` yerel llama.cpp sunucusunu kullanır. Varsayılan model Qwen2.5-3B-Instruct Q4_K_M'dir. CPU'da yavaştır ve 3B model bile atıf hatası yapabilir; çıktısı **taslaktır**, kanıt değildir. 7B model bu donanım sınıfında önerilmez.
 - `paperqa_ask`, sunucu kapalıysa llama.cpp'yi otomatik başlatır (`PAPERQA_AUTO_START=1`), model hazır olana kadar bekler ve yalnızca kendi başlattığı sunucuyu `PAPERQA_AUTO_STOP_IDLE` saniye sonra durdurur. Elle başlatılan sunucuya dokunmaz; çökme sonrası kalan sunucu pid dosyasından sahiplenilir.
 - `paperqa_llm_status` arka ucun erişilebilirliğini, yüklü modelleri ve otomatik yaşam döngüsü durumunu (`auto_start`, `auto_stop_idle_seconds`, `managed`, `managed_pid`) raporlar; sunucuyu başlatmaz.
-- `paperqa_create_workspace`, seçilen proje kökünde 00–03 akış klasörlerini açar. `paperqa_register_project` proje kökü olan `output_directory` yolunu zorunlu ister. `export_review(project=...)` ve rapor üretimi bu kökü kullanır.
+- `paperqa_create_workspace`, seçilen proje kökünde 01–05 akış klasörlerini açar. `paperqa_register_project` proje kökü olan `output_directory` yolunu zorunlu ister. `export_review(project=...)` ve rapor üretimi bu kökü kullanır.
 - İndeks üyeliği manifest ile sabittir. Klasöre sonradan bırakılan PDF, manifeste eklenmedikçe indekse girmez.
 - Manifest yolları proje klasörüne göre doğrulanır; mutlak yol, `..` kaçışı ve çift kayıt reddedilir. `paperqa_status` manifest–indeks uyuşmazlıklarını ve `healthy` durumunu raporlar. Aynı veya iç içe indeks yolu kullanan projeler reddedilir.
 - `paperqa_build_index(rebuild=True)` eski indeksi `.bak-*` klasörüne taşır; çökme durumunda geri getirir, kısmi başarısızlıkta yedeği korur.
@@ -65,8 +67,14 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 - Düzeltilmiş bölüm metni + Ek 1 + Ek 2 + Ek 4'ü; iş akışı 3'te ayrıca bağlam değerlendirmesi + Ek 3 kaynak önerilerini tek dosyalık HTML'e yazar.
 - `scripts/build_topic_discovery.py`, JSON tarama kaydı ve sıralı araştırma önerilerini çevrimdışı HTML'e çevirir.
 - Kalite kapısı: DOI/sayfa/alıntı/çeviri zorunluluğu, yerel yol yasağı, HTML dengesi.
+  Chapter-report HTML'lerinde DOI kopyalama düğmesi için tek, denetimli gömülü
+  betik izinlidir; diğer `<script>`, `<iframe>` ve `on*` öznitelikleri reddedilir.
+  Fulltext listesi HTML'inde DOI kopyalama düğmesi yoktur; onun yerine
+  tıklanabilir DOI/yayıncı düğmeleri ve düz metin DOI açık adresi bulunur.
 - Manifest tabanlı temizlik: yalnızca üretilmiş dosyaları siler; PDF/indeks/registry'ye dokunmaz.
 - Tasarım tek CSS dosyasındadır: `packages/report-kit/src/report_kit/templates/chapter-report.css`.
+- HTML/Markdown/manifest adları varsayılan olarak `_YYYYMMDD-HHMMSS` zaman
+  soneki alır; `--no-timestamp` sabit ad üretir.
 
 ### Ortak proje kaydı
 
@@ -86,95 +94,113 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 
 ## Veri akışı
 
-### Başlangıç ve iş akışı 1 — Kaynak keşfi ve PDF listesi
+### Başlangıç ve akış 1 — Konu belirleme
 
-Kullanıcı proje kökünü verir; `paperqa_create_workspace` 00–03 akış klasörlerini
-oluşturur. Ajan ardından 0/1/2/3 seçimini sorar ve yalnızca seçilen akışı
-başlatır. Akış 0 başlık/amaç önerilerini, akış 1 kaynak listesini üretir.
+Kullanıcı proje kökünü verir; `paperqa_create_workspace` 01–05 akış klasörlerini
+oluşturur. Ajan ardından 1–5 seçimini sorar ve yalnızca seçilen akışı başlatır.
+Akış 1 başlık/amaç önerilerini üretir; ürün türü ve hedef kelime sayısı burada
+sabitlenir.
 
 ```text
 Araştırma konusu
    │
    ├─ search_literature
-   │      └─ OpenAlex + PubMed + Europe PMC + Crossref
+   │      └─ OpenAlex + Semantic Scholar + PubMed + Europe PMC + Crossref
+   │         (arXiv ve ClinicalTrials.gov `sources` ile isteğe bağlı)
+   │      └─ coverage + score + evidence_scarcity
    ├─ olası boşluklar + başlık/amaç önerileri
-   │      └─ 00_konu_basligi_kesfi/00_konu_basligi_kesfi.html
-   ├─ kullanıcı başlık seçer
-   │      └─ yöntem/tasarım önerisi → 00_konu_basligi_kesfi/01_yontem_tasarimi.html
-   │
-Soru/kapsam
-   │
-   ├─ deep_research / search_literature
-   │      └─ OpenAlex + PubMed + Europe PMC + Crossref
-   │
-   ├─ get_article / get_links
-   │      └─ metadata + öncelikli linkler + DOI
-   │
-   ├─ verify_doi_and_publisher / doi_provenance / journal_rank
-   │      └─ DOI gerçek mi, yayıncı kim, Q kaç?
-   │
-   ├─ aday JSON (schemas/fulltext-list.schema.json)
-   │      └─ scripts/build_fulltext_list.py
-   │             ├─ 01_kaynak_kesfi/00_kaynak_listeleri.html (çoklu liste giriş sayfası)
-   │             └─ 01_kaynak_kesfi/<araştırma>_fulltext_listesi.html (insan)
+   │      └─ 01_konu_belirleme/01_konu_<zaman>.json/.html
+   ├─ kullanıcı başlık + tür + hedef kelime seçer
+   │      └─ (ampirik makale) yöntem/tasarım
+   │             └─ 01_konu_belirleme/01_yontem_tasarimi_<zaman>.json/.html
+   └─ kapı: başlık ve tür onaylanmadan akış 2 başlamaz
 ```
 
-### İş akışı 2 — PDF'lerden kanıta dayalı taslak
+### Akış 2 — Yazım planı
 
-Akış 2 PDF'leri `<proje-klasörü>/02_bolum_taslagi/fulltext/` altında, taslak
-dosyaları `02_bolum_taslagi/taslak/` altında tutulur. Akış 3 girdileri ise
-`03_taslak_denetimi/taslak/` ve `03_taslak_denetimi/fulltext/` altındadır. İki akış ayrı
-PaperQA proje adı, manifest ve indeks kullanır. HTML aynı chapter-report şablonunu kullanır
-ve bağlam değerlendirmesi, Ek 1, Ek 2 iddia–kanıt matrisi, Ek 3 kaynak önerileri ile Ek 4 kaynak katkısı/sınırlarını içerir. Manifest ve indeks proje
-kökündeki `.literature-mcp/` altındadır.
+Onaylı tür ve uzunluğa göre alt başlık iskeleti kurulur. Her alt başlık için
+amaç, hedef kelime ve gereken kanıt türü yazılır. Bu akış kaynak seçmez;
+yalnızca iskeletin gerçekçiliğini doğrulayacak hafif tarama yapar.
 
 ```text
-Kullanıcı PDF'leri akışın fulltext/ klasörüne koyar → paper_directory
+Onaylı başlık + tür + hedef kelime
    │
+   ├─ alt başlıklar S1…Sn + purpose + target_words
+   ├─ evidence_needs (tasarım + min_count)
+   ├─ scripts/build_writing_plan.py
+   │      └─ 02_yazim_plani/01_yazim_plani_<zaman>.json/.html
+   └─ kapı: kullanıcı onayı (plan_status=approved)
+```
+
+### Akış 3 — Plana göre kaynak keşfi ve fulltext seçimi
+
+Her alt başlık için hedefli sorgular üretilir; aday havuzu tek yerde toplanır.
+Atama matrisi alt başlık → DOI eşlemesini kurar ve karşılanamayan kanıt
+ihtiyaçlarını boşluk olarak raporlar. Yalnızca atanmış DOI'lerin PDF'leri
+indirilir.
+
+```text
+Onaylı plan
+   │
+   ├─ alt başlık başına 2–4 sorgu → deep_research / search_literature
+   │      └─ coverage + score + evidence_scarcity
+   ├─ scripts/build_assignment_matrix.py --update-plan
+   │      ├─ 03_kaynak_kesfi/00_atama_matrisi_<zaman>.json/.html
+   │      └─ plana assigned_dois/status/gap_note geri yazılır
+   ├─ boşluk varsa kullanıcıya sor (kapsam daralt / gerekçeli kabul)
+   ├─ get_article / get_links + verify_doi_and_publisher / doi_provenance / journal_rank
+   ├─ scripts/build_fulltext_list.py
+   │      └─ 03_kaynak_kesfi/01_fulltext_listesi_<zaman>.json/.html
+   ├─ scripts/build_search_coverage.py --fulltext-list ... --auto-report
+   │      └─ 03_kaynak_kesfi/01_arama_kapsam_raporu_<zaman>.json/.html/.md
+   ├─ scripts/build_fulltext_index.py
+   │      └─ 03_kaynak_kesfi/00_kaynak_listeleri_<zaman>.html
+   └─ scripts/download_open_access.py (yalnızca atanmış DOI'ler)
+          └─ 03_kaynak_kesfi/fulltext/<doi-adi>.pdf
+```
+
+### Akış 4 — Taslak yazma
+
+PDF'ler akış 3'ten `04_taslak/fulltext/` altına aktarılır (DOI adına çevrilir),
+PaperQA projesi kaydedilir ve indekslenir. Her paragraf sayfa doğrulamalı bir
+kaynağa bağlanır.
+
+```text
+03_kaynak_kesfi/fulltext/ → scripts/promote_fulltext.py --to 4
+   │      └─ 04_taslak/fulltext/<doi-adi>.pdf
    ├─ paperqa_register_project → manifest.csv
    ├─ project_audit → DOI/metadata/atıf denetimi
    ├─ paperqa_build_index → indexes/<proje>
    ├─ paperqa_status + library_status → doğrulama
-   │
-   └─ paperqa_search + paperqa_read_pages / read_paper
-          └─ bölüm taslağı + kaynakça
-                 └─ export_review (MD/CSV/JSON)
+   ├─ paperqa_search + paperqa_read_pages / read_paper
+   └─ chapter-report build
+          └─ 04_taslak/04_taslak_<zaman>.json/.md/.html/.manifest.json
 ```
 
-### İş akışı 3 — Mevcut taslağı denetleme
+### Akış 5 — Taslak analizi
 
-Raporun ana teslimi `03_taslak_denetimi/taslak/05_bolum_raporu.html` olur.
+İki denetim birlikte çalışır: plan uyumu ve kanıt denetimi. Plan uyumu,
+taslağın akış 2 iskeletine ne kadar uyduğunu ölçer; kanıt denetimi her iddiayı
+sayfa doğrulamalı kaynağa bağlar.
 
 ```text
-Kullanıcının taslağı (`03_taslak_denetimi/taslak/`) + PDF'ler
-(`03_taslak_denetimi/fulltext/`)
+02_yazim_plani/01_yazim_plani_<zaman>.json + 04_taslak/04_taslak_<zaman>.json
    │
-   ├─ project_audit / paperqa_status / library_status
-   │      └─ gerçek dosya ve indeks durumu
+   ├─ scripts/check_plan_compliance.py --strict
+   │      └─ 05_analiz/05_plan_uyumu_<zaman>.json/.html
+   │         (yazılmayan başlık, kelime sapması, plansız bölüm, kullanılmayan atama)
    │
-   ├─ taslağı cümlelere/iddialara ayır
-   │
-   ├─ her iddia:
-   │      ├─ paperqa_search(project, query)
-   │      ├─ paperqa_read_pages(project, doi, sayfa)
-   │      └─ gerekirse read_paper
-   │
+   ├─ her iddia: paperqa_search + paperqa_read_pages
    ├─ verify_doi_and_publisher / doi_provenance / journal_rank
-   │
    ├─ compare_studies / evidence_check (yardımcı)
-   │
-   ├─ düzeltme kartları
-   │      └─ schemas/change-card.schema.json
-   │
-   ├─ Ek 2 kaynak denetimi
-   ├─ iddia–kanıt matrisi
-   │      └─ schemas/claim-evidence.schema.json
-   │
-   ├─ chapter-report kalite kapısı
-   │      └─ schemas/chapter-report.schema.json
-   │
-   └─ 05_bolum_raporu.html + manifest
+   ├─ düzeltme kartları (schemas/change-card.schema.json)
+   ├─ Ek 2 kaynak denetimi + iddia–kanıt matrisi (schemas/claim-evidence.schema.json)
+   ├─ chapter-report kalite kapısı (schemas/chapter-report.schema.json)
+   └─ 05_analiz/05_analiz_<zaman>.html/.md/.manifest.json
 ```
+
+Not: taslak kullanıcıdan geldiyse plan olmayabilir; bu durumda yalnızca kanıt
+denetimi çalışır ve plandan söz edilmez.
 
 ## Sınırlar ve güvenlik
 
@@ -199,6 +225,7 @@ Kullanıcının taslağı (`03_taslak_denetimi/taslak/`) + PDF'ler
 
 ## Genişletme notları
 
-- Yeni bir metadata kaynağı eklenirse `search_all` içindeki birleştirme ve `publisher_allowed` mantığı korunmalıdır.
+- Yeni bir metadata kaynağı eklenirse `search_all`/`search_literature` içindeki birleştirme, `publisher_allowed` mantığı ve `coverage.per_source` sayımı korunmalıdır. Kaynak hataları `sources_status` içinde raporlanır, diğer kaynakları durdurmaz.
+- Ranking değişikliği yapılırsa `sources.score_result` ve `docs/output-spec.md` birlikte güncellenir; `coverage` yüksek kalite eşiği aynı yerden okunur.
 - Yeni bir proje türü için `projects.json`'a kayıt eklemek yeterlidir; ardından `paperqa_register_project` ve `paperqa_build_index` çalıştırılır.
 - Yeni bir çıktı biçimi eklenirse `docs/output-spec.md` ve ilgili JSON şeması güncellenir; ajan sözleşmesi `AGENTS.md` aynı değişikliği yansıtmalıdır.

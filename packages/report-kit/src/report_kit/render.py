@@ -102,6 +102,17 @@ def doi_link(doi: Any, label: Any = None) -> str:
     return f'<a href="{escape_attr(doi_url(raw))}">{escape(text)}</a>'
 
 
+def doi_copy_button(doi: Any) -> str:
+    """Return a small copy-to-clipboard button for a valid DOI."""
+    raw = str(doi or "").strip()
+    if not is_doi(raw):
+        return ""
+    return (
+        f'<button type="button" class="doi-copy" data-doi="{escape_attr(raw)}" '
+        f'aria-label="{escape_attr(raw)} DOI\'sini kopyala">DOI kopyala</button>'
+    )
+
+
 def rich(value: Any) -> str:
     """Escape then apply the report's only inline markup: ``**bold**``."""
     text = escape(value)
@@ -432,7 +443,7 @@ def render_change_cards(cards: list[dict[str, Any]]) -> str:
             if page:
                 label += f", s. {page}"
             if source.get("doi"):
-                label += f" · DOI: {doi_link(source['doi'])}"
+                label += f" · DOI: {doi_link(source['doi'])} {doi_copy_button(source['doi'])}"
             lang = str(source.get("quote_language") or "en")
             out.append('  <div class="ev">')
             out.append(f'    <div class="ev-head">{label}</div>')
@@ -488,7 +499,7 @@ def render_source_table(source_audit: list[dict[str, Any]]) -> str:
             continue
         number = escape(item.get("no", ""))
         citation = escape(item.get("citation", ""))
-        doi = doi_link(item.get("doi", ""))
+        doi = doi_link(item.get("doi", "")) + " " + doi_copy_button(item.get("doi", ""))
         journal = escape(item.get("journal", ""))
         year = escape(item.get("year", ""))
         journal_year = f"{journal} ({year})" if journal and year else (journal or year or "-")
@@ -559,7 +570,7 @@ def render_references(references: list[dict[str, Any]]) -> str:
         year = escape(ref.get("year", ""))
         title = escape(ref.get("title", ""))
         journal = escape(ref.get("journal", ""))
-        doi = doi_link(ref.get("doi", ""))
+        doi = doi_link(ref.get("doi", "")) + " " + doi_copy_button(ref.get("doi", ""))
         parts = [f"{authors} ({year}).", f"<i>{title}</i>."]
         if journal:
             parts.append(f"{journal}.")

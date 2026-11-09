@@ -24,6 +24,12 @@ LOCAL_PATH_PATTERNS = [
 ]
 PAGE_RE = re.compile(r"(?:^|\b)(?:s\.|ss\.|s\.\s*\d|sayfa|p\.|pp\.)\s*\d", re.I)
 SCRIPT_RE = re.compile(r"<script\b|<iframe\b|\son[a-z]+\s*=", re.I)
+# Rapor şablonundaki tek izinli betik: DOI'yi panoya kopyalar. Betik
+# kullanıcı verisi içermez; JSON alanları HTML'e kaçışlı yazılır.
+ALLOWED_SCRIPT_RE = re.compile(
+    r"<script>\s*/\* DOI copy button: yalnızca panoya kopyalama \*/.*?</script>",
+    re.S,
+)
 TAG_RE = re.compile(r"<(/)?([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*?(/?)>")
 VOID_TAGS = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
@@ -485,7 +491,10 @@ def validate_html(html_text: str) -> ValidationResult:
         result.add_error("HTML: <meta charset=\"utf-8\"> eksik")
     if "<style" not in html_text.lower():
         result.add_error("HTML: gömülü <style> bloğu yok")
-    if SCRIPT_RE.search(html_text):
+    allowed_scripts = ALLOWED_SCRIPT_RE.findall(html_text)
+    if len(allowed_scripts) > 1:
+        result.add_error("HTML: izin verilen DOI kopyalama betiği birden fazla kez var")
+    if SCRIPT_RE.search(ALLOWED_SCRIPT_RE.sub("", html_text)):
         result.add_error("HTML: <script>, <iframe> veya on* olay özniteliği yasak")
     for pattern in LOCAL_PATH_PATTERNS[:4]:
         if pattern.search(html_text):

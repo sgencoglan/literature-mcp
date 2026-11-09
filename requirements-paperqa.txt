@@ -1,0 +1,14 @@
+# PaperQA2 indeksi için Python bağımlılıkları.
+#
+# Önce CPU-only PyTorch kurun (CUDA paketi indirilmez):
+#   .venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.0"
+#
+# Ardından:
+#   .venv/bin/pip install -r requirements-paperqa.txt
+#
+# Kısa yol: bash scripts/setup_paperqa.sh
+paperqa>=2.0
+sentence-transformers>=2.2
+mcp>=1.0,<2
+PyMuPDF>=1.24
+httpx>=0.27

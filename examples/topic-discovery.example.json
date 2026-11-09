@@ -3,6 +3,19 @@
   "title": "Konu, çalışma başlığı ve amaç keşfi",
   "topic": "Uzaktan çalışma ve çalışan refahı",
   "generated_at": "2026-10-31",
+  "genre": "ampirik_makale",
+  "genre_note": "Örnek, ampirik bir çalışma önerisi içerdiği için bu tür seçilmiştir; gerçek projede tür kullanıcıya sorulur.",
+  "audience": "Uzaktan çalışan ebeveynler, yöneticiler ve iş-yaşam dengesi araştırmacıları",
+  "target_total_words": 7000,
+  "scope_in": [
+    "Uzaktan çalışan ebeveynlerde iş-aile sınır yönetimi",
+    "Yönetici desteği ve psikolojik iyi oluş"
+  ],
+  "scope_out": [
+    "Ofiste tam zamanlı çalışanlar",
+    "Klinik psikolojik tedavi protokolleri"
+  ],
+  "selected_title": null,
   "scope": "Kurgusal biçim örneği; gerçek veri tabanı araması değildir.",
   "database_searches": [
     {

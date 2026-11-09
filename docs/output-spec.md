@@ -4,11 +4,15 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 
 ## Genel kurallar
 
-- **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile 00–03 akış klasörlerini açın.
-- **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 0, 1, 2 veya 3 seçmesini isteyin; seçimden önce arama veya PDF işleme yapmayın.
-- **Akış klasörleri:** `00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/`, `03_taslak_denetimi/`. Her çıktıyı ilgili klasöre yazın. PDF'ler akış 2 ve 3 için ilgili klasörün `fulltext/` altına konur.
-- **Ana dosyalar:** İş akışı 0 `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` ve JSON öneri raporu; iş akışı 1 tek araştırmada `01_fulltext_listesi.html`, birden çok araştırmada her araştırmaya özel adlandırılmış liste HTML'leri ve tümüne bağlantı veren `00_kaynak_listeleri.html` üretir. Her kaynak için katkı/sınır değerlendirmesi bulunur. İş akışı 2 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren chapter-report HTML/Markdown; iş akışı 3 bağlam değerlendirmesi + Ek 1 + Ek 2 + Ek 3 + Ek 4 içeren `05_bolum_raporu.html` üretir.
-- **PaperQA kaynakları:** `output_directory` proje köküdür. Akış 2 PDF'leri `02_bolum_taslagi/fulltext/`, akış 3 PDF'leri `03_taslak_denetimi/fulltext/` altındadır. Her akış ayrı proje adı, manifest ve indeks kullanır; bunlar `<proje-kökü>/.literature-mcp/` altında tutulur.
+- **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile 01–05 akış klasörlerini açın.
+- **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 1, 2, 3, 4 veya 5 seçmesini isteyin; seçimden önce arama veya PDF işleme yapmayın.
+- **Akış klasörleri:** `01_konu_belirleme/`, `02_yazim_plani/`, `03_kaynak_kesfi/`, `04_taslak/`, `05_analiz/`. Her çıktıyı ilgili klasöre yazın; PDF'ler yalnızca ilgili akışın `fulltext/` altındadır.
+- **Ana dosyalar:** Akış 1 `01_konu_belirleme/01_konu_<zaman>.html` (tür, hedef kelime, kapsam, başlık önerileri). Akış 2 `02_yazim_plani/01_yazim_plani_<zaman>.html` (alt başlık iskeleti). Akış 3 `03_kaynak_kesfi/00_atama_matrisi_<zaman>.html`, fulltext listesi ve kapsam raporu. Akış 4 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren `04_taslak/04_taslak_<zaman>.html`. Akış 5 `05_analiz/05_plan_uyumu_<zaman>.html` ve bağlam + Ek 1–4 içeren `05_analiz/05_analiz_<zaman>.html`.
+- **Zaman soneki:** Üreticiler varsayılan olarak `_YYYYMMDD-HHMMSS` soneki ekler; aynı saniye içinde ikinci çıktı `-01`, `-02` alır. Böylece tekrar çalıştırma önceki dosyayı ezmez. Sabit ad için `--no-timestamp` kullanılır. Ajanın elle yazdığı JSON veri dosyaları da zaman soneki alır.
+- **Silme yasağı:** Üreticiler önceki çıktıları **silmez**. Her çalıştırma yeni bir sürüm dosyası ekler; aynı ada sahip dosya varsa `--force` verilmedikçe yazmaz ve hata döndürür. Tek silme yolu, kullanıcının açıkça çağırdığı `chapter-report cleanup` komutudur (manifest tabanlı). “Eski sürümü sil / yerine yaz” istenmedikçe hiçbir dosya kaldırılmaz.
+- **DOI bağlantıları:** Fulltext listesi HTML'inde tıklanabilir DOI düğmesi, tıklanabilir yayıncı düğmesi ve düz metin DOI açık adresi bulunur; DOI kopyalama düğmesi yoktur. Chapter-report HTML'lerinde DOI kopyalama düğmesi bulunur; bu amaçla tek bir denetimli gömülü betik izinlidir; başka `<script>`, `<iframe>` veya `on*` olay özniteliği kullanılamaz.
+- **Arama kapsamı:** `search_all`, `search_literature` ve `deep_research` cevapları `coverage` (kaynak bazında `returned`, `unique_dois`, `high_quality`; toplam tekil DOI; `evidence_scarcity`; `query_variants`; zaman) ve her sonuçta `score` alanı taşır. Akış 3'te bu blok `scripts/build_search_coverage.py` ile `03_kaynak_kesfi/01_arama_kapsam_raporu_<zaman>.json/html` olarak yazılır.
+- **PaperQA kaynakları:** `output_directory` proje köküdür. Akış 4 PDF'leri `04_taslak/fulltext/`, akış 5 PDF'leri `05_analiz/fulltext/` altındadır. Her akış ayrı proje adı, manifest ve indeks kullanır; bunlar `<proje-kökü>/.literature-mcp/` altında tutulur.
 
 - **Dil:** Teslim Türkçedir. İngilizce kaynak cümlesi özgün hâliyle verilir; Türkçesi ayrı alanda bulunur.
 - **DOI:** Yalnızca `https://doi.org/<doi>` biçimi. DOI metni ayrıca `doi` alanında saklanır.
@@ -22,40 +26,46 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 ## Dosya adları
 
 Proje kökü `paperqa_create_workspace` tarafından başlatılır. İş akışları
-`00_konu_basligi_kesfi/`, `01_kaynak_kesfi/`, `02_bolum_taslagi/`,
-`03_taslak_denetimi/` altına yazılır;
-PDF'ler ilgili akışın `fulltext/`, taslaklar ve raporlar `taslak/` altındadır. Akış 2 ve 3'ün manifesti ve
+`01_konu_belirleme/`, `02_yazim_plani/`, `03_kaynak_kesfi/`, `04_taslak/`,
+`05_analiz/` altına yazılır;
+PDF'ler ilgili akışın `fulltext/` altındadır; çıktılar doğrudan akış klasörüne yazılır (`taslak/` alt klasörü kaldırıldı). Akış 4 ve 5'in manifesti ve
 indeksi `.literature-mcp/` altında birbirinden ayrı tutulur.
 
 Her akışın ana ve ek çıktıları ilgili alt klasörde tutulur. Yeni proje
-kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür:
+kaydında `output_directory` kullanıcı tarafından seçilen proje köküdür.
+Aşağıdaki tabloda `<zaman>`, `_YYYYMMDD-HHMMSS` sonekini temsil eder.
+Üreticiler bu soneki varsayılan olarak ekler; `--no-timestamp` sabit ad
+verir. Ajanın elle yazdığı JSON da zaman soneki almalıdır.
 
 | Dosya | Biçim | Kime | İçerik |
 |---|---|---|---|
-| `00_konu_basligi_kesfi/00_konu_basligi_kesfi.json` | JSON | Ajan | Veri tabanı sorgu kaydı, sıralı başlık/amaç önerileri, seçilen başlık (seçimden sonra) ve sınırlılıklar |
-| `00_konu_basligi_kesfi/00_konu_basligi_kesfi.html` | HTML | İnsan | Önerileri ve OpenAlex/PubMed/Europe PMC/Crossref tarama kapsamını gösteren çevrimdışı rapor |
-| `00_konu_basligi_kesfi/01_yontem_tasarimi.json` | JSON | Ajan | Kullanıcının seçtiği başlık için varsayımları açık yöntem/tasarım önerisi, örneklem, ölçüm, analiz ve etik plan |
-| `00_konu_basligi_kesfi/01_yontem_tasarimi.html` | HTML | İnsan | Aynı tasarımın karar noktaları ve sınırlılıklarını gösteren çevrimdışı rapor |
-| `01_kaynak_kesfi/00_kaynak_listeleri.html` | HTML | İnsan | Aynı klasördeki bir veya daha fazla araştırma kaynak listesine giriş sayfası |
-| `01_kaynak_kesfi/01_fulltext_listesi.html` veya `<sira>_<arastirma-kisa-adi>_fulltext_listesi.html` | HTML | İnsan | DOI/yayıncı linkleri, öncelik, Q, atıf, indirildi kutuları ve her kaynak için katkı/sınır analizi |
-| `01_kaynak_kesfi/01_fulltext_listesi.json` veya `<sira>_<arastirma-kisa-adi>_fulltext_listesi.json` | JSON | Ajan | İlgili HTML listesinin şemalı verisi |
-| `02_bolum_taslagi/taslak/02_bolum_taslagi.json` | JSON | Ajan | Bölüm metni, Ek 1, Ek 2 ve Ek 4 için chapter-report girdisi |
-| `02_bolum_taslagi/taslak/02_bolum_taslagi.md` | Markdown | İnsan + ajan | Taslak + kanıt eklerinin düzenlenebilir sürümü |
-| `02_bolum_taslagi/taslak/02_bolum_taslagi.html` | HTML | İnsan | Bölüm metni + Ek 1 + iddia–kanıt matrisi + Ek 4 |
-| `03_taslak_denetimi/taslak/02_degisiklik_kartlari.csv` | CSV | İnsan + ajan | Cümle bazlı düzeltme kartları |
-| `03_taslak_denetimi/taslak/02_degisiklik_kartlari.json` | JSON | Ajan | Kartların şemalı hâli |
-| `03_taslak_denetimi/taslak/03_kaynak_denetimi.csv` | CSV | İnsan + ajan | Kaynak denetimi |
-| `03_taslak_denetimi/taslak/03_iddia_kanit_matrisi.csv` | CSV | İnsan + ajan | İddia–kanıt matrisi |
-| `03_taslak_denetimi/taslak/04_denetim_raporu.html` | HTML | İnsan | Kartlar + denetim + matris + kaynakça |
-| `03_taslak_denetimi/taslak/04_denetim_raporu.md` | Markdown | İnsan + ajan | Düzenlenebilir rapor |
-| `03_taslak_denetimi/taslak/04_denetim_raporu.json` | JSON | Ajan | Tam yapılandırılmış rapor |
-| `03_taslak_denetimi/taslak/05_bolum_raporu.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + bağlam değerlendirmesi + Ek 1–4 |
-| `03_taslak_denetimi/taslak/05_bolum_raporu.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
-| `03_taslak_denetimi/taslak/05_bolum_raporu.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
+| `01_konu_belirleme/01_konu_<zaman>.json` | JSON | Ajan | Tür (`genre`), hedef kelime, kapsam içi/dışı, hedef kitle, başlık önerileri, seçilen başlık ve tarama kaydı |
+| `01_konu_belirleme/01_konu_<zaman>.html` | HTML | İnsan | Önerileri ve arama kapsamını gösteren çevrimdışı rapor |
+| `01_konu_belirleme/01_yontem_tasarimi_<zaman>.json` | JSON | Ajan | Yalnızca `ampirik_makale` seçildiyse: desen, örneklem, ölçüm, analiz, etik |
+| `01_konu_belirleme/01_yontem_tasarimi_<zaman>.html` | HTML | İnsan | Aynı tasarımın karar noktaları ve sınırlılıkları |
+| `02_yazim_plani/01_yazim_plani_<zaman>.json` | JSON | Ajan | Alt başlık iskeleti, amaç, hedef kelime, kanıt ihtiyacı, `plan_status` |
+| `02_yazim_plani/01_yazim_plani_<zaman>.html` | HTML | İnsan | Her alt başlık için kart: amaç, kelime, kanıt türü, atanmış kaynak, boşluk |
+| `03_kaynak_kesfi/00_atama_matrisi_<zaman>.json` | JSON | Ajan | Alt başlık → DOI ataması, eşleşme skoru, karşılanmayan kanıt ihtiyaçları |
+| `03_kaynak_kesfi/00_atama_matrisi_<zaman>.html` | HTML | İnsan | Atama tablosu; boşluk işaretli alt başlıklar |
+| `03_kaynak_kesfi/00_kaynak_listeleri_<zaman>.html` | HTML | İnsan | Aynı klasördeki kaynak listelerine giriş sayfası |
+| `03_kaynak_kesfi/01_fulltext_listesi_<zaman>.json` | JSON | Ajan | `schemas/fulltext-list.schema.json` uyumlu aday listesi |
+| `03_kaynak_kesfi/01_fulltext_listesi_<zaman>.html` | HTML | İnsan | DOI/yayıncı düğmeleri, kısa düz `doi`, gerekçe, kalite skoru, otomatik işaretlenen indirildi kutuları |
+| `03_kaynak_kesfi/01_arama_kapsam_raporu_<zaman>.json/html/md` | JSON+HTML+MD | Ajan + insan | Kaynak kapsamı, `coverage`, `evidence_scarcity`, seçilenler |
+| `03_kaynak_kesfi/01_arama_kapsam_raporu_<zaman>_karsilastirma.json/html` | JSON+HTML | Ajan + insan | İki query setinin kapsam farkı |
+| `03_kaynak_kesfi/oa_indirme_raporu_<zaman>.json` | JSON | Ajan | Açık erişim indirme özeti; e-posta maskelenir |
+| `04_taslak/04_taslak_<zaman>.json` | JSON | Ajan | Taslak metin + Ek 1/2/4 için chapter-report girdisi |
+| `04_taslak/04_taslak_<zaman>.md` | Markdown | İnsan + ajan | Taslağın düzenlenebilir sürümü |
+| `04_taslak/04_taslak_<zaman>.html` | HTML | İnsan | Taslak metni + Ek 1 + iddia–kanıt matrisi + Ek 4 |
+| `04_taslak/04_taslak_<zaman>.manifest.json` | JSON | Ajan | Üretilen dosyaların temizlik manifesti |
+| `04_taslak/fulltext_aktarim_<zaman>.json` | JSON | Ajan | Akış 3 → 4 PDF aktarım raporu |
+| `05_analiz/05_plan_uyumu_<zaman>.json/html` | JSON+HTML | Ajan + insan | Plan uyumu: yazılmayan başlık, kelime sapması, plansız bölüm, kullanılmayan atama |
+| `05_analiz/05_analiz_<zaman>.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + bağlam + Ek 1–4 |
+| `05_analiz/05_analiz_<zaman>.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
+| `05_analiz/05_analiz_<zaman>.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
-Birden çok araştırmanın listeleri aynı `01_kaynak_kesfi/` klasöründe tutulur; ayrı araştırma kök klasörlerine dağıtılmaz. Her dosya adı sıra numarası ve araştırma kısa adını içerir. `scripts/build_fulltext_index.py` tüm liste çiftlerinden `00_kaynak_listeleri.html` üretir. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
+Birden çok araştırmanın listeleri aynı `03_kaynak_kesfi/` klasöründe tutulur; ayrı araştırma kök klasörlerine dağıtılmaz. Her dosya adı sıra numarası ve araştırma kısa adını içerir. `scripts/build_fulltext_index.py` tüm liste çiftlerinden `00_kaynak_listeleri_<zaman>.html` üretir. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
 
-## 00 — Konu ve başlık keşfi
+## 01 — Konu belirleme
 
 Şema: [`../schemas/topic-discovery.schema.json`](../schemas/topic-discovery.schema.json).
 Varsayılan veri tabanları OpenAlex, PubMed, Europe PMC ve Crossref'tir. JSON,
@@ -64,6 +74,12 @@ her öneri için başlık, araştırma sorusu, genel/özel amaçlar, hedef grup,
 önerilen desen, olası boşluk türü, en yakın çalışmalar, yapılabilirlik ve
 sıralama gerekçesini taşır. `novelty_signal` yalnızca ön taramada görülen
 boşluk sinyalini belirtir; kesin özgünlük iddiası değildir.
+
+Akış 1 ayrıca ürün sözleşmesini sabitler: `genre` (`kitap_bolumu`,
+`uygulama_rehberi`, `derleme_makale`, `ampirik_makale`), `target_total_words`,
+`audience`, `scope_in`, `scope_out` ve seçim sonrası `selected_title`.
+`genre` ve `target_total_words` olmadan üretici doğrulama hatası verir; bu
+alanlar doldurulmadan akış 2 başlamaz.
 
 `scripts/build_topic_discovery.py`, JSON'u tek dosyalık çevrimdışı HTML'e
 çevirir. Arama başarısızlıkları ve kapsam dışı kalabilecek alan-özel veri
@@ -75,7 +91,41 @@ Kullanıcı bir başlık seçtikten sonra yöntem/tasarım dosyaları
 HTML'e çevirir. Kullanıcı/araştırma ekibi onayına kadar `design_status`
 `proposed` kalır.
 
-## 01 — Fulltext listesi
+## 02 — Yazım planı
+
+Şema: [`../schemas/writing-plan.schema.json`](../schemas/writing-plan.schema.json).
+Girdi, akış 1'de onaylanmış başlık + tür + hedef kelime sayısıdır. Çıktı
+`02_yazim_plani/01_yazim_plani_<zaman>.json` ve `.html` dosyalarıdır.
+
+Her alt başlık kaydı şunları taşır:
+
+| Alan | Zorunlu | Açıklama |
+|---|---|---|
+| `id` | evet | `S1`, `S2`, ... |
+| `heading` | evet | Alt başlık metni |
+| `purpose` | evet | Bu alt başlığın savunacağı tek işlev |
+| `target_words` | evet | Hedef kelime (en az 50) |
+| `evidence_needs` | evet | `design` + `min_count` listesi |
+| `assigned_dois` | hayır | Akış 3 doldurur |
+| `gap_note` | hayır | Karşılanamayan kanıt ihtiyacının gerekçesi |
+| `status` | hayır | `planned`, `covered`, `gap` |
+
+Kabul edilen tasarım kodları: `systematic_review`, `meta_analysis`, `rct`,
+`quasi_experimental`, `cohort`, `cross_sectional`, `qualitative`,
+`policy_document`, `any`. `target_words` toplamı `target_total_words`'a
+±%10 içinde olmalıdır.
+
+HTML'de her alt başlık bir karttır: amaç, hedef kelime, gereken kanıt türü,
+atanmış kaynaklar ve varsa boşluk notu. `plan_status` kullanıcı onayına kadar
+`draft` kalır; `approved` olmadan akış 3 başlamaz.
+
+```bash
+python3 scripts/build_writing_plan.py plan.json \
+  -o <proje-kökü>/02_yazim_plani/01_yazim_plani.html
+python3 scripts/build_writing_plan.py plan.json --check
+```
+
+## 03 — Kaynak keşfi ve fulltext listesi
 
 ### HTML yapısı
 
@@ -89,10 +139,61 @@ HTML'e çevirir. Kullanıcı/araştırma ekibi onayına kadar `design_status`
    - dergi, Q
    - atıf sayısı
    - erişim (açık erişim / kurum erişimi)
-   - DOI linki, yayıncı linki, varsa OA PDF linki
-5. **Alt bilgi:** "PDF indirme kullanıcı hesabından yapılır; bu liste indirme yapmaz."
+   - DOI düğmesi, düz metin DOI açık adresi, yayıncı düğmesi, varsa OA PDF açık adresi
+5. **Alt bilgi:** DOI/yayıncı düğmeleri ile OA PDF açık adreslerinin davranışı; açık erişimli PDF'lerin `scripts/download_open_access.py` ile indirilebileceği; kapalı erişimlilerin kullanıcı hesabından indirildiği.
 
-Tek dosya olmalı; harici CSS/JS/font kullanılmaz. `@media print` ile yazdırma düzeni bozulmamalı. "İndirildi" durumu `localStorage` ile saklanır; tarayıcı desteklemiyorsa sessizce devam eder.
+Tek dosya olmalı; harici CSS/JS/font kullanılmaz. Gömülü betik yalnızca
+filtre, yazdırma ve "indirildi" durumu içindir; DOI kopyalama betiği
+fulltext listesinde yoktur. `@media print`
+ile yazdırma düzeni bozulmamalı. "İndirildi" durumu `localStorage` ile
+saklanır; tarayıcı desteklemiyorsa sessizce devam eder. PDF'i `fulltext/`
+klasörlerinde bulunan kaynaklar sayfa açılışında otomatik işaretlenir ve
+"işaretleri temizle" bu işaretleri korur.
+
+### Arama kapsamı ve skor
+
+`search_all`, `search_literature` ve `deep_research` her sonuca bir `score`
+ekler: 0.35 anlamsal alaka + 0.25 `log10(atıf+1)/4` + 0.15 güncellik +
+0.15 SCImago quartile + 0.10 çalışma türü. Preprint (arXiv) kayıtları
+`is_preprint=true` alır ve skoru 0.85 ile çarpılır. Yüksek kalite eşiği
+0.60'tır ve çalışma türü bileşeni en az 0.40 olmalıdır.
+
+`coverage` bloğu şu alanları taşır: `sources_queried`, `per_source`
+(`returned`, `unique_dois`, `high_quality`, `status`, `note`,
+`requested_limit`, `duration_ms`), `skipped_sources`, `warnings`,
+`total_unique_dois`, `high_quality_total`, `evidence_scarcity`,
+`evidence_scarcity_message`, `closest_studies`, `publisher_distribution`,
+`query_expansion`, `evidence_density`, `query_variants`, `timestamp`.
+Yüksek kaliteli sonuç sayısı 5'in altındaysa `evidence_scarcity=true` olur;
+mesaj en yakın 5 çalışmayı DOI ve yılıyla listeler ve “Araştırma boşluğu
+olasılığı yüksektir” uyarısını ekler. `query_expansion` orijinal sorguyu,
+genişletilmiş sorguları, MeSH terimlerini, dil dönüşümünü ve notları;
+`evidence_density` Q1, son 5 yıl, RCT / sistematik derleme / meta-analiz,
+klinik çalışma ve preprint sayılarını, katı yüksek-kalite sayısını(`high_quality_strict_total`: Q1/Q2 + en az 10 atıf + RCT/SR/MA) ve son 3 yıl
+`trend` sinyalini taşır. `publisher_distribution`
+platform dağılımını ve açık erişim/preprint/PDF oranlarını; `warnings` ile
+`skipped_sources` ise hata, hız limiti ve sorgulanmayan kaynakları görünür
+kılar. Blok, akış 3'te
+`scripts/build_search_coverage.py` ile JSON + HTML + Markdown raporuna
+dönüştürülür. `--compare` iki query setinin kapsam farkını üretir.
+Şema: [`../schemas/search-coverage.schema.json`](../schemas/search-coverage.schema.json).
+`--fulltext-list <json>` verildiğinde rapor seçilmiş DOI'leri bilir ve normal
+sonuç tablosunda sıra numarasının yanına yeşil `seçildi` etiketi koyar. Ayrı
+bir "seçilen makaleler" tablosu üretilmez.
+
+### Açık erişim PDF indirme
+
+`scripts/download_open_access.py <liste.json>` Unpaywall'ı (önce) ve
+OpenAlex'i (yedek) sorgular. Yalnızca herkese açık `http(s)` PDF bağlantıları
+denenir; ödeme duvarı veya erişim kontrolü aşılmaz. Varsayılan hedef otomatik
+oluşturulan `03_kaynak_kesfi/fulltext/` klasörüdür; `--workflow 4` ile
+`04_taslak/fulltext/`, `--workflow 5` ile
+`05_analiz/fulltext/` seçilir. İndirme raporu her akışta doğrudan o akışın
+klasörüne `oa_indirme_raporu_<zaman>.json` olarak yazılır; e-posta maskelenir.
+`--dry-run` yalnızca OA durumunu bildirir, `--update-json` kaynak listesine
+`oa_pdf_url`, `oa_source`, `oa_license`, `oa_checked_at`, `oa_downloaded` ve
+`oa_local_file` alanlarını ekler.
+Unpaywall için `setup.txt` içindeki `email` zorunludur.
 
 ### JSON alanları
 
@@ -121,6 +222,12 @@ Aday alanları:
 | `publisher` | enum | evet | Beş platform veya `Diğer` |
 | `publisher_url` | string/null | hayır | Yayıncı sayfası |
 | `oa_pdf_url` | string/null | hayır | OA PDF |
+| `oa_downloaded` | boolean | hayır | PDF `fulltext/` klasörüne indirildiyse `true` |
+| `oa_local_file` | string | hayır | İndirilen PDF'in dosya adı (yol değil) |
+| `oa_source` | string/null | hayır | Unpaywall/OpenAlex |
+| `oa_license` | string/null | hayır | Lisans bilgisi |
+| `oa_host_type` | string/null | hayır | Yayıncı/arşiv türü |
+| `oa_checked_at` | string | hayır | OA kontrol zamanı |
 | `priority` | enum | evet | `A`, `B`, `C` |
 | `access` | string | hayır | `Açık erişim`, `Kurum erişimi`, `Erişim yok` |
 | `rationale` | string | evet | Neden seçildi |
@@ -132,7 +239,7 @@ Aday alanları:
 
 Şema: [`../schemas/fulltext-list.schema.json`](../schemas/fulltext-list.schema.json).
 
-## 02 — Düzeltme kartları
+## 04 — Taslak ve düzeltme kartları
 
 ### CSV sütunları
 
@@ -173,9 +280,16 @@ Durum: supported
 
 `rewritten_sentence` kırmızıyla işaretlenir. İlk taslakta bulunmayan ve anlam taşıyan eklemeler `rewritten_segments[].added_by_mcp=true` ile mavi/yeşil gösterilir. Tam metin `intro.paragraphs[].segments` içinde de aynı eklemeler işaretlenir. Renk lejantı zorunludur. Kaynak cümlesi ve çevirisi normal renkte kalır. Salt dilbilgisi/parafraz farkları yeni bilgi eklemesi sayılmaz.
 
-## 03 — Kaynak denetimi (Ek 2)
+## 05 — Analiz raporu
 
-### CSV sütunları
+Akış 5 iki denetimi birleştirir: plan uyumu (`05_plan_uyumu_<zaman>.json/html`)
+ve kanıt denetimi. Plan uyumu raporu yazılmayan alt başlıkları, ±%25 kelime
+sapmasını, planda olmayan bölümleri ve kullanılmayan atamaları gösterir.
+Kanıt denetimi aşağıdaki üç çıktıyı üretir.
+
+### Kaynak denetimi (Ek 2)
+
+#### CSV sütunları
 
 | Sütun | Açıklama |
 |---|---|
@@ -193,16 +307,16 @@ Durum: supported
 | `limitation` | Sınırlılık |
 | `verified` | `evet` / `hayır` |
 
-### Kurallar
+#### Kurallar
 
 - Her DOI `verify_doi_and_publisher` ile doğrulanır.
 - `project_audit`/`journal_rank` çıktısı yoksa `-` yazılır; uydurma yapılmaz.
 - `role` kararı gerekçelendirilir; "iyi görünüyor" gibi gerekçesiz karar verilmez.
 - Aynı DOI birden çok kez listelenmez.
 
-## 03 — İddia–kanıt matrisi
+### İddia–kanıt matrisi
 
-### CSV sütunları
+#### CSV sütunları
 
 | Sütun | Açıklama |
 |---|---|
@@ -217,16 +331,16 @@ Durum: supported
 | `decision` | `keep`, `revise`, `delete`, `add_source` |
 | `note` | Not |
 
-### Kurallar
+#### Kurallar
 
 - Her satırda en az bir DOI ve sayfa bulunur; `none`/`not_found` istisnadır ve açıkça yazılır.
 - `support=full` için alıntı iddiayı doğrudan desteklemelidir; yakın konu yeterli değildir.
 - `contradicts` varsa iddia kararı `revise` veya `delete` olur.
 - `strength` yalnızca kanıtın türüne göre verilir; dergi Q'su tek başına `strong` yapmaz.
 
-## 04 — Denetim raporu
+### Denetim raporu
 
-### HTML bölümleri
+#### HTML bölümleri
 
 1. Kapak: proje, taslak, tarih, kapsam.
 2. Yönetici özeti: kaç kart, kaç kaynak, kaç iddia, kaç `not_found`.
@@ -236,11 +350,11 @@ Durum: supported
 6. Kaynakça: yalnızca DOI linkleri.
 7. Ek: yöntem, arama tarihleri, dışlama ölçütleri.
 
-### Markdown
+#### Markdown
 
 Aynı bölümler; tablolar Markdown olarak. HTML'e özel renkler Markdown'da `**değişen cümle**` veya `<mark>` ile belirtilebilir; teslimde kırmızı kuralı HTML için geçerlidir.
 
-### JSON
+#### JSON
 
 Üst düzey anahtarlar:
 
@@ -258,13 +372,15 @@ Aynı bölümler; tablolar Markdown olarak. HTML'e özel renkler Markdown'da `**
 }
 ```
 
-## 05 — Altın standart bölüm raporu
+### Altın standart analiz raporu
 
-`05_bolum_raporu.html`, b1 pilot raporu için beğenilen tasarımın
-standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
-çıktıdır; teslimde tercih edilen rapor `05`'tir.
+`05_analiz_<zaman>.html` teslimde tercih edilen rapordur; düzeltilmiş metin,
+bağlam değerlendirmesi ve Ek 1–4'ü birleştirir. Ara denetim raporu
+`05_analiz_<zaman>.json/md` eşlik dosyalarıyla birlikte üretilir. Her iki HTML
+de DOI kopyalama düğmesi içerir; chapter-report'ta bu amaçla tek bir denetimli
+gömülü betik dışında betik kullanılmaz.
 
-### Bölümler
+#### Bölümler
 
 1. Düzeltilmiş bölüm metni; yeniden düzenlenen ifadeler kırmızı, MCP'nin
    eklediği anlamlı ifadeler mavi/yeşil.
@@ -274,7 +390,7 @@ standartlaştırılmış hâlidir. `04_denetim_raporu.html` denetim odaklı ara
 3. Ek 2 — kaynak envanteri (rol + sınırlılık sütunları), konum + kanıt türü +
    not sütunlu iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar ve opsiyonel
    sonraki adımlar.
-4. İş akışı 3 için bağlam değerlendirmesi: paragraf işlevi, cümle/paragraf
+4. İş akışı 5 için bağlam değerlendirmesi: paragraf işlevi, cümle/paragraf
    uyumu, geçişler ve makale/bölüm bağlamı.
 5. **Ek 3 — Bağlama uygun kaynak önerileri:** ilgili iddia/konum, doğrulanmış
    DOI/metaveri ve uygunluk gerekçesi. Tam metni incelenmeyen adaylar kanıt
@@ -320,21 +436,27 @@ kapısında öneri olarak denetlenir; `--strict` ile zorunlu olur.
 ### Üretim ve kalite kapısı
 
 ```bash
-chapter-report build rapor.json -o 05_bolum_raporu.html --check
-chapter-report build rapor.json -o 05_bolum_raporu.html \
-  --markdown 05_bolum_raporu.md
+# Varsayılan: _YYYYMMDD-HHMMSS sonekli çıktı
+chapter-report build rapor.json -o 05_analiz.html --check
+chapter-report build rapor.json -o 05_analiz.html \
+  --markdown 05_analiz.md
+
+# Sabit ad gerekiyorsa
+chapter-report build rapor.json -o 05_analiz.html \
+  --markdown 05_analiz.md --no-timestamp --force
 ```
 
-Zorunlu alanlar, DOI biçimi, sayfa/kanıt, yerel yol yasağı ve HTML dengesi
-denetlenir. Ayrıntılar: [`report-standard.md`](report-standard.md).
+Zorunlu alanlar, DOI biçimi, sayfa/kanıt, yerel yol yasağı, HTML dengesi ve
+izin verilen tek DOI kopyalama betiği denetlenir. Ayrıntılar:
+[`report-standard.md`](report-standard.md).
 
 ### Temizlik
 
-`05_bolum_raporu.manifest.json` yalnızca üretilen dosyaları listeler. Analiz
-sonunda:
+`05_analiz_<zaman>.manifest.json` yalnızca üretilen dosyaları listeler.
+Analiz sonunda:
 
 ```bash
-chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
+chapter-report cleanup --manifest 05_analiz_<zaman>.manifest.json \
   --scope intermediate --yes
 ```
 
@@ -352,5 +474,13 @@ PDF, indeks ve registry dosyaları manifest dışında olduğu için silinmez.
 - [ ] JSON şemaya uyuyor.
 - [ ] Proje izolasyonu korundu.
 - [ ] Eski proje dosyaları değişmedi.
-- [ ] `05_bolum_raporu.html` kalite kapısından 0 hatayla geçti.
+- [ ] Üretilen dosya adları `_YYYYMMDD-HHMMSS` soneki içeriyor; önceki çıktı ezilmedi.
+- [ ] Kaynak listesi HTML'inde tıklanabilir DOI/yayıncı düğmeleri ve düz metin DOI açık adresi var; DOI kopyalama düğmesi yok.
+- [ ] Bölüm raporu HTML'lerinde DOI kopyalama düğmesi var; chapter-report'ta başka betik yok.
+- [ ] Arama cevabındaki `coverage` ve `evidence_scarcity` incelendi; `01_arama_kapsam_raporu_<zaman>.json/html` yazıldı.
+- [ ] Ürün türü ve hedef kelime sayısı soruldu; yazım planı onaylandı (`plan_status: approved`).
+- [ ] Atama matrisi üretildi; karşılanmayan `min_count` için boşluk gerekçesi yazıldı.
+- [ ] Açık erişim PDF'leri yalnızca herkese açık bağlantılardan ve yalnızca atanmış DOI'ler için indirildi; hedef `03_kaynak_kesfi/fulltext/`, rapor aynı klasörde.
+- [ ] Plan uyumu raporu `05_analiz/05_plan_uyumu_<zaman>.html` üretildi ve sapmalar açıklandı.
+- [ ] `05_analiz_<zaman>.html` kalite kapısından 0 hatayla geçti.
 - [ ] Temizlik yalnızca manifestteki dosyalara uygulandı.

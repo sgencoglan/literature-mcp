@@ -116,7 +116,29 @@ td.src { min-width: 340px; }
 td.journal { min-width: 170px; }
 td.cites { width: 70px; text-align: right; white-space: nowrap; }
 td.access { min-width: 120px; }
-td.links { min-width: 190px; white-space: nowrap; }
+td.links { min-width: 260px; white-space: normal; }
+.link-line, .doi-address { margin: 5px 0; }
+.button-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.link-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.plain-url {
+  display: block;
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--ink);
+}
+.url {
+  display: block;
+  font-size: 12px;
+  word-break: break-all;
+  line-height: 1.4;
+}
 .authors { font-size: 12.5px; color: var(--muted); }
 .title { font-weight: 600; margin: 2px 0 5px; }
 .rationale { font-size: 12.5px; color: var(--muted); }
@@ -140,6 +162,7 @@ td.links { min-width: 190px; white-space: nowrap; }
 .prio-b { background: #fff4d6; color: #7a5200; }
 .prio-c { background: #edf1f5; color: var(--gray); }
 .oa { background: #e2f4ea; color: var(--green); }
+.done { background: #e2f4ea; color: var(--green); }
 .closed { background: #f0f2f4; color: var(--gray); }
 .q1 { background: #e2f4ea; color: var(--green); }
 .q2 { background: #e7f0fa; color: var(--accent); }
@@ -249,10 +272,11 @@ footer {
         <td class="access">
           <div><span class="badge oa">OA</span></div>
           <div class="muted">Açık erişim</div>
+          
         </td>
-        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2026.001" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://www.sciencedirect.com/science/article/pii/EXAMPLE0001" target="_blank" rel="noopener">ScienceDirect</a> <a class="btn oa" href="https://example.org/oa/example-0001.pdf" target="_blank" rel="noopener">OA PDF</a></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2026.001" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://www.sciencedirect.com/science/article/pii/EXAMPLE0001" target="_blank" rel="noopener">ScienceDirect</a><a class="btn oa" href="https://example.org/oa/example-0001.pdf" target="_blank" rel="noopener">OA PDF</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2026.001</span></div></td>
       </tr>
-<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Bu çalışmada uzaktan çalışma ve çalışan refahı arasındaki ilişkiye odaklanan temel aday kaynak.</p><div><strong>Neyi destekliyor:</strong><ul><li>Başlık ve arama kapsamı bakımından refah ilişkilerini inceleyen kaynak olarak değerlendirilebilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Yalnızca bu bibliyografik kayıttan herhangi bir etki yönü, nedensellik veya alt grup sonucu çıkarılamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Yöntem, örneklem, ölçümler ve sonuçlar tam metin/özet incelenmeden doğrulanmış değildir.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
+<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Bu çalışmada uzaktan çalışma ve çalışan refahı arasındaki ilişkiye odaklanan temel aday kaynak.</p><p><strong>Neden seçildi:</strong> Uzaktan çalışma ile refah arasındaki ilişkiyi doğrudan sentezliyor.</p><p><strong>Kalite skoru:</strong> 0.820 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Başlık ve arama kapsamı bakımından refah ilişkilerini inceleyen kaynak olarak değerlendirilebilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Yalnızca bu bibliyografik kayıttan herhangi bir etki yönü, nedensellik veya alt grup sonucu çıkarılamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Yöntem, örneklem, ölçümler ve sonuçlar tam metin/özet incelenmeden doğrulanmış değildir.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
 
       <tr>
         <td class="check">
@@ -273,10 +297,11 @@ footer {
         <td class="access">
           <div><span class="badge closed">Kapalı</span></div>
           <div class="muted">Kurum erişimi</div>
+          
         </td>
-        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2025.002" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://link.springer.com/article/10.5555/example.2025.002" target="_blank" rel="noopener">SpringerLink</a></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2025.002" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://link.springer.com/article/10.5555/example.2025.002" target="_blank" rel="noopener">SpringerLink</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2025.002</span></div></td>
       </tr>
-<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Hibrit çalışma ve iş–yaşam dengesi konusunda zaman içindeki değişim için aday kaynak.</p><div><strong>Neyi destekliyor:</strong><ul><li>Boylamsal çalışma türü bilgisi doğrulanırsa zaman boyutlu iş–yaşam dengesi tartışmasına katkı sağlayabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Başlık tek başına hibrit çalışmanın dengeyi iyileştirdiğini veya bozduğunu kanıtlamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Örneklem, ölçüm aralığı ve nedensel sınırlılıklar henüz incelenmedi.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
+<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Hibrit çalışma ve iş–yaşam dengesi konusunda zaman içindeki değişim için aday kaynak.</p><p><strong>Neden seçildi:</strong> Hibrit düzenlerde zaman içindeki değişimi boylamsal veriyle gösteriyor.</p><p><strong>Kalite skoru:</strong> 0.710 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Boylamsal çalışma türü bilgisi doğrulanırsa zaman boyutlu iş–yaşam dengesi tartışmasına katkı sağlayabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Başlık tek başına hibrit çalışmanın dengeyi iyileştirdiğini veya bozduğunu kanıtlamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Örneklem, ölçüm aralığı ve nedensel sınırlılıklar henüz incelenmedi.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
 
       <tr>
         <td class="check">
@@ -297,10 +322,11 @@ footer {
         <td class="access">
           <div><span class="badge closed">Kapalı</span></div>
           <div class="muted">Kurum erişimi</div>
+          
         </td>
-        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2024.003" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://onlinelibrary.wiley.com/doi/10.5555/example.2024.003" target="_blank" rel="noopener">Wiley</a></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2024.003" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://onlinelibrary.wiley.com/doi/10.5555/example.2024.003" target="_blank" rel="noopener">Wiley</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2024.003</span></div></td>
       </tr>
-<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Uzaktan çalışma, sınır yönetimi ve tükenmişlik arasındaki olası mekanizmayı incelemek için aday kaynak.</p><div><strong>Neyi destekliyor:</strong><ul><li>Sınır yönetimi temasının tükenmişlik tartışmasıyla bağlantısını kurmaya yardımcı olabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Bu kayıt, mekanizmanın yönünü veya tüm çalışanlarda geçerli olduğunu göstermiyor.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Nitel/tam metin bulguları ve örneklem kapsamı doğrulanmalı.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
+<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Uzaktan çalışma, sınır yönetimi ve tükenmişlik arasındaki olası mekanizmayı incelemek için aday kaynak.</p><p><strong>Neden seçildi:</strong> Sınır yönetimi mekanizması için nitel bağlam sağlıyor.</p><p><strong>Kalite skoru:</strong> 0.540 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Sınır yönetimi temasının tükenmişlik tartışmasıyla bağlantısını kurmaya yardımcı olabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Bu kayıt, mekanizmanın yönünü veya tüm çalışanlarda geçerli olduğunu göstermiyor.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Nitel/tam metin bulguları ve örneklem kapsamı doğrulanmalı.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
 
       <tr>
         <td class="check">
@@ -321,10 +347,11 @@ footer {
         <td class="access">
           <div><span class="badge oa">OA</span></div>
           <div class="muted">Açık erişim</div>
+          
         </td>
-        <td class="links"><a class="btn doi" href="https://doi.org/10.5555/example.2023.004" target="_blank" rel="noopener">DOI</a> <a class="btn pub" href="https://www.tandfonline.com/doi/full/10.5555/example.2023.004" target="_blank" rel="noopener">Taylor &amp; Francis</a> <a class="btn oa" href="https://example.org/oa/example-0004.pdf" target="_blank" rel="noopener">OA PDF</a></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2023.004" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://www.tandfonline.com/doi/full/10.5555/example.2023.004" target="_blank" rel="noopener">Taylor &amp; Francis</a><a class="btn oa" href="https://example.org/oa/example-0004.pdf" target="_blank" rel="noopener">OA PDF</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2023.004</span></div></td>
       </tr>
-<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Örgütsel destek kavramını tanımlamak ve bölümün kavramsal çerçevesine bağlamak için aday kaynak.</p><div><strong>Neyi destekliyor:</strong><ul><li>Kavramsal tanım ve örgütsel destek çerçevesi sunabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Ampirik etki büyüklüğü veya doğrudan müdahale sonucu kanıtı olarak kullanılamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Kaydın kapsamı ve kavramsal yaklaşımı tam metinden kontrol edilmeli.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
+<tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Örgütsel destek kavramını tanımlamak ve bölümün kavramsal çerçevesine bağlamak için aday kaynak.</p><p><strong>Neden seçildi:</strong> Kavramsal çerçeve; doğrudan veri değil, bağlam ve tanım desteği.</p><p><strong>Kalite skoru:</strong> 0.660 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Kavramsal tanım ve örgütsel destek çerçevesi sunabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Ampirik etki büyüklüğü veya doğrudan müdahale sonucu kanıtı olarak kullanılamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Kaydın kapsamı ve kavramsal yaklaşımı tam metinden kontrol edilmeli.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
       </tbody>
     </table>
   </div>
@@ -332,8 +359,10 @@ footer {
 <p class="notes"><strong>Not:</strong> Bu dosya yalnızca biçim örneğidir. Kayıtlar kurgusaldır; gerçek DOI veya yayıncı sayfası içermez. Kendi adaylarınızla değiştirin.</p>
 </main>
 <footer>
-  Bu liste yalnızca DOI ve yayıncı sayfası bağlantıları içerir; PDF indirmez, ödeme duvarını veya erişim kontrolünü aşmaz.
-  Tam metinleri kendi kurum hesabınızdan indirip proje klasörüne koyun. "İndirildi" işaretleri bu tarayıcıda saklanır.
+  DOI ve yayıncı/veritabanı düğmeleri bağlantıyı yeni sekmede açar; DOI kısa biçimde düz metin olarak gösterilir.
+  OA PDF bağlantısı tıklanabilir açık adrestir.
+  Açık erişimli PDF'leri <code>scripts/download_open_access.py</code> ile proje klasörüne indirebilirsiniz.
+  PDF'i indirilmiş kaynaklar otomatik işaretlenir; diğer "İndirildi" işaretleri bu tarayıcıda saklanır.
 </footer>
 <script>
 const PROJECT = "ornek-proje";
@@ -385,14 +414,18 @@ boxes.forEach(box => box.addEventListener("change", writeState));
 if (filter) filter.addEventListener("input", applyFilter);
 document.getElementById("print").addEventListener("click", () => window.print());
 document.getElementById("clear").addEventListener("click", () => {
-  if (!boxes.some(b => b.checked)) return;
-  if (!window.confirm("Tüm indirildi işaretleri temizlensin mi?")) return;
-  boxes.forEach(box => { box.checked = false; });
+  if (!boxes.some(b => b.checked && b.dataset.downloaded !== "1")) return;
+  if (!window.confirm("İndirilenler korunacak; diğer indirildi işaretleri temizlensin mi?")) return;
+  boxes.forEach(box => {
+    if (box.dataset.downloaded !== "1") box.checked = false;
+  });
   writeState();
 });
 
 const saved = readState();
-boxes.forEach(box => { box.checked = saved.has(box.dataset.doi); });
+boxes.forEach(box => {
+  box.checked = box.dataset.downloaded === "1" || saved.has(box.dataset.doi);
+});
 updateStats();
 </script>
 </body>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arama kapsam raporu — ADHD okul performansı müdahale</title>
+<style>
+:root { --bg:#f4f6f8; --card:#fff; --ink:#16212b; --muted:#5b6b7b; --line:#dbe2e9; --blue:#0b5cad; --green:#1e7d4f; --red:#b3261e; --amber:#9a6400; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+header { background:#0b2540; color:#fff; padding:28px 22px; }
+header h1 { margin:6px 0; font-size:25px; }
+header p { margin:0; opacity:.9; max-width:900px; }
+main { max-width:1100px; margin:0 auto; padding:20px 22px 40px; }
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:16px 0; }
+.stats.compact { grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
+.stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+.stat .num { font-size:24px; font-weight:700; display:block; }
+.stat small { color:var(--muted); }
+.label { font-size:12px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--muted); }
+.query-list { margin:6px 0 12px 20px; padding:0; }
+.query-list li { margin:4px 0; }
+.grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.closest { margin-top:10px; color:var(--ink); }
+.closest th { color:var(--muted); }
+details { margin-top:10px; }
+summary { cursor:pointer; color:var(--blue); font-size:13px; }
+.alert { background:#fff4f2; border:1px solid #f2c2bd; color:#7d1f18; border-radius:10px; padding:12px 14px; margin:14px 0; }
+.ok { background:#eefaf2; border:1px solid #bfe3cd; color:var(--green); }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin:16px 0; }
+h2 { font-size:18px; margin:4px 0 10px; }
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border-bottom:1px solid var(--line); padding:8px 10px; }
+td { border-bottom:1px solid var(--line); padding:9px 10px; vertical-align:top; }
+td.num { text-align:right; white-space:nowrap; }
+.table-wrap { overflow-x:auto; }
+.title { font-weight:600; }
+.muted { color:var(--muted); font-size:12.5px; }
+.chip { display:inline-block; background:#e7f0fa; color:var(--blue); border-radius:999px; padding:2px 10px; margin:2px 6px 2px 0; font-size:12.5px; }
+.defs { font-size:13px; color:var(--muted); }
+.defs li { margin:4px 0; }
+.badge { display:inline-block; border-radius:999px; padding:2px 10px; font-size:12px; font-weight:700; }
+.badge.warn { background:#fde8e6; color:var(--red); }
+.badge.good { background:#e2f4ea; color:var(--green); }
+.badge.selected { background:#e2f4ea; color:var(--green); margin-left:6px; }
+.badge.ok { background:#e2f4ea; color:var(--green); }
+.badge.err { background:#fde8e6; color:var(--red); }
+.badge.skip { background:#f0f2f4; color:var(--muted); }
+.badge.prio { background:#e7f0fa; color:var(--blue); }
+td.why { font-size:12.5px; max-width:380px; }
+.notice { background:#fffdf3; border:1px solid #f0e2b6; color:#6b4f00; border-radius:10px; padding:12px 14px; margin:14px 0; }
+.warning-list { margin:6px 0 0 20px; padding:0; }
+.warning-list li { margin:3px 0; }
+tr.skipped td { color:var(--muted); }
+tr.total td { background:#f8fafc; font-weight:600; }
+td.note { font-size:12.5px; color:var(--muted); max-width:300px; }
+.error-text { color:var(--red); font-size:12px; margin-top:3px; }
+footer { max-width:1100px; margin:0 auto; padding:0 22px 36px; color:var(--muted); font-size:12.5px; }
+@media print { body { background:#fff; } header { background:#fff; color:#000; border-bottom:2px solid #000; } .card,.stat { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="muted" style="color:#cfe0f2;text-transform:uppercase;letter-spacing:.08em">Arama kapsam raporu</div>
+  <h1>ADHD okul performansı müdahale</h1>
+  <p>Proje: <strong>ornek-proje</strong> · Oluşturma: 2026-11-08T12:00:00+00:00</p>
+</header>
+<main>
+  <section class="stats">
+    <div class="stat"><span class="num">4</span><small>Sorgulanan kaynak</small></div>
+    <div class="stat"><span class="num">18</span><small>Tekil DOI</small></div>
+    <div class="stat"><span class="num">4</span><small>Yüksek kalite</small></div>
+    <div class="stat"><span class="num"><span class="badge warn">Evet</span></span><small>Kanıt sınırlılığı</small></div>
+  </section>
+  <div class="alert"><strong>Kanıt sınırlılığı:</strong> Bu konuda yüksek kaliteli kanıt sınırlı görünüyor. Yüksek kaliteli sonuç sayısı: 4 (eşik: 5). En yakın 3 çalışma: ADHD okul performansı müdahalesi: sistematik derleme (2025), DOI: 10.5555/example.2026.001; Sınıf temelli davranış müdahalesi (2024); Hibrit öğrenme ve dikkat (2023). Araştırma boşluğu olasılığı yüksektir.<div class="closest"><div class="table-wrap"><table><thead><tr><th>#</th><th>En yakın çalışma</th><th>Skor</th><th>DOI</th></tr></thead><tbody><tr><td class="num">1</td><td><div class="title">ADHD okul performansı müdahalesi: sistematik derleme</div><div class="muted">2025 · Systematic review / meta-analysis</div></td><td class="num">0.820</td><td class="doi"><a href="https://doi.org/10.5555/example.2026.001" target="_blank" rel="noopener">10.5555/example.2026.001</a></td></tr><tr><td class="num">2</td><td><div class="title">Sınıf temelli davranış müdahalesi</div><div class="muted">2024 · Randomized controlled trial</div></td><td class="num">0.710</td><td class="doi"><a href="https://doi.org/10.5555/example.2026.002" target="_blank" rel="noopener">10.5555/example.2026.002</a></td></tr><tr><td class="num">3</td><td><div class="title">Hibrit öğrenme ve dikkat</div><div class="muted">2023 · Cohort study</div></td><td class="num">0.540</td><td class="doi">—</td></tr></tbody></table></div></div></div>
+  <div class="notice"><strong>Kaynak uyarıları:</strong><ul class="warning-list"><li>arxiv bu koşuda sorgulanmadı: preprint istenmedi (include_arxiv=false).</li><li>clinicaltrials bu koşuda sorgulanmadı: klinik çalışma araması istenmedi.</li></ul></div>
+  
+  <section class="card">
+    <h2>Sorgu ve genişletme</h2>
+    <p><span class="label">Orijinal sorgu</span><br><code>ADHD okul performansı müdahale</code></p>
+    <p><span class="label">Genişletilmiş sorgular</span></p>
+    <ol class="query-list"><li><code>attention deficit hyperactivity disorder school performance intervention</code></li><li><code>ADHD academic achievement behavioral intervention children</code></li></ol>
+    <div class="grid2">
+      <div>
+        <span class="label">MeSH terimleri</span>
+        <p><span class="chip">Attention Deficit Disorder with Hyperactivity[Mesh]</span><span class="chip">Academic Performance</span></p>
+      </div>
+      <div>
+        <span class="label">Dil / dönüşüm</span>
+        <p><span class="chip">Türkçe → İngilizce</span></p>
+      </div>
+    </div>
+    <p><span class="label">Kullanılan dönüşümler</span><br><span class="chip">synonym</span><span class="chip">MeSH</span><span class="chip">language</span></p>
+    <ul class="defs"><li>Türkçe sorgu İngilizce eş anlamlılara çevrildi.</li><li>PubMed ve Europe PMC için MeSH terimleri kullanıldı.</li></ul>
+  </section>
+  
+  <section class="card">
+    <h2>Kanıt yoğunluğu ve negatif sinyaller</h2>
+    <div class="stats compact">
+      <div class="stat"><span class="num">4</span><small>Yüksek kaliteli (eşik 0.6)</small></div>
+      <div class="stat"><span class="num">2</span><small>Katı yüksek kalite (Q1/Q2 + atıf + RCT/SR/MA)</small></div>
+      <div class="stat"><span class="num">7</span><small>Q1 dergi</small></div>
+      <div class="stat"><span class="num">11</span><small>Son 5 yıl (2022+)</small></div>
+      <div class="stat"><span class="num">%61</span><small>Son 5 yıl oranı</small></div>
+      <div class="stat"><span class="num">3</span><small>RCT</small></div>
+      <div class="stat"><span class="num">2</span><small>Sistematik derleme / meta-analiz</small></div>
+      <div class="stat"><span class="num">1</span><small>Klinik çalışma</small></div>
+      <div class="stat"><span class="num">2</span><small>Preprint</small></div>
+    </div>
+    <p class="muted">Toplam değerlendirilen kayıt: 18. Sinyaller ön eleme göstergesidir; sistematik derleme yerine geçmez.</p>
+    <p class="trend"><span class="label">Yayın sayısı trendi (son 3 yıl)</span><br><span class="badge good">artıyor</span> 2024: <strong>4</strong> · 2025: <strong>6</strong> · 2026: <strong>5</strong> · değişim %25</p>
+    <details>
+      <summary>Çalışma türü dağılımı</summary>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Çalışma türü</th><th>Kayıt</th></tr></thead>
+        <tbody><tr><td>Unspecified design</td><td class="num">6</td></tr><tr><td>Cross-sectional study</td><td class="num">3</td></tr><tr><td>Randomized controlled trial</td><td class="num">3</td></tr><tr><td>Systematic review / meta-analysis</td><td class="num">2</td></tr><tr><td>Preprint</td><td class="num">2</td></tr><tr><td>Cohort study</td><td class="num">1</td></tr><tr><td>Clinical trial (interventional)</td><td class="num">1</td></tr></tbody>
+      </table></div>
+    </details>
+  </section>
+  
+  <section class="card">
+    <h2>Publisher ve fulltext erişim dağılımı</h2>
+    <div class="stats compact">
+      <div class="stat"><span class="num">6</span><small>Açık erişim (%33)</small></div>
+      <div class="stat"><span class="num">2</span><small>Preprint (%11)</small></div>
+      <div class="stat"><span class="num">8</span><small>PDF bağlantısı (%44)</small></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Platform / yayıncı</th><th>Kayıt</th><th>Oran</th></tr></thead>
+      <tbody><tr><td>Ovid LWW</td><td class="num">2</td><td class="num">%11</td></tr><tr><td>ScienceDirect</td><td class="num">5</td><td class="num">%28</td></tr><tr><td>SpringerLink</td><td class="num">2</td><td class="num">%11</td></tr><tr><td>Wiley</td><td class="num">2</td><td class="num">%11</td></tr><tr><td>Taylor &amp; Francis</td><td class="num">3</td><td class="num">%17</td></tr><tr><td>Diğer yayıncı</td><td class="num">2</td><td class="num">%11</td></tr><tr><td>Yayıncı bilinmiyor</td><td class="num">2</td><td class="num">%11</td></tr></tbody>
+    </table></div>
+    <p class="muted">“Diğer yayıncı” beş öncelikli platform dışında bir yayıncı adı veya linki olan kayıtlardır; “Yayıncı bilinmiyor” hiç yayıncı bilgisi çözülemeyen kayıtlardır. Toplam: 18.</p>
+  </section>
+  <section class="card">
+    <h2>Kaynak bazında kapsam</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Kaynak</th><th>Durum</th><th>Dönen kayıt</th><th>Tekil DOI</th><th>Yüksek kalite</th><th>İstenen limit</th><th>Süre</th><th>Not</th></tr></thead>
+      <tbody><tr><td><strong>OpenAlex</strong></td><td><span class="badge ok">✓ Tamam</span></td><td class="num">10</td><td class="num">9</td><td class="num">4</td><td class="num">10</td><td class="num">640 ms</td><td class="note">OpenAlex relevance search; yıl/OA filtreleri uygulandı.</td></tr><tr><td><strong>Semantic Scholar</strong></td><td><span class="badge ok">✓ Tamam</span></td><td class="num">10</td><td class="num">8</td><td class="num">3</td><td class="num">10</td><td class="num">1180 ms</td><td class="note">Atıf ve influential citation alanları dahil.</td></tr><tr><td><strong>PubMed</strong></td><td><span class="badge ok">✓ Tamam</span></td><td class="num">8</td><td class="num">7</td><td class="num">3</td><td class="num">8</td><td class="num">520 ms</td><td class="note">MeSH/eş anlamlı genişletme ajan tarafından sağlandı.</td></tr><tr><td><strong>Europe PMC</strong></td><td><span class="badge ok">✓ Tamam</span></td><td class="num">7</td><td class="num">6</td><td class="num">2</td><td class="num">7</td><td class="num">430 ms</td><td class="note">Europe PMC REST; OA PDF bağlantıları dahil.</td></tr><tr class="skipped"><td><strong>arXiv</strong></td><td><span class="badge skip">✗ Sorgulanmadı</span></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="note">preprint istenmedi (include_arxiv=false)</td></tr><tr class="skipped"><td><strong>ClinicalTrials.gov</strong></td><td><span class="badge skip">✗ Sorgulanmadı</span></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="note">klinik çalışma araması istenmedi</td></tr><tr class="total"><td><strong>Toplam (tekilleştirilmiş)</strong></td><td>—</td><td class="num">35</td><td class="num">18</td><td class="num">4</td><td class="num">—</td><td class="num">—</td><td class="note">Tekilleştirme sonrası toplam DOI ve yüksek kalite sayısı.</td></tr></tbody>
+    </table></div>
+    <p class="muted">“Dönen kayıt” kaynağın verdiği ham sonuç sayısıdır; tekilleştirme sonrası toplam DOI sayısı toplam satırındadır.</p>
+  </section>
+  <section class="card">
+    <h2>Sorgu varyantları</h2>
+    <p><span class="chip">attention deficit hyperactivity disorder school performance intervention</span><span class="chip">ADHD academic achievement behavioral intervention children</span></p>
+  </section>
+  <section class="card">
+    <h2>Öne çıkan sonuçlar</h2>
+    <div class="table-wrap"><table><thead><tr><th>#</th><th>Kaynak</th><th>Çalışma türü</th><th>Skor</th><th>Atıf</th><th>DOI</th></tr></thead><tbody><tr><td class="num">1<span class="badge selected">seçildi</span></td><td><div class="title">ADHD okul performansı müdahalesi: sistematik derleme</div><div class="muted">Journal of Example Work · 2025</div></td><td>Systematic review / meta-analysis</td><td class="num">0.820</td><td class="num">44</td><td class="doi"><a href="https://doi.org/10.5555/example.2026.001" target="_blank" rel="noopener">10.5555/example.2026.001</a></td></tr><tr><td class="num">2<span class="badge selected">seçildi</span></td><td><div class="title">Sınıf temelli davranış müdahalesi</div><div class="muted">Example Applied Psychology · 2024</div></td><td>Randomized controlled trial</td><td class="num">0.710</td><td class="num">19</td><td class="doi"><a href="https://doi.org/10.5555/example.2026.002" target="_blank" rel="noopener">10.5555/example.2026.002</a></td></tr><tr><td class="num">3</td><td><div class="title">Hibrit öğrenme ve dikkat</div><div class="muted">Example Education Review · 2023</div></td><td>Cohort study</td><td class="num">0.540</td><td class="num">6</td><td class="doi">—</td></tr></tbody></table></div><p class="muted">“seçildi” etiketi, kaynağın fulltext listesi HTML'ine aktarıldığını gösterir.</p>
+    <p class="muted">Skor bir ön eleme göstergesidir; kanıt değildir. Kanıt için tam metin sayfası doğrulanmalıdır.</p>
+  </section>
+  <section class="card">
+    <h2>Yöntem ve tanımlar</h2>
+    <ul class="defs"><li><strong>score_formula:</strong> 0.35 × anlamsal alaka + 0.25 × log10(atıf+1)/4 + 0.15 × güncellik + 0.15 × dergi quartile + 0.10 × çalışma türü</li><li><strong>recency:</strong> Son 2 yıl 1.0; 10 yıl ve üzeri 0.0; arası doğrusal azalır.</li><li><strong>quartile:</strong> Q1=1.0, Q2=0.70, Q3=0.40, Q4=0.15, bilinmiyorsa 0.30.</li><li><strong>study_type:</strong> Sistematik derleme/meta-analiz ve RCT=1.0; klinik çalışma (girişim)=0.80; kohort/yarı deneysel=0.60; vaka-kontrol=0.50; kesitsel=0.40; nitel=0.35; tanımsız=0.25; preprint=0.05.</li><li><strong>preprint_penalty:</strong> Preprint sonuçların skoru 0.85 ile çarpılır ve is_preprint=true işaretlenir.</li><li><strong>high_quality:</strong> Yüksek kalite: preprint değil, skor ≥ 0.60 ve çalışma türü bileşeni ≥ 0.40.</li><li><strong>high_quality_strict:</strong> Katı yüksek kalite: Q1/Q2 + en az 10 atıf + RCT veya sistematik derleme/meta-analiz.</li><li><strong>trend:</strong> Son 3 yılın yıllık yayın sayısı eğimi; |eğim| &lt; 0.34 ise sabit kabul edilir.</li><li><strong>evidence_scarcity:</strong> Yüksek kaliteli sonuç sayısı 5&#x27;in altındaysa evidence_scarcity=true olur.</li></ul>
+  </section>
+</main>
+<footer>
+  Bu rapor yalnızca sorgulanan açık metadata kaynaklarının kapsamını gösterir.
+  Kaynakların sessizce başarısız olduğu durumlar dönen kayıt sayısına yansımaz;
+  ayrıntı için arama cevabındaki <code>notes</code> alanına bakın.
+</footer>
+</body>
+</html>

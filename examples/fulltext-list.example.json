@@ -31,7 +31,8 @@
       "limits": [
         "Yöntem, örneklem, ölçümler ve sonuçlar tam metin/özet incelenmeden doğrulanmış değildir."
       ],
-      "assessment_basis": "metadata"
+      "assessment_basis": "metadata",
+      "score": 0.82
     },
     {
       "doi": "10.5555/example.2025.002",
@@ -58,7 +59,8 @@
       "limits": [
         "Örneklem, ölçüm aralığı ve nedensel sınırlılıklar henüz incelenmedi."
       ],
-      "assessment_basis": "metadata"
+      "assessment_basis": "metadata",
+      "score": 0.71
     },
     {
       "doi": "10.5555/example.2024.003",
@@ -85,7 +87,8 @@
       "limits": [
         "Nitel/tam metin bulguları ve örneklem kapsamı doğrulanmalı."
       ],
-      "assessment_basis": "metadata"
+      "assessment_basis": "metadata",
+      "score": 0.54
     },
     {
       "doi": "10.5555/example.2023.004",
@@ -112,7 +115,8 @@
       "limits": [
         "Kaydın kapsamı ve kavramsal yaklaşımı tam metinden kontrol edilmeli."
       ],
-      "assessment_basis": "metadata"
+      "assessment_basis": "metadata",
+      "score": 0.66
     }
   ]
 }

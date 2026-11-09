@@ -10,6 +10,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+try:  # scripts/ içinden çalışırken
+    from output_naming import add_timestamp, add_timestamp_argument
+except ImportError:  # python -m scripts.build_study_design
+    from scripts.output_naming import add_timestamp, add_timestamp_argument
+
 
 def esc(value: Any) -> str:
     return html.escape("" if value is None else str(value), quote=True)
@@ -117,6 +122,7 @@ def main() -> int:
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--force", action="store_true")
+    add_timestamp_argument(parser)
     args = parser.parse_args()
     try:
         data = json.loads(args.input.read_text(encoding="utf-8"))
@@ -132,13 +138,14 @@ def main() -> int:
         return 0
     if not args.output:
         parser.error("--check kullanılmadığında -o/--output zorunludur")
-    if args.output.exists() and not args.force:
-        print(f"Çıktı zaten var: {args.output}; üzerine yazmak için --force kullanın.", file=sys.stderr)
+    output_path = add_timestamp(args.output, enabled=args.timestamp)
+    if output_path.exists() and not args.force:
+        print(f"Çıktı zaten var: {output_path}; üzerine yazmak için --force kullanın.", file=sys.stderr)
         return 2
-    args.output.parent.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     output = render(data)
-    args.output.write_text(output, encoding="utf-8")
-    print(f"Yazıldı: {args.output} ({len(output):,} bayt)")
+    output_path.write_text(output, encoding="utf-8")
+    print(f"Yazıldı: {output_path} ({len(output):,} bayt)")
     return 0
 
 

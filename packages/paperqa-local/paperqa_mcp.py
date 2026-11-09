@@ -38,6 +38,7 @@ import re
 import shutil
 import signal
 import time
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -53,6 +54,21 @@ from mcp.server.fastmcp import FastMCP
 # --------------------------------------------------------------------------- #
 # Configuration
 # --------------------------------------------------------------------------- #
+
+WORKFLOW_DIRS = {
+    "1": "01_konu_belirleme",
+    "2": "02_yazim_plani",
+    "3": "03_kaynak_kesfi",
+    "4": "04_taslak",
+    "5": "05_analiz",
+}
+
+GENRES = {
+    "kitap_bolumu": "Kitap bölümü",
+    "uygulama_rehberi": "Uygulama rehberi",
+    "derleme_makale": "Derleme makalesi",
+    "ampirik_makale": "Ampirik makale",
+}
 
 DEFAULT_REGISTRY = str(Path.home() / ".literature-mcp" / "projects.json")
 REGISTRY_PATH = Path(
@@ -872,11 +888,13 @@ def _scan_pdfs(directory: Path, recurse: bool) -> list[Path]:
 def _doi_candidates_from_filename(name: str) -> list[str]:
     """Dosya adından olası DOI adayları üretir (kayıt numarası belirsizliği için).
 
-    ``10.117701430343231202923.pdf`` gibi dosyalarda kayıt numarası 4, 5, ...
-    haneli olabilir; adayları sırayla üretiriz ve Crossref ile doğrularız.
+    DOI dosya adının başında olmak zorunda değildir; ``Yilmaz_2024_10.1000_xyz.123.pdf``
+    gibi kullanıcı adlandırmaları da çözülür. ``10.117701430343231202923.pdf``
+    gibi dosyalarda kayıt numarası 4, 5, ... haneli olabilir; adayları sırayla
+    üretiriz ve Crossref ile doğrularız.
     """
     stem = name[:-4] if name.lower().endswith(".pdf") else name
-    match = re.match(r"^(10\.)(\d{4,9})(.*)$", stem)
+    match = re.search(r"(10\.)(\d{4,9})(.*)$", stem)
     if not match:
         return []
     run, tail = match.group(2), match.group(3)
@@ -889,6 +907,12 @@ def _doi_candidates_from_filename(name: str) -> list[str]:
         if doi not in candidates:
             candidates.append(doi)
     return candidates
+
+
+def _is_doi_named(name: str) -> bool:
+    """Dosya adı zaten normalize DOI adı mı (``10.1000xyz.123.pdf``)?"""
+    stem = name[:-4] if name.lower().endswith(".pdf") else name
+    return bool(re.match(r"^10\.\d{4,9}[A-Za-z0-9.\-]*$", stem))
 
 
 async def _validate_doi(doi: str) -> bool:
@@ -1231,12 +1255,19 @@ async def paperqa_create_workspace(
     project_directory: str,
     name: str | None = None,
 ) -> dict[str, Any]:
-    """Proje kökünde 00–03 iş akışı klasörlerini açar; henüz akış/proje kaydı seçmez.
+    """Proje kökünde beş iş akışı klasörünü açar; akış/proje seçimi yapmaz.
 
-    Var olan dosyaları silmez veya taşımaz. Akış 2 ve 3 için PDF klasörlerini,
-    workflow'a göre ayrılmış manifestler ve indeksler için iç klasörleri açar.
-    Birden çok araştırma başlığı için akış 1 listeleri aynı 01_kaynak_kesfi
-    klasöründe tutulur ve 00_kaynak_listeleri.html giriş sayfasında gösterilir.
+    Var olan dosyaları silmez veya taşımaz. Açılan klasörler:
+
+    1. ``01_konu_belirleme`` — konu, başlık, tür, kapsam
+    2. ``02_yazim_plani`` — alt başlık iskeleti ve kanıt ihtiyacı
+    3. ``03_kaynak_kesfi`` — plana göre arama, atama matrisi, ``fulltext/``
+    4. ``04_taslak`` — taslak metin ve ``fulltext/``
+    5. ``05_analiz`` — iddia–kanıt ve plan uyumu denetimi, ``fulltext/``
+
+    Üretilen dosya adları varsayılan olarak ``_YYYYMMDD-HHMMSS`` zaman soneki
+    alır. Ürün türü (kitap bölümü / uygulama rehberi / derleme makale /
+    ampirik makale) bu araçta **seçilmez**; akış 1'de kullanıcıya sorulur.
     """
     root = Path(project_directory).expanduser().resolve()
     name = (name or "").strip()
@@ -1249,14 +1280,14 @@ async def paperqa_create_workspace(
             "Proje adı 2-61 karakter olmalı ve yalnızca harf, rakam, '.', '_', '-' içermelidir."
         )
     paths = {
-        "topic_discovery": root / "00_konu_basligi_kesfi",
-        "source_discovery": root / "01_kaynak_kesfi",
-        "draft": root / "02_bolum_taslagi",
-        "draft_fulltext": root / "02_bolum_taslagi" / "fulltext",
-        "draft_text": root / "02_bolum_taslagi" / "taslak",
-        "draft_audit": root / "03_taslak_denetimi",
-        "audit_fulltext": root / "03_taslak_denetimi" / "fulltext",
-        "audit_text": root / "03_taslak_denetimi" / "taslak",
+        "topic": root / WORKFLOW_DIRS["1"],
+        "plan": root / WORKFLOW_DIRS["2"],
+        "sources": root / WORKFLOW_DIRS["3"],
+        "source_fulltext": root / WORKFLOW_DIRS["3"] / "fulltext",
+        "draft": root / WORKFLOW_DIRS["4"],
+        "draft_fulltext": root / WORKFLOW_DIRS["4"] / "fulltext",
+        "analysis": root / WORKFLOW_DIRS["5"],
+        "analysis_fulltext": root / WORKFLOW_DIRS["5"] / "fulltext",
         "internal": root / ".literature-mcp",
         "indexes": root / ".literature-mcp" / "indexes",
         "manifests": root / ".literature-mcp" / "projects",
@@ -1274,37 +1305,54 @@ async def paperqa_create_workspace(
     return {
         "project_name": name,
         "project_directory": str(root),
-        "next_step": "Kullanıcıya 0–3 arasındaki iş akışlarından hangisini istediğini sor; seçim gelmeden devam etme.",
+        "next_step": "Kullanıcıya 1–5 arasındaki iş akışlarından hangisini istediğini sor; seçim gelmeden devam etme.",
         "workflow_choices": [
-            "0 — Konu, çalışma başlığı ve amaç keşfi",
-            "1 — Kaynak keşfi ve PDF listesi",
-            "2 — PDF'lerden sayfa doğrulamalı bölüm taslağı",
-            "3 — Mevcut taslağı PDF kanıtlarıyla denetleme",
+            "1 — Konu belirleme (başlık, tür, kapsam, hedef uzunluk)",
+            "2 — Yazım planı (alt başlık iskeleti + kanıt ihtiyacı)",
+            "3 — Plana göre kaynak keşfi ve fulltext seçimi",
+            "4 — Sayfa doğrulamalı taslak yazma",
+            "5 — Taslak analizi (iddia–kanıt + plan uyumu)",
         ],
         "workflow_directories": {
-            "0_topic_discovery": str(paths["topic_discovery"]),
-            "1_source_discovery": str(paths["source_discovery"]),
-            "2_draft": str(paths["draft"]),
-            "3_draft_audit": str(paths["draft_audit"]),
+            "1_konu": str(paths["topic"]),
+            "2_yazim_plani": str(paths["plan"]),
+            "3_kaynak_kesfi": str(paths["sources"]),
+            "4_taslak": str(paths["draft"]),
+            "5_analiz": str(paths["analysis"]),
+        },
+        "topic_outputs": {
+            "directory": str(paths["topic"]),
+            "topic_json": str(paths["topic"] / "01_konu_<zaman>.json"),
+            "topic_html": str(paths["topic"] / "01_konu_<zaman>.html"),
+            "method_json": str(paths["topic"] / "01_yontem_tasarimi_<zaman>.json"),
+            "method_html": str(paths["topic"] / "01_yontem_tasarimi_<zaman>.html"),
+        },
+        "plan_outputs": {
+            "directory": str(paths["plan"]),
+            "plan_json": str(paths["plan"] / "01_yazim_plani_<zaman>.json"),
+            "plan_html": str(paths["plan"] / "01_yazim_plani_<zaman>.html"),
         },
         "source_discovery_outputs": {
-            "directory": str(paths["source_discovery"]),
-            "landing_html": str(paths["source_discovery"] / "00_kaynak_listeleri.html"),
-            "single_study_html": str(paths["source_discovery"] / "01_fulltext_listesi.html"),
-            "multiple_study_filename_pattern": "<sira>_<arastirma-kisa-adi>_fulltext_listesi.{json,html}",
+            "directory": str(paths["sources"]),
+            "landing_html": str(paths["sources"] / "00_kaynak_listeleri_<zaman>.html"),
+            "single_study_html": str(paths["sources"] / "01_fulltext_listesi_<zaman>.html"),
+            "assignment_matrix": str(paths["sources"] / "00_atama_matrisi_<zaman>.json"),
+            "multiple_study_filename_pattern": "<sira>_<arastirma-kisa-adi>_fulltext_listesi_<zaman>.{json,html}",
+            "timestamp_format": "_YYYYMMDD-HHMMSS (--no-timestamp ile sabit ad)",
             "rule": "Birden çok seçilmiş araştırmanın tüm listelerini bu klasöre yaz; ayrı araştırma kök klasörleri oluşturma.",
         },
         "fulltext_directories": {
+            "source": str(paths["source_fulltext"]),
             "draft": str(paths["draft_fulltext"]),
-            "audit": str(paths["audit_fulltext"]),
+            "analysis": str(paths["analysis_fulltext"]),
         },
         "draft_directories": {
-            "draft": str(paths["draft_text"]),
-            "audit": str(paths["audit_text"]),
+            "draft": str(paths["draft"]),
+            "analysis": str(paths["analysis"]),
         },
         "workflow_project_names": {
             "draft": scoped_name("draft"),
-            "audit": scoped_name("audit"),
+            "analysis": scoped_name("analysis"),
         },
         "internal_directory": str(paths["internal"]),
         "created": created,
@@ -1522,6 +1570,163 @@ async def paperqa_register_project(
             "Çıktılar varsayılan olarak proje klasörüne yazılır.",
             "DOI'si olmayan dosyalar varsayılan olarak dışarıda bırakıldı.",
             "Aynı DOI'ye çözülen yinelenen dosyalar manifeste alınmadı.",
+        ],
+    }
+
+
+@mcp.tool()
+async def paperqa_promote_fulltext(
+    project_directory: str,
+    target_workflow: str = "4",
+    move: bool = False,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Akış 3'te indirilen açık erişim PDF'lerini akış 4/5'e taşır.
+
+    - Kaynak: ``03_kaynak_kesfi/fulltext/``; hedef: 4 (``04_taslak``) veya
+      5 (``05_analiz``) akışının ``fulltext/`` klasörü.
+    - Dosyaları DOI tabanlı ada çevirir (``10.4073csr.2011.4.pdf``); DOI'yi
+      önce dosya adından, sonra PDF'in ilk iki sayfasından, sonra akış 3
+      listesindeki başlık eşleşmesinden bulur. Kullanıcının kendi indirdiği
+      ve adı düzenlenmemiş PDF'ler de aynı kuralla yeniden adlandırılır.
+    - Hiçbir dosya **silinmez**; hedefte aynı DOI varsa atlanır.
+    - ``move=False`` (varsayılan) kopyalar; ``move=True`` taşır.
+    - ``dry_run=True`` yalnızca planı döndürür.
+    """
+    root = Path(project_directory).expanduser().resolve()
+    if not root.is_dir():
+        raise ValueError(f"Proje klasörü bulunamadı: {root}")
+    target = str(target_workflow or "4").strip()
+    if target not in {"4", "5"}:
+        raise ValueError("target_workflow '4' (04_taslak) veya '5' (05_analiz) olmalı.")
+    source_dir = root / WORKFLOW_DIRS["3"] / "fulltext"
+    target_dir = root / WORKFLOW_DIRS[target] / "fulltext"
+
+    titles: dict[str, list[str]] = {}
+    for listing in sorted((root / WORKFLOW_DIRS["3"]).glob("*fulltext_listesi*.json")):
+        try:
+            data = json.loads(listing.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for item in data.get("candidates") or []:
+            if not isinstance(item, dict):
+                continue
+            doi = str(item.get("doi") or "").strip().lower()
+            title = str(item.get("title") or "").strip()
+            if doi and title:
+                titles.setdefault(doi, []).append(title)
+
+    def doi_filename(doi: str) -> str:
+        text = unicodedata.normalize("NFKD", doi)
+        text = text.encode("ascii", "ignore").decode("ascii")
+        text = re.sub(r"[^A-Za-z0-9.\-]+", "", text).strip(".-")
+        return (text or "doi-yok")[:150]
+
+    def resolve(path: Path) -> tuple[str, str]:
+        candidates = _doi_candidates_from_filename(path.name)
+        if candidates:
+            return candidates[0], "filename"
+        probe = _pdf_probe(path)
+        if probe.get("doi"):
+            return str(probe["doi"]).lower(), "pdf"
+        name_tokens = {
+            token for token in re.split(r"[^a-z0-9]+", path.stem.lower())
+            if len(token) > 3
+        }
+        best_doi, best_score = "", 0.0
+        for doi, doi_titles in titles.items():
+            for title in doi_titles:
+                title_tokens = {
+                    token for token in re.split(r"[^a-z0-9]+", title.lower())
+                    if len(token) > 3
+                }
+                if not name_tokens or not title_tokens:
+                    continue
+                score = len(name_tokens & title_tokens) / len(name_tokens)
+                if score > best_score:
+                    best_doi, best_score = doi, score
+        if best_score >= 0.5:
+            return best_doi, "title"
+        return "", ""
+
+    def pdfs_in(directory: Path) -> list[Path]:
+        if not directory.is_dir():
+            return []
+        return sorted(
+            (p for p in directory.iterdir() if p.is_file() and p.suffix.lower() == ".pdf"),
+            key=lambda p: p.name.lower(),
+        )
+
+    copied = moved = already = renamed = 0
+    items: list[dict[str, Any]] = []
+    unresolved: list[str] = []
+
+    existing = {p.stem.lower() for p in pdfs_in(target_dir)}
+    for source in pdfs_in(source_dir):
+        doi, how = resolve(source)
+        if not doi:
+            unresolved.append(source.name)
+            items.append({"source": str(source), "status": "unresolved"})
+            continue
+        stem = doi_filename(doi)
+        if stem in existing:
+            already += 1
+            items.append({"source": str(source), "doi": doi, "status": "already_present",
+                          "destination": f"{stem}.pdf"})
+            continue
+        destination = target_dir / f"{stem}.pdf"
+        if dry_run:
+            items.append({"source": str(source), "doi": doi, "status": "planned",
+                          "destination": destination.name, "resolved_by": how})
+            continue
+        target_dir.mkdir(parents=True, exist_ok=True)
+        if move:
+            shutil.move(str(source), str(destination))
+            moved += 1
+            status = "moved"
+        else:
+            shutil.copy2(str(source), str(destination))
+            copied += 1
+            status = "copied"
+        existing.add(stem)
+        items.append({"source": str(source), "doi": doi, "status": status,
+                      "destination": destination.name, "resolved_by": how})
+
+    # Hedefte adı DOI olmayan (kullanıcının kendi indirdiği) PDF'leri düzelt.
+    for path in pdfs_in(target_dir):
+        if _is_doi_named(path.name):
+            continue
+        doi, how = resolve(path)
+        if not doi:
+            continue
+        destination = target_dir / f"{doi_filename(doi)}.pdf"
+        if destination.exists():
+            continue
+        if dry_run:
+            items.append({"source": str(path), "doi": doi, "status": "rename_planned",
+                          "destination": destination.name, "resolved_by": how})
+            continue
+        path.rename(destination)
+        renamed += 1
+        items.append({"source": str(path), "doi": doi, "status": "renamed",
+                      "destination": destination.name, "resolved_by": how})
+
+    return {
+        "project_directory": str(root),
+        "source_directory": str(source_dir),
+        "target_directory": str(target_dir),
+        "target_workflow": target,
+        "dry_run": dry_run,
+        "copied": copied,
+        "moved": moved,
+        "already_present": already,
+        "renamed": renamed,
+        "unresolved": unresolved,
+        "items": items,
+        "notes": [
+            "Hiçbir dosya silinmedi.",
+            "DOI önce dosya adından, sonra PDF metninden, sonra akış 3 başlığından çözüldü.",
+            "Hedefte aynı DOI varsa dosya atlandı.",
         ],
     }
 

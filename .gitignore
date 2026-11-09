@@ -12,6 +12,8 @@ htmlcov/
 .env
 .env.*
 !.env.example
+setup.txt
+SETUP.txt
 config/opencode.local.json
 
 # Runtime literature data
@@ -36,13 +38,31 @@ packages/sciencedirect-meta/data/*.csv.gz
 .DS_Store
 Thumbs.db
 
-# Generated local reports
-01_fulltext_listesi.html
-02_degisiklik_kartlari.*
-03_kaynak_denetimi.*
-03_iddia_kanit_matrisi.*
-04_denetim_raporu.*
-05_bolum_raporu.*
+# Generated local reports (canonical and timestamped)
+01_konu_*.json
+01_konu_*.html
+01_yontem_tasarimi_*.json
+01_yontem_tasarimi_*.html
+01_yazim_plani_*.json
+01_yazim_plani_*.html
+00_atama_matrisi_*.json
+00_atama_matrisi_*.html
+00_kaynak_listeleri*.html
+01_fulltext_listesi*.html
+01_fulltext_listesi*.json
+01_*_fulltext_listesi*.html
+01_*_fulltext_listesi*.json
+01_arama_kapsam_raporu_*
+04_taslak_*.json
+04_taslak_*.md
+04_taslak_*.html
+05_plan_uyumu_*
+05_analiz_*
+02_degisiklik_kartlari*
+03_kaynak_denetimi*
+03_iddia_kanit_matrisi*
+oa_indirme_raporu_*.json
+*.manifest.json
 
 # Python packaging
 *.egg-info/

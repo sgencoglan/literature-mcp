@@ -32,6 +32,12 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
+from sciencedirect_meta import bootstrap
+
+# Proje setup.txt dosyasını süreç başında oku; var olan ortam değişkenleri
+# her zaman önceliklidir.
+bootstrap.load()
+
 # --------------------------------------------------------------------------- #
 # Configuration
 # --------------------------------------------------------------------------- #
@@ -80,6 +86,15 @@ DEFAULT_ALLOWED_PUBLISHERS = (
 DEFAULT_MAILTO = "research@example.org"
 MAILTO = os.environ.get("CROSSREF_MAILTO", DEFAULT_MAILTO).strip() or DEFAULT_MAILTO
 
+# Optional API credentials. Both services work without a key, but keys raise
+# the rate limits: NCBI allows 10 req/s with a key (3 without), and OpenAlex
+# validates its key and grants the authenticated quota.
+OPENALEX_API_KEY = os.environ.get("OPENALEX_API_KEY", "").strip()
+PUBMED_API_KEY = os.environ.get("PUBMED_API_KEY", "").strip()
+SEMANTIC_SCHOLAR_API_KEY = os.environ.get("SEMANTIC_SCHOLAR_API_KEY", "").strip()
+NCBI_TOOL = os.environ.get("NCBI_TOOL", "sciencedirect-meta-mcp").strip() or "sciencedirect-meta-mcp"
+NCBI_EMAIL = os.environ.get("NCBI_EMAIL", MAILTO).strip() or MAILTO
+
 HTTP_TIMEOUT = 35.0
 MAX_ABSTRACT_CHARS = 6000
 MAX_ENRICH = 15          # max Crossref PII lookups per tool call
@@ -122,6 +137,72 @@ def normalize_doi(value: Optional[str]) -> str:
         if doi.lower().startswith(prefix):
             doi = doi[len(prefix):]
     return doi.strip().strip(".").lower()
+
+
+def _openalex_params(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """OpenAlex query params with polite-pool mailto and optional API key."""
+    params: Dict[str, Any] = {"mailto": MAILTO}
+    if OPENALEX_API_KEY:
+        params["api_key"] = OPENALEX_API_KEY
+    if extra:
+        params.update(extra)
+    return params
+
+
+def _pubmed_params(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """NCBI E-utilities params with tool/email and optional API key."""
+    params: Dict[str, Any] = {"tool": NCBI_TOOL, "email": NCBI_EMAIL}
+    if PUBMED_API_KEY:
+        params["api_key"] = PUBMED_API_KEY
+    if extra:
+        params.update(extra)
+    return params
+
+
+async def _get_with_retry(
+    url: str,
+    params: Dict[str, Any],
+    attempts: int = 4,
+) -> httpx.Response:
+    """GET with backoff for 429 and transient network errors.
+
+    * ``429``: honour ``Retry-After`` when present, else exponential backoff.
+    * ``5xx`` and DNS/timeout/connection errors: retried as well; a temporary
+      name-resolution failure (common in container/offline setups) should not
+      drop the source for the whole run.
+    """
+    last_error: Optional[Exception] = None
+    response: Optional[httpx.Response] = None
+    for attempt in range(attempts):
+        try:
+            response = await _client.get(url, params=params)
+        except httpx.RequestError as exc:
+            last_error = exc
+            if attempt < attempts - 1:
+                await asyncio.sleep(0.8 * (attempt + 1))
+                continue
+            raise
+        if response.status_code == 429 or response.status_code >= 500:
+            if attempt < attempts - 1:
+                retry_after = response.headers.get("Retry-After", "")
+                delay = None
+                if retry_after.strip().isdigit():
+                    delay = min(float(retry_after.strip()), 10.0)
+                await asyncio.sleep(delay if delay is not None else 1.0 * (attempt + 1))
+                continue
+        return response
+    if response is not None:
+        return response
+    raise last_error or httpx.ConnectError("istek tamamlanamadı")
+
+
+def redact_secrets(value: Any) -> str:
+    """Remove API keys from error text before it reaches logs or tool output."""
+    text = str(value)
+    for secret in (OPENALEX_API_KEY, PUBMED_API_KEY, SEMANTIC_SCHOLAR_API_KEY):
+        if secret:
+            text = text.replace(secret, "<redacted>")
+    return text
 
 
 def _truncate(text: Optional[str], limit: int = MAX_ABSTRACT_CHARS) -> Optional[str]:
@@ -436,6 +517,10 @@ async def search_openalex(
     open_access_only: bool = False,
     elsevier_only: bool = True,
     priority_publishers_only: bool = False,
+    work_types: Optional[Sequence[str]] = None,
+    min_citations: Optional[int] = None,
+    has_abstract: bool = False,
+    semantic_search: bool = False,
 ) -> List[Dict[str, Any]]:
     filters: List[str] = []
     if elsevier_only:
@@ -447,19 +532,37 @@ async def search_openalex(
         filters.append(f"publication_year:{year_from or 1900}-{year_to or 2100}")
     if open_access_only:
         filters.append("is_oa:true")
+    if work_types:
+        types = "|".join(
+            str(value).strip() for value in work_types if str(value).strip()
+        )
+        if types:
+            filters.append(f"type:{types}")
+    if min_citations is not None:
+        filters.append(f"cited_by_count:>{max(0, int(min_citations))}")
+    if has_abstract:
+        filters.append("has_abstract:true")
 
-    params: Dict[str, Any] = {
-        "search": query,
+    params = _openalex_params({
         "per-page": max(1, min(limit, 50)),
         "select": (
             "id,doi,title,publication_year,publication_date,authorships,"
             "primary_location,abstract_inverted_index,cited_by_count,"
-            "open_access,best_oa_location,type"
+            "open_access,best_oa_location,type,relevance_score"
         ),
-    }
+    })
+    if semantic_search:
+        params["search.semantic"] = query
+    else:
+        params["search"] = query
     if filters:
         params["filter"] = ",".join(filters)
-    response = await _client.get("https://api.openalex.org/works", params=params)
+    response = await _get_with_retry("https://api.openalex.org/works", params)
+    if response.status_code == 429:
+        raise RuntimeError(
+            "OpenAlex 429: anonim günlük kota dolu; OPENALEX_API_KEY tanımlayın "
+            "veya kısa süre sonra tekrar deneyin"
+        )
     response.raise_for_status()
     payload = response.json()
 
@@ -476,24 +579,25 @@ async def search_openalex(
             if authorship.get("author", {}).get("display_name")
         ]
         url, link_type = _sciencedirect_link(doi, None)
-        results.append(
-            _paper(
-                title=work.get("title"),
-                authors=authors,
-                year=work.get("publication_year"),
-                journal=source.get("display_name"),
-                doi=doi or None,
-                abstract=_reconstruct_abstract(work.get("abstract_inverted_index")),
-                cited_by=work.get("cited_by_count") or 0,
-                open_access=oa.get("is_oa"),
-                pdf_url=best_oa.get("pdf_url"),
-                sciencedirect_url=url,
-                sciencedirect_url_type=link_type,
-                source="openalex",
-                openalex_id=work.get("id"),
-                type=work.get("type"),
-            )
+        item = _paper(
+            title=work.get("title"),
+            authors=authors,
+            year=work.get("publication_year"),
+            journal=source.get("display_name"),
+            doi=doi or None,
+            abstract=_reconstruct_abstract(work.get("abstract_inverted_index")),
+            cited_by=work.get("cited_by_count") or 0,
+            open_access=oa.get("is_oa"),
+            pdf_url=best_oa.get("pdf_url"),
+            sciencedirect_url=url,
+            sciencedirect_url_type=link_type,
+            source="openalex",
+            openalex_id=work.get("id"),
+            type=work.get("type"),
         )
+        if work.get("relevance_score") is not None:
+            item["openalex_relevance_score"] = work.get("relevance_score")
+        results.append(item)
 
     await enrich_sciencedirect_links(results)
     return results
@@ -560,25 +664,33 @@ def _parse_pubmed_xml(xml_text: str) -> List[Dict[str, Any]]:
     return results
 
 
-async def search_pubmed(query: str, limit: int = 10) -> List[Dict[str, Any]]:
-    search = await _client.get(
+async def search_pubmed(
+    query: str,
+    limit: int = 10,
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    term = query
+    if year_from or year_to:
+        term = f"({query}) AND ({year_from or 1800}:{year_to or 3000}[dp])"
+    search = await _get_with_retry(
         "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-        params={
+        _pubmed_params({
             "db": "pubmed",
-            "term": query,
+            "term": term,
             "retmode": "json",
             "retmax": max(1, min(limit, 50)),
             "sort": "relevance",
-        },
+        }),
     )
     search.raise_for_status()
     ids = search.json().get("esearchresult", {}).get("idlist", [])
     if not ids:
         return []
 
-    fetch = await _client.get(
+    fetch = await _get_with_retry(
         "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
-        params={"db": "pubmed", "id": ",".join(ids), "retmode": "xml"},
+        _pubmed_params({"db": "pubmed", "id": ",".join(ids), "retmode": "xml"}),
     )
     fetch.raise_for_status()
     return _parse_pubmed_xml(fetch.text)
@@ -588,11 +700,22 @@ async def search_pubmed(query: str, limit: int = 10) -> List[Dict[str, Any]]:
 # Europe PMC
 # --------------------------------------------------------------------------- #
 
-async def search_europepmc(query: str, limit: int = 10) -> List[Dict[str, Any]]:
+async def search_europepmc(
+    query: str,
+    limit: int = 10,
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    epmc_query = query
+    if year_from or year_to:
+        epmc_query = (
+            f"({query}) AND FIRST_PDATE:[{year_from or 1800}-01-01 "
+            f"TO {year_to or 3000}-12-31]"
+        )
     response = await _client.get(
         "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
         params={
-            "query": query,
+            "query": epmc_query,
             "format": "json",
             "pageSize": max(1, min(limit, 50)),
             "resultType": "core",
@@ -648,9 +771,16 @@ async def search_all(
     year_to: Optional[int] = None,
     priority_only: bool = False,
     allowed_publishers: Optional[Sequence[str]] = None,
+    include_semantic_scholar: bool = True,
+    include_arxiv: bool = False,
+    include_clinicaltrials: bool = False,
+    query_variants: Optional[Sequence[str]] = None,
+    query_expansion: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    sources = await asyncio.gather(
-        search_openalex(
+    from sciencedirect_meta import sources
+
+    tasks: Dict[str, Any] = {
+        "openalex": search_openalex(
             query,
             limit,
             year_from,
@@ -658,18 +788,43 @@ async def search_all(
             elsevier_only=False,
             priority_publishers_only=priority_only,
         ),
-        search_pubmed(query, limit),
-        search_europepmc(query, limit),
-        return_exceptions=True,
+    }
+    if include_semantic_scholar:
+        tasks["semantic_scholar"] = sources.search_semantic_scholar(
+            query, limit, year_from, year_to
+        )
+    tasks["pubmed"] = search_pubmed(query, limit, year_from, year_to)
+    tasks["europepmc"] = search_europepmc(query, limit, year_from, year_to)
+    if include_arxiv:
+        tasks["arxiv"] = sources.search_arxiv(query, limit, year_from, year_to)
+    if include_clinicaltrials:
+        tasks["clinicaltrials"] = sources.search_clinicaltrials(
+            query, limit, year_from, year_to
+        )
+
+    gathered = await asyncio.gather(
+        *(
+            sources.run_source(
+                name,
+                coro,
+                requested_limit=limit,
+                rate_limited_when_empty=(name == "semantic_scholar"),
+            )
+            for name, coro in tasks.items()
+        )
     )
 
     merged: Dict[str, Dict[str, Any]] = {}
     notes: List[str] = []
-    for name, result in zip(("openalex", "pubmed", "europepmc"), sources):
-        if isinstance(result, Exception):
-            notes.append(f"{name}: {result}")
-            continue
-        for item in result:
+    per_source: Dict[str, List[Dict[str, Any]]] = {}
+    source_meta: Dict[str, Dict[str, Any]] = {}
+    for name, result in zip(tasks.keys(), gathered):
+        meta = {key: value for key, value in result.items() if key != "items"}
+        source_meta[name] = meta
+        per_source[name] = result["items"]
+        if meta.get("status") == "error":
+            notes.append(f"{name}: {meta.get('error')}")
+        for item in result["items"]:
             key = _dedupe_key(item)
             if not key or key == "title:":
                 continue
@@ -677,6 +832,18 @@ async def search_all(
                 _merge(merged[key], item)
             else:
                 merged[key] = item
+
+    skipped: List[Dict[str, str]] = []
+    if not include_semantic_scholar:
+        skipped.append(
+            {"source": "semantic_scholar", "reason": "include_semantic_scholar=false"}
+        )
+    if not include_arxiv:
+        skipped.append({"source": "arxiv", "reason": "include_arxiv=false"})
+    if not include_clinicaltrials:
+        skipped.append(
+            {"source": "clinicaltrials", "reason": "include_clinicaltrials=false"}
+        )
 
     items = list(merged.values())
     for item in items:
@@ -689,8 +856,20 @@ async def search_all(
         # Keep only records with a real publisher link in the allowlist.
         items = _filter_by_publisher(items, allowed_publishers)
 
-    items.sort(key=_rank)
+    _attach_quartiles_best_effort(items)
+    sources.score_results(items, query)
+    items.sort(key=lambda item: (-(item.get("score") or 0.0), _rank(item)))
     returned = items[: max(1, min(limit, 50))]
+    coverage = sources.build_coverage(
+        per_source,
+        items,
+        query_variants=query_variants or [query],
+        original_query=query,
+        query_expansion=query_expansion,
+        source_meta=source_meta,
+        skipped_sources=skipped,
+        requested_limit=limit,
+    )
 
     return {
         "query": query,
@@ -700,13 +879,26 @@ async def search_all(
         "priority_order": PRIORITY_ORDER,
         "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
         "sources": {
-            "openalex": "ok" if not isinstance(sources[0], Exception) else "error",
-            "pubmed": "ok" if not isinstance(sources[1], Exception) else "error",
-            "europepmc": "ok" if not isinstance(sources[2], Exception) else "error",
+            name: meta.get("status", "ok") for name, meta in source_meta.items()
         },
+        "coverage": coverage,
+        "evidence_scarcity": coverage["evidence_scarcity"],
+        "evidence_scarcity_message": coverage["evidence_scarcity_message"],
         "notes": notes,
         "results": returned,
     }
+
+
+def _attach_quartiles_best_effort(items: Sequence[Dict[str, Any]]) -> None:
+    """Add SCImago quartiles when the local dataset is available."""
+    if not items:
+        return
+    try:
+        from sciencedirect_meta.local_research import _attach_quartiles
+
+        _attach_quartiles(items)
+    except Exception as exc:  # noqa: BLE001 - optional local dataset
+        logger.info("Quartile enrichment skipped: %s", exc)
 
 
 async def get_article(identifier: str, id_type: str = "doi") -> Dict[str, Any]:
@@ -718,7 +910,10 @@ async def get_article(identifier: str, id_type: str = "doi") -> Dict[str, Any]:
 
     if doi:
         try:
-            response = await _client.get(f"https://api.openalex.org/works/doi:{quote(doi, safe='')}")
+            response = await _client.get(
+                f"https://api.openalex.org/works/doi:{quote(doi, safe='')}",
+                params=_openalex_params(),
+            )
             if response.status_code == 200:
                 work = response.json()
                 location = work.get("primary_location") or {}
@@ -749,7 +944,7 @@ async def get_article(identifier: str, id_type: str = "doi") -> Dict[str, Any]:
                     )
                 )
         except Exception as exc:  # noqa: BLE001
-            logger.info("OpenAlex article lookup failed: %s", exc)
+            logger.info("OpenAlex article lookup failed: %s", redact_secrets(exc))
 
     query = f"DOI:{doi}" if doi else f"EXT_ID:{pmid}"
     try:
@@ -808,8 +1003,9 @@ async def handle_list_tools() -> List[types.Tool]:
         types.Tool(
             name="search_pubmed",
             description=(
-                "Search PubMed via NCBI E-utilities (no API key required). Returns abstracts, "
-                "DOIs and PMIDs; Elsevier DOIs get a ScienceDirect DOI link."
+                "Search PubMed via NCBI E-utilities (works without a key; PUBMED_API_KEY "
+                "raises the rate limit to 10 req/s). Returns abstracts, DOIs and PMIDs; "
+                "Elsevier DOIs get a ScienceDirect DOI link."
             ),
             inputSchema={
                 "type": "object",
@@ -836,9 +1032,79 @@ async def handle_list_tools() -> List[types.Tool]:
             },
         ),
         types.Tool(
+            name="search_semantic_scholar",
+            description=(
+                "Search Semantic Scholar's Graph API. Returns title, abstract, year, DOI, "
+                "citation/influential-citation counts, open-access PDF, venue, authors, "
+                "paperId and URL. Works anonymously; SEMANTIC_SCHOLAR_API_KEY raises the "
+                "rate limit. Failures are swallowed so other sources keep working."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 100},
+                    "year_from": {"type": "integer"},
+                    "year_to": {"type": "integer"},
+                    "fields_of_study": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional Semantic Scholar fields of study, e.g. ['Medicine'].",
+                    },
+                    "open_access_only": {"type": "boolean", "default": False},
+                },
+                "required": ["query"],
+            },
+        ),
+        types.Tool(
+            name="search_arxiv",
+            description=(
+                "Search arXiv (no API key). Returns title, abstract, authors, published/updated "
+                "dates, arXiv id, DOI when present, PDF/abstract URLs, categories and primary "
+                "category. Results are marked is_preprint=true and receive a controlled "
+                "ranking penalty."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
+                    "year_from": {"type": "integer"},
+                    "year_to": {"type": "integer"},
+                    "categories": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional arXiv categories, e.g. ['cs.CL', 'stat.ML'].",
+                    },
+                },
+                "required": ["query"],
+            },
+        ),
+        types.Tool(
+            name="search_clinicaltrials",
+            description=(
+                "Search ClinicalTrials.gov API v2 (no API key). Useful for intervention, RCT "
+                "and clinical-study searches. Returns NCT id, status, study type, phase, "
+                "conditions, interventions, start year and a study URL."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
+                    "year_from": {"type": "integer"},
+                    "year_to": {"type": "integer"},
+                    "intervention_only": {"type": "boolean", "default": False},
+                },
+                "required": ["query"],
+            },
+        ),
+        types.Tool(
             name="search_all",
             description=(
-                "Combined search across OpenAlex (all publishers), PubMed and Europe PMC. "
+                "Combined search across OpenAlex (all publishers), Semantic Scholar, PubMed and "
+                "Europe PMC; arXiv and ClinicalTrials.gov are opt-in. Adds a relevance/quality "
+                "score, a transparent per-source coverage block and an evidence-scarcity signal. "
                 "Deduplicates results and ranks links in this order: Ovid LWW, ScienceDirect, "
                 "SpringerLink, Wiley, Taylor & Francis. Set priority_only=true to "
                 "restrict results to these publishers."
@@ -868,6 +1134,30 @@ async def handle_list_tools() -> List[types.Tool]:
                             "Publisher/source allowlist. Default: Ovid LWW, ScienceDirect, "
                             "SpringerLink, Wiley, Taylor & Francis."
                         ),
+                    },
+                    "include_semantic_scholar": {"type": "boolean", "default": True},
+                    "include_arxiv": {"type": "boolean", "default": False},
+                    "include_clinicaltrials": {"type": "boolean", "default": False},
+                    "query_variants": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Synonyms/variants used for this query; echoed in coverage.",
+                    },
+                    "query_expansion": {
+                        "type": "object",
+                        "description": (
+                            "Explicit query-expansion record. Fields: original, expanded/queries, "
+                            "mesh, languages, transformations, notes."
+                        ),
+                        "properties": {
+                            "original": {"type": "string"},
+                            "expanded": {"type": "array", "items": {"type": "string"}},
+                            "queries": {"type": "array", "items": {"type": "string"}},
+                            "mesh": {"type": "array", "items": {"type": "string"}},
+                            "languages": {"type": "array", "items": {"type": "string"}},
+                            "transformations": {"type": "array", "items": {"type": "string"}},
+                            "notes": {"type": "array", "items": {"type": "string"}},
+                        },
                     },
                 },
                 "required": ["query"],
@@ -951,6 +1241,91 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
             results.sort(key=_rank)
             return _text({"query": query, "count": len(results), "results": results})
 
+        if name == "search_semantic_scholar":
+            query = str(args.get("query", "")).strip()
+            if not query:
+                return _text({"error": "query is required"})
+            from sciencedirect_meta import sources
+
+            results = await sources.search_semantic_scholar(
+                query=query,
+                limit=int(args.get("limit", 10)),
+                year_from=args.get("year_from"),
+                year_to=args.get("year_to"),
+                fields_of_study=args.get("fields_of_study"),
+                open_access_only=bool(args.get("open_access_only", False)),
+            )
+            sources.score_results(results, query)
+            results.sort(key=lambda item: -(item.get("score") or 0.0))
+            return _text(
+                {
+                    "query": query,
+                    "count": len(results),
+                    "source": "semantic_scholar",
+                    "notes": [
+                        "Anonymous access unless SEMANTIC_SCHOLAR_API_KEY is set; "
+                        "failures return an empty result list."
+                    ],
+                    "results": results,
+                }
+            )
+
+        if name == "search_arxiv":
+            query = str(args.get("query", "")).strip()
+            if not query:
+                return _text({"error": "query is required"})
+            from sciencedirect_meta import sources
+
+            results = await sources.search_arxiv(
+                query=query,
+                limit=int(args.get("limit", 10)),
+                year_from=args.get("year_from"),
+                year_to=args.get("year_to"),
+                categories=args.get("categories"),
+            )
+            sources.score_results(results, query)
+            results.sort(key=lambda item: -(item.get("score") or 0.0))
+            return _text(
+                {
+                    "query": query,
+                    "count": len(results),
+                    "source": "arxiv",
+                    "notes": [
+                        "All arXiv records are preprints (is_preprint=true) and receive "
+                        "a controlled ranking penalty."
+                    ],
+                    "results": results,
+                }
+            )
+
+        if name == "search_clinicaltrials":
+            query = str(args.get("query", "")).strip()
+            if not query:
+                return _text({"error": "query is required"})
+            from sciencedirect_meta import sources
+
+            results = await sources.search_clinicaltrials(
+                query=query,
+                limit=int(args.get("limit", 10)),
+                year_from=args.get("year_from"),
+                year_to=args.get("year_to"),
+                intervention_only=bool(args.get("intervention_only", False)),
+            )
+            sources.score_results(results, query)
+            results.sort(key=lambda item: -(item.get("score") or 0.0))
+            return _text(
+                {
+                    "query": query,
+                    "count": len(results),
+                    "source": "clinicaltrials",
+                    "notes": [
+                        "ClinicalTrials.gov records are study registrations, not "
+                        "peer-reviewed publications."
+                    ],
+                    "results": results,
+                }
+            )
+
         if name == "search_all":
             query = str(args.get("query", "")).strip()
             if not query:
@@ -962,6 +1337,11 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
                 year_to=args.get("year_to"),
                 priority_only=bool(args.get("priority_only", False)),
                 allowed_publishers=args.get("allowed_publishers"),
+                include_semantic_scholar=bool(args.get("include_semantic_scholar", True)),
+                include_arxiv=bool(args.get("include_arxiv", False)),
+                include_clinicaltrials=bool(args.get("include_clinicaltrials", False)),
+                query_variants=args.get("query_variants"),
+                query_expansion=args.get("query_expansion"),
             )
             return _text(payload)
 
@@ -1001,7 +1381,7 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
         return _text({"error": f"unknown tool: {name}"})
     except Exception as exc:  # noqa: BLE001
         logger.exception("Tool %s failed", name)
-        return _text({"error": str(exc), "tool": name})
+        return _text({"error": redact_secrets(exc), "tool": name})
 
 
 async def _run() -> None:

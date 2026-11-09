@@ -1,6 +1,6 @@
 # Araç Kataloğu
 
-İki MCP sunucusunda toplam **28 araç** vardır. Makine okunabilir tam sürüm (JSON Schema dâhil): [`tool-catalog.json`](tool-catalog.json). Bu dosya, aynı katalogun insan okunabilir özetidir.
+İki MCP sunucusunda toplam **32 araç** vardır. Makine okunabilir tam sürüm (JSON Schema dâhil): [`tool-catalog.json`](tool-catalog.json). Bu dosya, aynı katalogun insan okunabilir özetidir.
 
 Yeniden üretmek için:
 
@@ -9,7 +9,7 @@ cd <repo>
 bash scripts/dump_tool_catalog.sh
 ```
 
-## sciencedirect-meta (19 araç)
+## sciencedirect-meta (22 araç)
 
 Açık metadata kaynaklarını kullanır; LLM çağırmaz. `project` parametresi verilen araçlar yalnızca o projenin klasöründe çalışır.
 
@@ -20,11 +20,14 @@ Açık metadata kaynaklarını kullanır; LLM çağırmaz. `project` parametresi
 | `search_sciencedirect` | Elsevier/ScienceDirect endeksli makale arama (OpenAlex + Crossref PII; siteye girmez) | `query` | `limit`, `year_from`, `year_to`, `open_access_only` | DOI, metadata, öncelikli linkler |
 | `search_pubmed` | PubMed E-utilities araması | `query` | `limit` | Abstract, DOI, PMID |
 | `search_europepmc` | Europe PMC REST araması | `query` | `limit` | Abstract, DOI, PMID, atıf, OA PDF |
-| `search_all` | OpenAlex + PubMed + Europe PMC birleşik arama | `query` | `limit`, yıl aralığı, `priority_only`, `allowed_publishers` | Tekilleştirilmiş kayıtlar + link önceliği |
+| `search_semantic_scholar` | Semantic Scholar Graph API araması (`semantic_scholar_key` setup.txt'den okunur; 1 istek/sn sınırına uyulur) | `query` | `limit`, yıl aralığı, `fields_of_study`, `open_access_only` | DOI, atıf/influential atıf, OA PDF, venue, paperId, URL |
+| `search_arxiv` | arXiv Atom API araması (anahtarsız) | `query` | `limit`, yıl aralığı, `categories` | arXiv id, PDF/abs URL, kategori, `is_preprint=true` |
+| `search_clinicaltrials` | ClinicalTrials.gov API v2 araması (anahtarsız) | `query` | `limit`, yıl aralığı, `intervention_only` | NCT id, durum, çalışma türü, faz, koşul, girişim |
+| `search_all` | OpenAlex + Semantic Scholar + PubMed + Europe PMC birleşik arama; arXiv ve ClinicalTrials.gov isteğe bağlı | `query` | `limit`, yıl aralığı, `priority_only`, `allowed_publishers`, `include_semantic_scholar`, `include_arxiv`, `include_clinicaltrials`, `query_variants` | Tekilleştirilmiş kayıtlar, `score`, `coverage`, `evidence_scarcity` |
 | `get_article` | DOI veya PMID ile tek makale | `identifier` | `id_type` | Metadata, abstract, atıf, linkler |
 | `get_links` | Tek DOI/PMID için öncelikli linkler | `identifier` | `id_type` | `links`, `preferred_url`, `publisher_url` |
-| `search_literature` | OpenAlex + PubMed + Europe PMC + Crossref DOI arama; `local_pdf` ekler | `query` | `sources`, `limit`, yıl aralığı, `priority_only`, `allowed_publishers`, `include_local_pdf`, `project` | DOI, metadata, yerel PDF eşleşmesi |
-| `deep_research` | Soruyu facet'lere bölüp çok kaynaklı arama | `question` | `subtopics`, `max_subtopics`, `results_per_topic`, yıl aralığı, `sources`, `priority_only`, `allowed_publishers` | Facet bazlı DOI sonuçları |
+| `search_literature` | OpenAlex + Semantic Scholar + PubMed + Europe PMC + Crossref DOI arama; arXiv/ClinicalTrials.gov `sources` ile seçilebilir; `local_pdf` ekler | `query` | `sources`, `limit`, yıl aralığı, `priority_only`, `allowed_publishers`, `include_local_pdf`, `project` | DOI, metadata, yerel PDF eşleşmesi, `score`, `coverage` |
+| `deep_research` | Soruyu facet'lere bölüp çok kaynaklı arama | `question` | `subtopics`, `max_subtopics`, `results_per_topic`, yıl aralığı, `sources`, `priority_only`, `allowed_publishers` | Facet bazlı DOI sonuçları + birleşik `coverage` |
 
 ### Doğrulama ve değerlendirme
 
@@ -47,13 +50,14 @@ Açık metadata kaynaklarını kullanır; LLM çağırmaz. `project` parametresi
 | `analysis_updates` | Kayıtlı denetim/matris verisini okur | — | `doi`, `entry_id`, `query`, `include_*`, `project` | Kayıtlı analiz (varsa) |
 | `export_review` | Markdown/CSV/JSON rapor yazar; `project` verilirse proje çıktı klasörüne | `title` | `project`, `sections`, `content`, `references`, `claims`, `format`, `filename`, `output_path` | Diske yazılan rapor |
 
-## paperqa-local (9 araç)
+## paperqa-local (10 araç)
 
 PaperQA2 indeksleri üzerinde çalışır. `paperqa_search` ve `paperqa_read_pages` LLM çağırmaz; `paperqa_ask` yerel Qwen modelini kullanır, sunucu kapalıysa llama.cpp'yi otomatik başlatır ve taslak üretir.
 
 | Araç | Amaç | Zorunlu girdi | İsteğe bağlı | Çıktı | LLM |
 |---|---|---|---|---|---|
-| `paperqa_create_workspace` | Seçilen proje kökünde 00–03 akış klasörlerini açar; kayıt veya akış seçimi yapmaz | `project_directory` | `name` | Akış klasörleri + akışa özel proje adları | Hayır |
+| `paperqa_create_workspace` | Seçilen proje kökünde 01–05 akış klasörlerini ve her akışın `fulltext/` alt klasörünü açar; kayıt, akış veya tür seçimi yapmaz | `project_directory` | `name` | Akış klasörleri + akışa özel proje adları | Hayır |
+| `paperqa_promote_fulltext` | Akış 3'te indirilen açık erişim PDF'lerini akış 4/5 `fulltext/` klasörüne kopyalar; kullanıcının dosyalarını DOI adına çevirir | `project_directory` | `target_workflow`, `move`, `dry_run` | Kopyalanan/taşınan/atlanan dosya listesi | Hayır |
 | `paperqa_projects` | Kayıtlı projeleri listeler | — | — | Proje + indeks durumu | Hayır |
 | `paperqa_register_project` | PDF klasörünü kaydeder; kullanıcı proje klasörü olan `output_directory` zorunludur | `name`, `paper_directory`, `output_directory` | `title`, `description`, `include_subdirectories`, `include_files_without_doi`, `refresh_manifest`, `enrich_metadata`, `index_directory`, `index_name` | Proje kaydı + proje klasöründeki manifest | Hayır |
 | `paperqa_build_index` | Manifest → PaperQA2 indeksi | `project` | `rebuild` | İndeks | Hayır (embedding) |

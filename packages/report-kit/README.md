@@ -12,7 +12,7 @@ görsel dilini korur:
 - Ek 2: kaynak envanteri (rol ve sınırlılık sütunlarıyla), konum + kanıt türü +
   not sütunlu iddia–kanıt matrisi, düzeltme özeti, sınırlılıklar ve opsiyonel
   sonraki adımlar,
-- iş akışı 3 için paragraf/makale bağlamı değerlendirmesi ve Ek 3 bağlama uygun
+- iş akışı 5 için paragraf/makale bağlamı değerlendirmesi ve Ek 3 bağlama uygun
   DOI/metaverisi doğrulanmış kaynak önerileri; tam metni okunmamış öneriler kanıt sayılmaz,
 - Ek 4'te her kaynak için bu projedeki katkı, desteklemediği çıkarımlar ve
   çalışma sınırlılıkları; değerlendirme dayanağı (özet/tam metin/sayfa) görünür,
@@ -30,9 +30,13 @@ python -m pip install -e packages/report-kit
 # Yalnızca doğrula (dosya yazmaz)
 chapter-report build examples/chapter-report.example.json --check
 
-# HTML üret
+# HTML üret (varsayılan: _YYYYMMDD-HHMMSS sonekli HTML, Markdown, manifest)
 chapter-report build rapor.json -o 05_bolum_raporu.html \
   --markdown 05_bolum_raporu.md
+
+# Sabit ad gerekiyorsa
+chapter-report build rapor.json -o 05_bolum_raporu.html \
+  --markdown 05_bolum_raporu.md --no-timestamp --force
 
 # Üret + ara dosyaları manifest üzerinden temizleme seçeneği
 chapter-report build rapor.json -o 05_bolum_raporu.html \
@@ -51,8 +55,8 @@ chapter-report build rapor.json -o 05_bolum_raporu.html \
 | `intermediate` | HTML ve Markdown dışındaki manifest kayıtlarını siler. |
 | `all` | Manifestteki tüm üretilmiş dosyaları siler; manifest kalır. |
 
-Silme yalnızca `05_bolum_raporu.manifest.json` içinde listelenen, proje klasörü
-içindeki dosyalarda yapılır. PDF, indeks, registry veya manifest dışındaki
+Silme yalnızca `05_bolum_raporu_<zaman>.manifest.json` içinde listelenen, proje
+klasörü içindeki dosyalarda yapılır. PDF, indeks, registry veya manifest dışındaki
 dosyalara dokunulmaz. `--dry-run` yalnızca neyin silineceğini gösterir;
 `--yes` onay sormadan uygular.
 
@@ -69,8 +73,9 @@ dosyalara dokunulmaz. `--dry-run` yalnızca neyin silineceğini gösterir;
 - yalnızca `https://doi.org/...` linkleri,
 - `file://`, `/home/...`, `C:\...` ve yerel PDF dosya adı yasağı,
 - özet sayılarının veriyle uyuşması,
-- `<script>`, harici stil/JS ve yerel yol içermeyen dengeli HTML
-  (`<article>`, `<footer>`, `<mark>` dahil).
+- harici stil/JS ve yerel yol içermeyen dengeli HTML (`<article>`, `<footer>`,
+  `<mark>` dahil); DOI kopyalama düğmesi için tek, denetimli `<script>` bloğu
+  dışında `<script>`, `<iframe>` ve `on*` özniteliği kabul edilmez.
 
 `--strict` uyarıları da hata sayar. Örnek veri ve şema:
 

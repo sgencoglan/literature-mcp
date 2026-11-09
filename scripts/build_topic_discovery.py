@@ -11,6 +11,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+try:  # scripts/ içinden çalışırken
+    from output_naming import add_timestamp, add_timestamp_argument
+except ImportError:  # python -m scripts.build_topic_discovery
+    from scripts.output_naming import add_timestamp, add_timestamp_argument
+
 DOI_RE = re.compile(r"^10\.\d{4,9}/\S+$")
 DATABASE_LABELS = {
     "openalex": "OpenAlex",
@@ -20,6 +25,12 @@ DATABASE_LABELS = {
     "other": "Diğer",
 }
 STATUS_LABELS = {"ok": "Arandı", "error": "Hata", "not_searched": "Aranmadı"}
+GENRE_LABELS = {
+    "kitap_bolumu": "Kitap bölümü",
+    "uygulama_rehberi": "Uygulama rehberi",
+    "derleme_makale": "Derleme makalesi",
+    "ampirik_makale": "Ampirik makale",
+}
 NOVELTY_LABELS = {"weak": "Sınırlı boşluk sinyali", "moderate": "Orta düzey boşluk sinyali", "strong": "Belirgin boşluk sinyali"}
 
 
@@ -42,6 +53,14 @@ def validate(data: Any) -> list[str]:
     for key in ("project", "title", "topic", "generated_at"):
         if not isinstance(data.get(key), str) or not data[key].strip():
             errors.append(f"{key}: boş olmayan metin olmalı.")
+    if data.get("genre") not in GENRE_LABELS:
+        errors.append(
+            "genre: kitap_bolumu/uygulama_rehberi/derleme_makale/ampirik_makale olmalı."
+        )
+    total_words = data.get("target_total_words")
+    if not isinstance(total_words, int) or isinstance(total_words, bool) or total_words < 300:
+        errors.append("target_total_words: en az 300 olan tam sayı olmalı.")
+
     databases = data.get("database_searches")
     if not isinstance(databases, list) or not databases:
         errors.append("database_searches: en az bir veritabanı sorgusu olmalı.")
@@ -135,6 +154,19 @@ def render(data: dict[str, Any]) -> str:
     limitations = "<ul>" + "".join(f"<li>{esc(value)}</li>" for value in data["limitations"]) + "</ul>"
     scope = f'<p><strong>Tarama kapsamı:</strong> {esc(data["scope"])}</p>' if data.get("scope") else ""
     next_step = f'<p class="next"><strong>Sonraki adım:</strong> {esc(data["next_step"])}</p>' if data.get("next_step") else ""
+    genre = GENRE_LABELS.get(str(data.get("genre") or ""), str(data.get("genre") or ""))
+    scope_in = "".join(
+        f"<li>{esc(value)}</li>" for value in (data.get("scope_in") or [])
+    ) or "<li class='muted'>Belirtilmedi.</li>"
+    scope_out = "".join(
+        f"<li>{esc(value)}</li>" for value in (data.get("scope_out") or [])
+    ) or "<li class='muted'>Belirtilmedi.</li>"
+    selected_title = data.get("selected_title")
+    selected_html = (
+        f'<p><strong>Seçilen başlık:</strong> {esc(selected_title)}</p>'
+        if selected_title
+        else ""
+    )
     return f"""<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(data['title'])} — {esc(data['project'])}</title>
@@ -147,8 +179,11 @@ h1,h2,h3{{line-height:1.25}}h1{{margin:0 0 .5rem;font-size:2rem}}h2{{font-size:1
 .proposal{{border:1px solid var(--line);border-radius:10px;padding:1.1rem 1.25rem;margin:1.2rem 0;break-inside:avoid}}.proposal-head{{display:flex;align-items:center;gap:.65rem}}.rank{{font-weight:800;font-size:1.1rem;color:var(--blue)}}.novelty{{border-radius:99px;padding:.18rem .65rem;font-size:.78rem;font-weight:700}}.novelty.strong{{background:var(--green);color:#17663a}}.novelty.moderate{{background:var(--amber);color:#765000}}.novelty.weak{{background:var(--gray);color:#4f5b66}}dl{{display:grid;grid-template-columns:minmax(145px, .3fr) 1fr;gap:.35rem .8rem}}dt{{font-weight:700}}dd{{margin:0}}li{{margin:.25rem 0}}.next{{background:var(--soft);padding:.8rem 1rem}}footer{{margin-top:2rem;border-top:1px solid var(--line);padding-top:.7rem;color:var(--muted);font-size:.8rem}}
 @media print{{body{{padding:.4in;max-width:none}}.proposal{{break-inside:avoid}}a{{color:inherit;text-decoration:none}}}}
 </style></head><body>
-<h1>{esc(data['title'])}</h1><p class="meta">Proje: <strong>{esc(data['project'])}</strong> · Üretim: {esc(data['generated_at'])}</p>
-<p class="scope"><strong>Konu:</strong> {esc(data['topic'])}</p>{scope}
+<h1>{esc(data['title'])}</h1><p class="meta">Proje: <strong>{esc(data['project'])}</strong> · Ürün: <strong>{esc(genre)}</strong> · Hedef: {esc(data.get('target_total_words'))} kelime · Üretim: {esc(data['generated_at'])}</p>
+<p class="scope"><strong>Konu:</strong> {esc(data['topic'])}</p>{scope}{selected_html}
+<div class="scope" style="margin-top:.8rem"><strong>Hedef kitle:</strong> {esc(data.get('audience') or 'belirtilmedi')}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:.6rem">
+<div><strong>Kapsam içi</strong><ul>{scope_in}</ul></div><div><strong>Kapsam dışı</strong><ul>{scope_out}</ul></div></div></div>
 <aside class="callout"><strong>Özgünlük notu:</strong> Bu rapor, seçilen veri tabanlarında bulunan kayıtlar üzerinden olası araştırma boşluklarını gösterir. “Özgünlük fırsatı” kesin yenilik kanıtı değildir; kapsamlı sistematik tarama, atıf zinciri ve alan uzmanı doğrulaması gerekir.</aside>
 <h2>Veri tabanı tarama kaydı</h2><div class="table-wrap"><table><thead><tr><th>Veri tabanı</th><th>Sorgu</th><th>Durum</th><th>Kayıt</th><th>Not</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
 <h2>Sıralı çalışma önerileri</h2>{''.join(cards)}
@@ -163,6 +198,7 @@ def main() -> int:
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--force", action="store_true")
+    add_timestamp_argument(parser)
     args = parser.parse_args()
     try:
         data = json.loads(args.input.read_text(encoding="utf-8"))
@@ -178,13 +214,14 @@ def main() -> int:
         return 0
     if not args.output:
         parser.error("--check kullanılmadığında -o/--output zorunludur")
-    if args.output.exists() and not args.force:
-        print(f"Çıktı zaten var: {args.output}; üzerine yazmak için --force kullanın.", file=sys.stderr)
+    output_path = add_timestamp(args.output, enabled=args.timestamp)
+    if output_path.exists() and not args.force:
+        print(f"Çıktı zaten var: {output_path}; üzerine yazmak için --force kullanın.", file=sys.stderr)
         return 2
     output = render(data)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(output, encoding="utf-8")
-    print(f"Yazıldı: {args.output} ({len(output):,} bayt)")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(output, encoding="utf-8")
+    print(f"Yazıldı: {output_path} ({len(output):,} bayt)")
     return 0
 
 

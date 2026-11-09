@@ -226,6 +226,19 @@ th {
 ul, ol { margin: .5rem 0; padding-left: 1.3rem; }
 li { margin: .3rem 0; }
 .empty { color: var(--muted); font-style: italic; }
+.doi-copy {
+  font: .68rem -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--muted);
+  padding: .1rem .35rem;
+  margin-left: .25rem;
+  cursor: pointer;
+  vertical-align: .05em;
+}
+.doi-copy:hover { border-color: var(--accent); color: var(--accent); }
+.doi-copy.copied { border-color: #9ccfae; background: #eefaf2; color: #1e6b33; }
 @media (max-width: 600px) {
   body { padding: 1.4rem 1rem 3rem; }
   table { font-size: .76rem; }
@@ -239,6 +252,7 @@ li { margin: .3rem 0; }
   }
   thead { display: table-header-group; }
   a { color: inherit; }
+  .doi-copy { display: none; }
 }
 
 </style>
@@ -292,7 +306,7 @@ li { margin: .3rem 0; }
   <h3>Değişiklik 1 — Uzaktan çalışmanın refah etkisini tek yönlü sunmak (1. paragraf, 2. cümle) <span class="badge warn">🟡 Kısmi</span></h3>
   <div class="row"><span class="lbl">Yazarın yazdığı</span><p>“Uzaktan çalışma çalışan refahını azaltır; esneklik bu olumsuz etkiyi telafi edemez.”</p></div>
   <div class="ev">
-    <div class="ev-head">Makaledeki orijinal cümle — Demir (2024), s. 4 · DOI: <a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></div>
+    <div class="ev-head">Makaledeki orijinal cümle — Demir (2024), s. 4 · DOI: <a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2024.001" aria-label="10.5555/ornek.2024.001 DOI'sini kopyala">DOI kopyala</button></div>
     <p class="en" lang="en">“Remote work had heterogeneous associations with well-being: autonomy was linked to higher satisfaction, whereas after-hours connectivity was linked to exhaustion.”</p>
     <p class="tr"><span class="lbl">Türkçesi</span>“Uzaktan çalışma refahla heterojen ilişkiler göstermiştir: özerklik daha yüksek memnuniyetle, mesai dışı erişilebilirlik ise tükenmeyle ilişkilendirilmiştir.”</p>
   </div>
@@ -308,7 +322,7 @@ li { margin: .3rem 0; }
   <h3>Değişiklik 2 — İşten ayrılma niyeti için doğrudan kanıt varmış gibi yazmak (2. paragraf, 1. cümle) <span class="badge bad">🔴 Kaynakta yok</span></h3>
   <div class="row"><span class="lbl">Yazarın yazdığı</span><p>“Uzaktan çalışma işten ayrılma niyetini doğrudan artırır.”</p></div>
   <div class="ev">
-    <div class="ev-head">Makaledeki orijinal cümle — Kaya &amp; Yılmaz (2023), s. 7 · DOI: <a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a></div>
+    <div class="ev-head">Makaledeki orijinal cümle — Kaya &amp; Yılmaz (2023), s. 7 · DOI: <a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2023.002" aria-label="10.5555/ornek.2023.002 DOI'sini kopyala">DOI kopyala</button></div>
     <p class="en" lang="en">“Boundary management explained additional variance in work–family conflict, but turnover intention was not included as an outcome in the model.”</p>
     <p class="tr"><span class="lbl">Türkçesi</span>“Sınır yönetimi, iş–aile çatışmasındaki ek varyansı açıklamış; ancak işten ayrılma niyeti modelde sonuç değişkeni olarak yer almamıştır.”</p>
   </div>
@@ -324,7 +338,7 @@ li { margin: .3rem 0; }
   <h3>Değişiklik 3 — Yönetici desteğini bireysel dayanıklılığa indirgemek (3. paragraf, 2. cümle) <span class="badge ok">✅ Destekli</span></h3>
   <div class="row"><span class="lbl">Yazarın yazdığı</span><p>“Tükenmeyi önlemenin tek yolu çalışanların bireysel dayanıklılığını artırmaktır.”</p></div>
   <div class="ev">
-    <div class="ev-head">Makaledeki orijinal cümle — Arslan vd. (2025), s. 11 · DOI: <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></div>
+    <div class="ev-head">Makaledeki orijinal cümle — Arslan vd. (2025), s. 11 · DOI: <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2025.003" aria-label="10.5555/ornek.2025.003 DOI'sini kopyala">DOI kopyala</button></div>
     <p class="en" lang="en">“Leader support was negatively associated with exhaustion after controlling for individual resilience, suggesting that organizational factors also matter.”</p>
     <p class="tr"><span class="lbl">Türkçesi</span>“Yönetici desteği, bireysel dayanıklılık kontrol edildikten sonra da tükenmeyle negatif ilişkiliydi; bu, örgütsel etkenlerin de önemli olduğunu göstermektedir.”</p>
   </div>
@@ -344,9 +358,9 @@ li { margin: .3rem 0; }
   <div class="table-wrap"><table>
     <thead><tr><th scope="col">#</th><th scope="col">Kaynak</th><th scope="col">DOI</th><th scope="col">Dergi (yıl)</th><th scope="col">Q (2024)</th><th scope="col">Atıf (Crossref/OpenAlex)</th><th scope="col">OA</th><th scope="col">Retraction</th><th scope="col">Rol</th><th scope="col">Sınırlılık</th></tr></thead>
     <tbody>
-<tr><td>1</td><td>Demir — Uzaktan çalışma ve refah</td><td><a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></td><td>Örnek İş ve Örgüt Psikolojisi Dergisi (2024)</td><td>Q1</td><td>12 / 14</td><td>✓</td><td>yok</td><td>çekirdek</td><td>Kesitsel veri; nedensellik kurulamaz.</td></tr>
-<tr><td>2</td><td>Kaya &amp; Yılmaz — Sınır yönetimi</td><td><a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a></td><td>Örnek Çalışma Yaşamı Dergisi (2023)</td><td>Q2</td><td>8 / 9</td><td>✗</td><td>yok</td><td>destek</td><td>İşten ayrılma niyeti ölçülmemiş; örneklem tek sektör.</td></tr>
-<tr><td>3</td><td>Arslan vd. — Yönetici desteği ve tükenme</td><td><a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></td><td>Örnek Örgütsel Davranış Dergisi (2025)</td><td>Q1</td><td>3 / 4</td><td>✓</td><td>yok</td><td>çekirdek</td><td>Yalnızca beyaz yakalı örneklem; kültürel genelleme sınırlı.</td></tr>
+<tr><td>1</td><td>Demir — Uzaktan çalışma ve refah</td><td><a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2024.001" aria-label="10.5555/ornek.2024.001 DOI'sini kopyala">DOI kopyala</button></td><td>Örnek İş ve Örgüt Psikolojisi Dergisi (2024)</td><td>Q1</td><td>12 / 14</td><td>✓</td><td>yok</td><td>çekirdek</td><td>Kesitsel veri; nedensellik kurulamaz.</td></tr>
+<tr><td>2</td><td>Kaya &amp; Yılmaz — Sınır yönetimi</td><td><a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2023.002" aria-label="10.5555/ornek.2023.002 DOI'sini kopyala">DOI kopyala</button></td><td>Örnek Çalışma Yaşamı Dergisi (2023)</td><td>Q2</td><td>8 / 9</td><td>✗</td><td>yok</td><td>destek</td><td>İşten ayrılma niyeti ölçülmemiş; örneklem tek sektör.</td></tr>
+<tr><td>3</td><td>Arslan vd. — Yönetici desteği ve tükenme</td><td><a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2025.003" aria-label="10.5555/ornek.2025.003 DOI'sini kopyala">DOI kopyala</button></td><td>Örnek Örgütsel Davranış Dergisi (2025)</td><td>Q1</td><td>3 / 4</td><td>✓</td><td>yok</td><td>çekirdek</td><td>Yalnızca beyaz yakalı örneklem; kültürel genelleme sınırlı.</td></tr>
     </tbody>
   </table></div>
   <p class="legend">Not: Bu örnekteki kaynaklar, yazarlar ve DOI’ler sentetiktir; gerçek bir literatür taramasına atıf olarak kullanılamaz.</p>
@@ -383,9 +397,9 @@ li { margin: .3rem 0; }
 </ol>
   <h3>Kaynakça</h3>
 <ol>
-  <li>Demir, A. (2024). <i>Uzaktan çalışma ve refah: Heterojen ilişkiler</i>. Örnek İş ve Örgüt Psikolojisi Dergisi. <a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a></li>
-  <li>Kaya, B.; Yılmaz, C. (2023). <i>Sınır yönetimi ve iş–aile çatışması</i>. Örnek Çalışma Yaşamı Dergisi. <a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a></li>
-  <li>Arslan, D.; Öz, E.; Tan, F. (2025). <i>Yönetici desteği, dayanıklılık ve tükenme</i>. Örnek Örgütsel Davranış Dergisi. <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a></li>
+  <li>Demir, A. (2024). <i>Uzaktan çalışma ve refah: Heterojen ilişkiler</i>. Örnek İş ve Örgüt Psikolojisi Dergisi. <a href="https://doi.org/10.5555/ornek.2024.001">10.5555/ornek.2024.001</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2024.001" aria-label="10.5555/ornek.2024.001 DOI'sini kopyala">DOI kopyala</button></li>
+  <li>Kaya, B.; Yılmaz, C. (2023). <i>Sınır yönetimi ve iş–aile çatışması</i>. Örnek Çalışma Yaşamı Dergisi. <a href="https://doi.org/10.5555/ornek.2023.002">10.5555/ornek.2023.002</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2023.002" aria-label="10.5555/ornek.2023.002 DOI'sini kopyala">DOI kopyala</button></li>
+  <li>Arslan, D.; Öz, E.; Tan, F. (2025). <i>Yönetici desteği, dayanıklılık ve tükenme</i>. Örnek Örgütsel Davranış Dergisi. <a href="https://doi.org/10.5555/ornek.2025.003">10.5555/ornek.2025.003</a> <button type="button" class="doi-copy" data-doi="10.5555/ornek.2025.003" aria-label="10.5555/ornek.2025.003 DOI'sini kopyala">DOI kopyala</button></li>
 </ol>
 </section>
 <section class="appendix appendix-recommendations">
@@ -459,6 +473,44 @@ li { margin: .3rem 0; }
     <p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Sayfa numarası doğrulanmış tam metin · incelenen sayfa(lar): 5–6</p>
   </article>
 </section>
-<footer class="report-footer"><p>literature-mcp · chapter-report v2.5.1 · Sentetik örnek; gerçek kaynak değildir.</p></footer>
+<footer class="report-footer"><p>literature-mcp · chapter-report v2.7.0 · Sentetik örnek; gerçek kaynak değildir.</p></footer>
+<script>
+/* DOI copy button: yalnızca panoya kopyalama */
+(function () {
+  function fallbackCopy(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    document.body.removeChild(area);
+    return ok;
+  }
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest("button.doi-copy");
+    if (!button) return;
+    var doi = button.getAttribute("data-doi") || "";
+    function done(ok) {
+      if (!ok) return;
+      var previous = button.textContent;
+      button.textContent = "Kopyalandı";
+      button.classList.add("copied");
+      setTimeout(function () {
+        button.textContent = previous;
+        button.classList.remove("copied");
+      }, 1600);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(doi).then(function () { done(true); }, function () { done(fallbackCopy(doi)); });
+    } else {
+      done(fallbackCopy(doi));
+    }
+  });
+})();
+</script>
 </body>
 </html>

@@ -29,6 +29,15 @@ else
   echo "Temiz."
 fi
 
+note "Yazım kontrolü (PaperQA)"
+TYPO_RE='(^|[^[:alnum:]_])(parpa'"qa"'|parp'"qa"'|Paper'"qa"')([^[:alnum:]_]|$)'
+if grep -RInE --exclude-dir=.git --exclude-dir=.venv --exclude-dir=__pycache__ \
+  --exclude=CHANGELOG.md "$TYPO_RE" .; then
+  bad "yanlış yazım bulundu; doğrusu PaperQA"
+else
+  echo "Temiz."
+fi
+
 note "Python sözdizimi"
 if ! "$PY" -m compileall -q scripts packages/sciencedirect-meta/src packages/paperqa-local packages/report-kit/src; then
   bad "Python derleme hatası"
@@ -50,6 +59,8 @@ pairs = [
     ("schemas/change-card.schema.json", "examples/change-card.example.json"),
     ("schemas/claim-evidence.schema.json", "examples/claim-evidence.example.json"),
     ("schemas/chapter-report.schema.json", "examples/chapter-report.example.json"),
+    ("schemas/search-coverage.schema.json", "examples/search-coverage.example.json"),
+    ("schemas/writing-plan.schema.json", "examples/writing-plan.example.json"),
 ]
 failed = False
 for schema_path, example_path in pairs:
@@ -84,6 +95,12 @@ note "report-kit birim testleri"
 if ! PYTHONPATH="$ROOT/packages/report-kit/src${PYTHONPATH:+:$PYTHONPATH}" \
   "$PY" -m unittest discover -s packages/report-kit/tests -v; then
   bad "report-kit testleri başarısız"
+fi
+
+note "scripts birim testleri"
+if ! PYTHONPATH="$ROOT/scripts${PYTHONPATH:+:$PYTHONPATH}" \
+  "$PY" -m unittest discover -s scripts/tests -v; then
+  bad "scripts testleri başarısız"
 fi
 
 note "chapter-report kalite kapısı"
@@ -136,6 +153,47 @@ print("OK: konu keşfi HTML örneği güncel")
 PY
 then
   bad "konu keşfi HTML örneği kaynakla uyuşmuyor"
+fi
+
+note "Arama kapsam raporu üreticisi"
+if ! "$PY" scripts/build_search_coverage.py examples/search-coverage.example.json --check; then
+  bad "arama kapsam örneği doğrulanamadı"
+fi
+if ! "$PY" - <<'PY'
+import json
+from pathlib import Path
+from scripts.build_search_coverage import render, render_markdown
+
+data = json.loads(Path("examples/search-coverage.example.json").read_text(encoding="utf-8"))
+expected = Path("examples/search-coverage.example.html").read_text(encoding="utf-8")
+if render(data) != expected:
+    raise SystemExit("examples/search-coverage.example.html güncel değil; yeniden üretin")
+expected_md = Path("examples/search-coverage.example.md").read_text(encoding="utf-8")
+if render_markdown(data) != expected_md:
+    raise SystemExit("examples/search-coverage.example.md güncel değil; yeniden üretin")
+print("OK: arama kapsam HTML ve Markdown örnekleri güncel")
+PY
+then
+  bad "arama kapsam HTML/Markdown örneği kaynakla uyuşmuyor"
+fi
+
+note "Yazım planı üreticisi"
+if ! "$PY" scripts/build_writing_plan.py examples/writing-plan.example.json --check; then
+  bad "yazım planı örneği doğrulanamadı"
+fi
+if ! "$PY" - <<'PYEOF'
+import json
+from pathlib import Path
+from scripts.build_writing_plan import render
+
+data = json.loads(Path("examples/writing-plan.example.json").read_text(encoding="utf-8"))
+expected = Path("examples/writing-plan.example.html").read_text(encoding="utf-8")
+if render(data) != expected:
+    raise SystemExit("examples/writing-plan.example.html güncel değil; yeniden üretin")
+print("OK: yazım planı HTML örneği güncel")
+PYEOF
+then
+  bad "yazım planı HTML örneği kaynakla uyuşmuyor"
 fi
 
 note "Yöntem tasarımı üreticisi"

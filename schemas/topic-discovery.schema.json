@@ -9,6 +9,17 @@
     "title": { "type": "string", "minLength": 1 },
     "topic": { "type": "string", "minLength": 1 },
     "generated_at": { "type": "string", "minLength": 1 },
+    "genre": {
+      "type": "string",
+      "enum": ["kitap_bolumu", "uygulama_rehberi", "derleme_makale", "ampirik_makale"],
+      "description": "Ürün türü. Varsayılan yoktur; akış 1'de kullanıcı seçer."
+    },
+    "genre_note": {"type": "string"},
+    "audience": {"type": "string"},
+    "target_total_words": {"type": "integer", "minimum": 300},
+    "scope_in": {"type": "array", "items": {"type": "string"}},
+    "scope_out": {"type": "array", "items": {"type": "string"}},
+    "selected_title": {"type": ["string", "null"]},
     "scope": { "type": "string" },
     "database_searches": {
       "type": "array",

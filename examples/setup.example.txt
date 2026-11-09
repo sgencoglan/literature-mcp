@@ -1,0 +1,18 @@
+# literature-mcp kimlik bilgileri — örnek
+# Bu dosyayı proje köküne `setup.txt` adıyla kopyalayın ve `chmod 600` uygulayın.
+# Düz metin sır içerir; sürüm kontrolüne eklemeyin.
+# MCP sunucusu bu dosyayı süreç başında otomatik okur; ortam değişkeni
+# tanımlıysa o değer önceliklidir.
+#
+# Crossref, NCBI, OpenAlex ve Unpaywall için ortak iletişim adresi.
+# Unpaywall anahtar istemez; yalnızca bu e-posta adresini kullanır.
+email=you@example.org
+
+# OpenAlex API anahtarı (isteğe bağlı; hız limitini yükseltir).
+openalex_key=
+
+# PubMed/NCBI API anahtarı (isteğe bağlı; 3 istek/sn → 10 istek/sn).
+pubmed_key=
+
+# Semantic Scholar API anahtarı (isteğe bağlı; kişisel kota 1 istek/sn).
+semantic_scholar_key=

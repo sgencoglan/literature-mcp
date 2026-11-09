@@ -10,5 +10,43 @@ $css
 </head>
 <body>
 $body
+<script>
+/* DOI copy button: yalnızca panoya kopyalama */
+(function () {
+  function fallbackCopy(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    document.body.removeChild(area);
+    return ok;
+  }
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest("button.doi-copy");
+    if (!button) return;
+    var doi = button.getAttribute("data-doi") || "";
+    function done(ok) {
+      if (!ok) return;
+      var previous = button.textContent;
+      button.textContent = "Kopyalandı";
+      button.classList.add("copied");
+      setTimeout(function () {
+        button.textContent = previous;
+        button.classList.remove("copied");
+      }, 1600);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(doi).then(function () { done(true); }, function () { done(fallbackCopy(doi)); });
+    } else {
+      done(fallbackCopy(doi));
+    }
+  });
+})();
+</script>
 </body>
 </html>

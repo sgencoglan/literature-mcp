@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "generated_at": "2026-10-31T18:28:06+00:00",
+  "generated_at": "2026-11-09T14:59:38+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
-      "tool_count": 19,
+      "tool_count": 22,
       "tools": [
         {
           "name": "search_sciencedirect",
@@ -42,7 +42,7 @@
         },
         {
           "name": "search_pubmed",
-          "description": "Search PubMed via NCBI E-utilities (no API key required). Returns abstracts, DOIs and PMIDs; Elsevier DOIs get a ScienceDirect DOI link.",
+          "description": "Search PubMed via NCBI E-utilities (works without a key; PUBMED_API_KEY raises the rate limit to 10 req/s). Returns abstracts, DOIs and PMIDs; Elsevier DOIs get a ScienceDirect DOI link.",
           "input_schema": {
             "type": "object",
             "properties": {
@@ -83,8 +83,111 @@
           }
         },
         {
+          "name": "search_semantic_scholar",
+          "description": "Search Semantic Scholar's Graph API. Returns title, abstract, year, DOI, citation/influential-citation counts, open-access PDF, venue, authors, paperId and URL. Works anonymously; SEMANTIC_SCHOLAR_API_KEY raises the rate limit. Failures are swallowed so other sources keep working.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 100
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "fields_of_study": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Optional Semantic Scholar fields of study, e.g. ['Medicine']."
+              },
+              "open_access_only": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
+          "name": "search_arxiv",
+          "description": "Search arXiv (no API key). Returns title, abstract, authors, published/updated dates, arXiv id, DOI when present, PDF/abstract URLs, categories and primary category. Results are marked is_preprint=true and receive a controlled ranking penalty.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Optional arXiv categories, e.g. ['cs.CL', 'stat.ML']."
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
+          "name": "search_clinicaltrials",
+          "description": "Search ClinicalTrials.gov API v2 (no API key). Useful for intervention, RCT and clinical-study searches. Returns NCT id, status, study type, phase, conditions, interventions, start year and a study URL.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "intervention_only": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        },
+        {
           "name": "search_all",
-          "description": "Combined search across OpenAlex (all publishers), PubMed and Europe PMC. Deduplicates results and ranks links in this order: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis. Set priority_only=true to restrict results to these publishers.",
+          "description": "Combined search across OpenAlex (all publishers), Semantic Scholar, PubMed and Europe PMC; arXiv and ClinicalTrials.gov are opt-in. Adds a relevance/quality score, a transparent per-source coverage block and an evidence-scarcity signal. Deduplicates results and ranks links in this order: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis. Set priority_only=true to restrict results to these publishers.",
           "input_schema": {
             "type": "object",
             "properties": {
@@ -121,6 +224,70 @@
                   ]
                 },
                 "description": "Publisher/source allowlist. Default: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis."
+              },
+              "include_semantic_scholar": {
+                "type": "boolean",
+                "default": true
+              },
+              "include_arxiv": {
+                "type": "boolean",
+                "default": false
+              },
+              "include_clinicaltrials": {
+                "type": "boolean",
+                "default": false
+              },
+              "query_variants": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Synonyms/variants used for this query; echoed in coverage."
+              },
+              "query_expansion": {
+                "type": "object",
+                "description": "Explicit query-expansion record. Fields: original, expanded/queries, mesh, languages, transformations, notes.",
+                "properties": {
+                  "original": {
+                    "type": "string"
+                  },
+                  "expanded": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "queries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mesh": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "languages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "transformations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             },
             "required": [
@@ -216,7 +383,7 @@
         },
         {
           "name": "search_literature",
-          "description": "Find DOIs and metadata across OpenAlex, PubMed, Europe PMC and Crossref. By default only records with a real publisher link from the allowed set are returned (Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis). Adds local_pdf when a matching PDF is already available; pass project=... to check only that project's folder.",
+          "description": "Find DOIs and metadata across OpenAlex, Semantic Scholar, PubMed, Europe PMC and Crossref; arXiv and ClinicalTrials.gov are opt-in through sources. Returns a quality score per result, a per-source coverage block and an evidence_scarcity signal. By default only records with a real publisher link from the allowed set are returned (Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis). Adds local_pdf when a matching PDF is already available; pass project=... to check only that project's folder.",
           "input_schema": {
             "type": "object",
             "properties": {
@@ -229,9 +396,12 @@
                   "type": "string",
                   "enum": [
                     "openalex",
+                    "semantic_scholar",
                     "pubmed",
                     "europepmc",
-                    "crossref"
+                    "crossref",
+                    "arxiv",
+                    "clinicaltrials"
                   ]
                 },
                 "description": "Metadata sources to query. Default: all available sources."
@@ -273,6 +443,51 @@
               "project": {
                 "type": "string",
                 "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              },
+              "query_expansion": {
+                "type": "object",
+                "description": "Explicit query-expansion record for the coverage report. Fields: original, expanded/queries, mesh, languages, transformations, notes.",
+                "properties": {
+                  "original": {
+                    "type": "string"
+                  },
+                  "expanded": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "queries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mesh": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "languages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "transformations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             },
             "required": [
@@ -282,7 +497,7 @@
         },
         {
           "name": "deep_research",
-          "description": "Decompose a research question into facets (overview, reviews, prevalence, risk factors, interventions, qualitative) and run multi-source DOI searches. By default only allowed publisher records are returned. Pass subtopics to control the decomposition explicitly.",
+          "description": "Decompose a research question into facets (overview, reviews, prevalence, risk factors, interventions, qualitative) and run multi-source DOI searches. Returns a quality score per result and a combined coverage block with an evidence_scarcity signal. By default only allowed publisher records are returned. Pass subtopics to control the decomposition explicitly.",
           "input_schema": {
             "type": "object",
             "properties": {
@@ -319,9 +534,12 @@
                   "type": "string",
                   "enum": [
                     "openalex",
+                    "semantic_scholar",
                     "pubmed",
                     "europepmc",
-                    "crossref"
+                    "crossref",
+                    "arxiv",
+                    "clinicaltrials"
                   ]
                 },
                 "description": "Metadata sources to query. Default: all available sources."
@@ -343,6 +561,51 @@
                   ]
                 },
                 "description": "Publisher/source allowlist. Default: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis."
+              },
+              "query_expansion": {
+                "type": "object",
+                "description": "Explicit query-expansion record for the coverage report. Fields: original, expanded/queries, mesh, languages, transformations, notes.",
+                "properties": {
+                  "original": {
+                    "type": "string"
+                  },
+                  "expanded": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "queries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mesh": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "languages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "transformations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             },
             "required": [
@@ -454,9 +717,12 @@
                   "type": "string",
                   "enum": [
                     "openalex",
+                    "semantic_scholar",
                     "pubmed",
                     "europepmc",
-                    "crossref"
+                    "crossref",
+                    "arxiv",
+                    "clinicaltrials"
                   ]
                 },
                 "description": "Metadata sources to query. Default: all available sources."
@@ -663,11 +929,11 @@
       ]
     },
     "paperqa-local": {
-      "tool_count": 9,
+      "tool_count": 10,
       "tools": [
         {
           "name": "paperqa_create_workspace",
-          "description": "Proje kökünde 00–03 iş akışı klasörlerini açar; henüz akış/proje kaydı seçmez.\n\nVar olan dosyaları silmez veya taşımaz. Akış 2 ve 3 için PDF klasörlerini,\nworkflow'a göre ayrılmış manifestler ve indeksler için iç klasörleri açar.\n",
+          "description": "Proje kökünde beş iş akışı klasörünü açar; akış/proje seçimi yapmaz.\n\nVar olan dosyaları silmez veya taşımaz. Açılan klasörler:\n\n1. ``01_konu_belirleme`` — konu, başlık, tür, kapsam\n2. ``02_yazim_plani`` — alt başlık iskeleti ve kanıt ihtiyacı\n3. ``03_kaynak_kesfi`` — plana göre arama, atama matrisi, ``fulltext/``\n4. ``04_taslak`` — taslak metin ve ``fulltext/``\n5. ``05_analiz`` — iddia–kanıt ve plan uyumu denetimi, ``fulltext/``\n\nÜretilen dosya adları varsayılan olarak ``_YYYYMMDD-HHMMSS`` zaman soneki\nalır. Ürün türü (kitap bölümü / uygulama rehberi / derleme makale /\nampirik makale) bu araçta **seçilmez**; akış 1'de kullanıcıya sorulur.\n",
           "input_schema": {
             "properties": {
               "project_directory": {
@@ -795,6 +1061,38 @@
               "output_directory"
             ],
             "title": "paperqa_register_projectArguments",
+            "type": "object"
+          }
+        },
+        {
+          "name": "paperqa_promote_fulltext",
+          "description": "Akış 3'te indirilen açık erişim PDF'lerini akış 4/5'e taşır.\n\n- Kaynak: ``03_kaynak_kesfi/fulltext/``; hedef: 4 (``04_taslak``) veya\n  5 (``05_analiz``) akışının ``fulltext/`` klasörü.\n- Dosyaları DOI tabanlı ada çevirir (``10.4073csr.2011.4.pdf``); DOI'yi\n  önce dosya adından, sonra PDF'in ilk iki sayfasından, sonra akış 3\n  listesindeki başlık eşleşmesinden bulur. Kullanıcının kendi indirdiği\n  ve adı düzenlenmemiş PDF'ler de aynı kuralla yeniden adlandırılır.\n- Hiçbir dosya **silinmez**; hedefte aynı DOI varsa atlanır.\n- ``move=False`` (varsayılan) kopyalar; ``move=True`` taşır.\n- ``dry_run=True`` yalnızca planı döndürür.\n",
+          "input_schema": {
+            "properties": {
+              "project_directory": {
+                "title": "Project Directory",
+                "type": "string"
+              },
+              "target_workflow": {
+                "default": "4",
+                "title": "Target Workflow",
+                "type": "string"
+              },
+              "move": {
+                "default": false,
+                "title": "Move",
+                "type": "boolean"
+              },
+              "dry_run": {
+                "default": false,
+                "title": "Dry Run",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "project_directory"
+            ],
+            "title": "paperqa_promote_fulltextArguments",
             "type": "object"
           }
         },
@@ -968,5 +1266,5 @@
       ]
     }
   },
-  "total_tools": 28
+  "total_tools": 32
 }

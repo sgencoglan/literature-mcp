@@ -1,0 +1,539 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sgencoglan/literature-mcp/schemas/search-coverage.schema.json",
+  "title": "Arama kapsam raporu",
+  "description": "search_all / search_literature / deep_research cevaplarındaki coverage bloğunun ve 01_arama_kapsam_raporu çıktısının şeması.",
+  "type": "object",
+  "required": [
+    "schema",
+    "coverage"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "search-coverage/1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "project": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "query": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "sources_queried",
+        "per_source",
+        "total_unique_dois",
+        "high_quality_total",
+        "evidence_scarcity",
+        "query_variants",
+        "timestamp"
+      ],
+      "properties": {
+        "sources_queried": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Bu aramada gerçekten sorgulanan kaynaklar."
+        },
+        "per_source": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "returned",
+              "unique_dois",
+              "high_quality"
+            ],
+            "properties": {
+              "returned": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unique_dois": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "high_quality": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "partial",
+                  "error",
+                  "rate_limited"
+                ]
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "requested_limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "duration_ms": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "rate_limited": {
+                "type": "boolean"
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "total_unique_dois": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "high_quality_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "high_quality_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "skipped_sources": {
+          "type": "array",
+          "description": "Bu koşuda sorgulanmayan kaynaklar ve gerekçeleri.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Hata, hız limiti ve atlanan kaynak uyarıları.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "publisher_distribution": {
+          "type": "object",
+          "description": "Platform/yayıncı dağılımı ve OA/preprint/PDF oranları.",
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "counts": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "labels": {
+              "type": "object"
+            },
+            "ratios": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "open_access_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "open_access_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "preprint_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "preprint_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "pdf_link_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pdf_link_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "evidence_scarcity": {
+          "type": "boolean"
+        },
+        "evidence_scarcity_message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closest_studies": {
+          "type": "array",
+          "description": "Kanıt sınırlıysa skora göre en yakın 5 çalışma.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "doi": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "score": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "study_design": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "query_expansion": {
+          "type": "object",
+          "description": "Orijinal sorgu, genişletilmiş sorgular, MeSH, dil ve dönüşüm kaydı.",
+          "properties": {
+            "original": {
+              "type": "string"
+            },
+            "expanded": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mesh": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "transformations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "evidence_density": {
+          "type": "object",
+          "description": "Q1, son 5 yıl, RCT/derleme/meta-analiz ve preprint sayıları.",
+          "properties": {
+            "total_results": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high_quality_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "q1_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "q1_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "recent_window_years": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "recent_window_start": {
+              "type": "integer"
+            },
+            "recent_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recent_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "randomized_controlled_trial_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "systematic_review_or_meta_analysis_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "clinical_trial_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "preprint_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "study_designs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "high_quality_strict_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high_quality_strict_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "high_quality_strict_rule": {
+              "type": "string"
+            },
+            "trend": {
+              "type": "object",
+              "properties": {
+                "window_years": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "years": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "counts": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "slope": {
+                  "type": "number"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "artıyor",
+                    "azalıyor",
+                    "sabit",
+                    "belirsiz"
+                  ]
+                },
+                "change_ratio": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "undated_total": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "query_variants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      }
+    },
+    "definitions": {
+      "type": "object"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "journal": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "study_design": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cited_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "doi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "selected": {
+      "type": "array",
+      "description": "Fulltext listesine aktarılan seçilmiş makaleler (gerekçe + aktarım durumu).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "doi": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "journal": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "priority": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quartile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "citations": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "open_access": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "rationale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transfer_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

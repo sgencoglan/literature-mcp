@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Sequence
 
 from .cleanup import CleanupError, cleanup_manifest, write_manifest
 from .markdown import render_markdown
+from .naming import add_timestamp
 from .render import render_report
 from .validate import (
     ValidationResult,
@@ -72,9 +74,18 @@ def _cmd_build(args: argparse.Namespace) -> int:
         print("Kontrol tamam; dosya yazılmadı.")
         return 0
 
-    output = Path(args.output)
-    markdown_path = Path(args.markdown) if args.markdown else None
-    manifest = Path(args.manifest) if args.manifest else output.with_name(output.stem + ".manifest.json")
+    moment = datetime.now().astimezone()
+    output = add_timestamp(Path(args.output), moment, enabled=args.timestamp)
+    markdown_path = (
+        add_timestamp(Path(args.markdown), moment, enabled=args.timestamp)
+        if args.markdown
+        else None
+    )
+    manifest = (
+        add_timestamp(Path(args.manifest), moment, enabled=args.timestamp)
+        if args.manifest
+        else output.with_name(output.stem + ".manifest.json")
+    )
 
     # Check every destination before writing any output. Otherwise an existing
     # Markdown or manifest file can make the command fail after HTML was already
@@ -211,6 +222,20 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--strict", action="store_true", help="Uyarıları da hata say")
     build.add_argument("--check", action="store_true", help="Yalnızca doğrula; HTML yazma")
     build.add_argument("--force", action="store_true", help="Mevcut HTML, Markdown ve manifest çıktılarının üzerine yaz")
+    timestamp_group = build.add_mutually_exclusive_group()
+    timestamp_group.add_argument(
+        "--timestamp",
+        dest="timestamp",
+        action="store_true",
+        default=True,
+        help="Çıktı adlarına tarih-saat ekle (varsayılan: açık).",
+    )
+    timestamp_group.add_argument(
+        "--no-timestamp",
+        dest="timestamp",
+        action="store_false",
+        help="Sabit çıktı adları kullan.",
+    )
     build.add_argument("--cleanup", choices=["keep", "ask", "intermediate", "all"], default="keep")
     build.add_argument("--dry-run", action="store_true", help="Temizlikte yalnızca listele")
     build.add_argument("--yes", action="store_true", help="Temizlikte onay sorma")

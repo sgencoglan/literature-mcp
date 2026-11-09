@@ -21,12 +21,23 @@ paywalls, or downloads PDFs.
 It does **not** call an LLM. `evidence_check` is lexical TF-IDF matching, not
 semantic entailment.
 
-## Tools (19)
+## Tools (22)
 
 ### Search and metadata
 
-`search_sciencedirect`, `search_pubmed`, `search_europepmc`, `search_all`,
-`search_literature`, `deep_research`, `get_article`, `get_links`.
+`search_sciencedirect`, `search_pubmed`, `search_europepmc`,
+`search_semantic_scholar`, `search_arxiv`, `search_clinicaltrials`,
+`search_all`, `search_literature`, `deep_research`, `get_article`, `get_links`.
+
+`search_all` / `search_literature` / `deep_research` return a quality `score`,
+a per-source `coverage` block and an `evidence_scarcity` signal. arXiv records
+are marked `is_preprint=true`.
+
+Credentials are loaded at process start from the project `setup.txt`
+(`sciencedirect_meta.bootstrap`), so `OPENALEX_API_KEY`, `PUBMED_API_KEY` and
+`SEMANTIC_SCHOLAR_API_KEY` do not have to be repeated in the editor config.
+Semantic Scholar allows 1 request/second per key; the client serialises calls
+to stay under that limit.
 
 ### Verification and ranking
 
@@ -38,7 +49,8 @@ semantic entailment.
 `evidence_check`, `library_status`, `analysis_updates`, `export_review`.
 
 The machine-readable catalog, including JSON input schemas, is at
-[`../../docs/tool-catalog.json`](../../docs/tool-catalog.json).
+[`../../docs/tool-catalog.json`](../../docs/tool-catalog.json). The coverage
+report builder lives at `scripts/build_search_coverage.py`.
 
 ## Install
 

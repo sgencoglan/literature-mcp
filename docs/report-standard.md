@@ -32,16 +32,16 @@ bir teslim üretmektir.
    - Düzeltme özeti.
    - Notlar ve sınırlılıklar.
    - **Sonraki adımlar** (`next_steps`, opsiyonel): yapılacak somut işler.
-4. **Bağlam değerlendirmesi (iş akışı 3)** — paragrafın işlevi, iddianın
+4. **Bağlam değerlendirmesi (iş akışı 5)** — paragrafın işlevi, iddianın
    paragraf ve bölüm akışına uyumu ve kaynak makalenin amacı/yöntemi/örneklemi/
    sınırlılıkları.
-5. **Ek 3 — Bağlama uygun kaynak önerileri (iş akışı 3)** — DOI/metaverisi
+5. **Ek 3 — Bağlama uygun kaynak önerileri (iş akışı 5)** — DOI/metaverisi
    doğrulanmış adaylar ve hangi iddia/bağlamla neden eşleştiği. Tam metni
    incelenmeyenler kanıt olarak sunulmaz; öneri yoksa nedeni belirtilir.
 6. **Ek 4 — Bu çalışmada kaynakların katkısı ve sınırları** — kaynak başına
    bu projedeki rolü, desteklediği ve desteklemediği önerme türleri,
    sınırlılıklar ve değerlendirme dayanağı. Özet/metaveri değerlendirmesi,
-   sayfa doğrulamalı PDF kanıtı yerine geçmez. İş akışı 1'de aynı alanlar her
+   sayfa doğrulamalı PDF kanıtı yerine geçmez. Akış 3'te aynı alanlar her
    kaynağın altında gösterilir.
 7. **Kaynakça (opsiyonel)** — yalnızca `https://doi.org/...` linkleri.
 8. **Markdown eşlik dosyası (opsiyonel)** — aynı veriden üretilen düzenleme
@@ -68,14 +68,22 @@ bir teslim üretmektir.
 
 - DOI linkleri yalnızca `https://doi.org/...`.
 - `file://`, `/home/...`, `C:\...`, `/Users/...` ve yerel PDF dosya adı yasak.
-- HTML tek dosyadır; harici CSS/JS/font, `<script>` veya `<iframe>` yoktur.
+- HTML tek dosyadır; harici CSS/JS/font/CDN yoktur. Yalnızca DOI kopyalama
+  düğmesi için tek, denetimli bir `<script>` bloğu bulunur; başka `<script>`,
+  `<iframe>` veya `on*` olay özniteliği yasaktır.
+- DOI'lerin yanında panoya kopyalama düğmesi bulunur.
 - Yayımlanmamış bölüm metni public depoya konmaz; public örnek sentetiktir.
 
 ## Kalite kapısı
 
 ```bash
-chapter-report build rapor.json -o 05_bolum_raporu.html --check
+chapter-report build rapor.json -o 05_analiz.html --check
+chapter-report build rapor.json -o 05_analiz.html \
+  --markdown 05_analiz.md
 ```
+
+Üretim varsayılan olarak `_YYYYMMDD-HHMMSS` sonekli HTML, Markdown ve manifest
+yazar; sabit ad için `--no-timestamp --force` kullanın.
 
 Komut şunları denetler:
 
@@ -87,7 +95,8 @@ Komut şunları denetler:
 - `notice` varsa başlık/metin bütünlüğü, `next_steps` varsa boş madde yasağı,
 - her değişiklik kartındaki DOI'nin kaynak envanterinde bulunması,
 - yerel yol/PDF dosya adı sızıntısı,
-- HTML etiket dengesi (`<article>`, `<footer>`, `<mark>` dahil) ve `<script>` yasağı.
+- HTML etiket dengesi (`<article>`, `<footer>`, `<mark>` dahil) ve denetimli DOI
+  kopyalama betiği dışında `<script>`/`<iframe>`/`on*` yasağı.
 
 `--strict` uyarıları da hata sayar; iddia konumu ve kanıt türü eksikse teslim
 geçmez. Teslimden önce **0 hata** ve uyarıların gözden geçirilmiş olması
@@ -120,19 +129,19 @@ bırakılır.
 
 ## Temizlik
 
-Üretim sonunda `05_bolum_raporu.manifest.json` oluşur. Temizlik yalnızca bu
+Üretim sonunda `05_analiz_<zaman>.manifest.json` oluşur. Temizlik yalnızca bu
 manifestteki dosyaları kapsar:
 
 ```bash
 # Ne silineceğini göster
-chapter-report cleanup --manifest 05_bolum_raporu.manifest.json --dry-run
+chapter-report cleanup --manifest 05_analiz_<zaman>.manifest.json --dry-run
 
 # HTML ve Markdown dışındaki ara dosyaları sil
-chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
+chapter-report cleanup --manifest 05_analiz_<zaman>.manifest.json \
   --scope intermediate --yes
 
 # Tüm üretilmiş dosyaları sil (manifest kalır)
-chapter-report cleanup --manifest 05_bolum_raporu.manifest.json \
+chapter-report cleanup --manifest 05_analiz_<zaman>.manifest.json \
   --scope all --yes
 ```
 

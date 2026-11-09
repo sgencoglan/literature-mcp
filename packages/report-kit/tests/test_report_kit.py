@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -14,7 +15,8 @@ sys.path.insert(0, str(ROOT / "packages" / "report-kit" / "src"))
 
 from report_kit.cleanup import CleanupError, cleanup_manifest, write_manifest  # noqa: E402
 from report_kit.markdown import render_markdown  # noqa: E402
-from report_kit.render import render_report  # noqa: E402
+from report_kit.naming import add_timestamp, timestamp_suffix  # noqa: E402
+from report_kit.render import doi_copy_button, render_report  # noqa: E402
 from report_kit.validate import validate_data, validate_html  # noqa: E402
 
 
@@ -57,6 +59,38 @@ class RenderTests(unittest.TestCase):
         html = render_report(data)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
         self.assertNotIn("<script>alert(1)</script>", html)
+
+    def test_doi_copy_button_copies_the_doi(self) -> None:
+        button = doi_copy_button("10.5555/ornek.2024.001")
+        self.assertIn('class="doi-copy"', button)
+        self.assertIn('data-doi="10.5555/ornek.2024.001"', button)
+        self.assertIn("DOI kopyala", button)
+        self.assertEqual(doi_copy_button("gecersiz-doi"), "")
+
+    def test_only_controlled_script_is_allowed(self) -> None:
+        html = render_report(example_data())
+        self.assertIn(
+            "/* DOI copy button: yalnızca panoya kopyalama */",
+            html,
+        )
+        self.assertTrue(validate_html(html).ok, validate_html(html).errors)
+        injected = html.replace(
+            "</body>", "<script>alert(1)</script></body>"
+        )
+        result = validate_html(injected)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("script" in error for error in result.errors))
+
+    def test_second_controlled_script_is_rejected(self) -> None:
+        html = render_report(example_data())
+        block = (
+            "<script>\n"
+            "/* DOI copy button: yalnızca panoya kopyalama */\n"
+            "</script>\n"
+        )
+        result = validate_html(html.replace("</body>", block + "</body>"))
+        self.assertFalse(result.ok)
+        self.assertTrue(any("birden fazla" in error for error in result.errors))
 
     def test_markdown_has_same_sections(self) -> None:
         markdown = render_markdown(example_data())
@@ -138,17 +172,44 @@ class ValidationTests(unittest.TestCase):
         self.assertTrue(any("next_steps" in error for error in result.errors))
 
 
+class NamingTests(unittest.TestCase):
+    def test_timestamp_suffix_format(self) -> None:
+        moment = datetime(2026, 11, 8, 13, 45, 6)
+        self.assertEqual(timestamp_suffix(moment), "20261108-134506")
+
+    def test_add_timestamp_is_idempotent(self) -> None:
+        moment = datetime(2026, 11, 8, 13, 45, 6)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rapor.html"
+            stamped = add_timestamp(path, moment)
+            self.assertEqual(stamped.name, "rapor_20261108-134506.html")
+            self.assertEqual(add_timestamp(stamped, moment), stamped)
+
+    def test_collision_gets_numeric_suffix(self) -> None:
+        moment = datetime(2026, 11, 8, 13, 45, 6)
+        with tempfile.TemporaryDirectory() as tmp:
+            first = Path(tmp) / "rapor_20261108-134506.html"
+            first.write_text("x", encoding="utf-8")
+            second = add_timestamp(Path(tmp) / "rapor.html", moment)
+            self.assertEqual(second.name, "rapor_20261108-134506-01.html")
+
+    def test_no_timestamp_keeps_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rapor.html"
+            self.assertEqual(add_timestamp(path, enabled=False), path)
+
+
 class CleanupTests(unittest.TestCase):
     def test_intermediate_cleanup_keeps_html_and_unrelated_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            html = root / "05_bolum_raporu.html"
+            html = root / "05_analiz.html"
             csv = root / "03_iddia_kanit_matrisi.csv"
             unrelated = root / "onemli_not.txt"
             html.write_text("<html></html>", encoding="utf-8")
             csv.write_text("a,b\n1,2\n", encoding="utf-8")
             unrelated.write_text("silme", encoding="utf-8")
-            manifest = root / "05_bolum_raporu.manifest.json"
+            manifest = root / "05_analiz.manifest.json"
             write_manifest(manifest, "test", [(html, "html"), (csv, "intermediate")])
             with redirect_stdout(io.StringIO()):
                 deleted = cleanup_manifest(manifest, scope="intermediate", yes=True)
@@ -160,8 +221,8 @@ class CleanupTests(unittest.TestCase):
     def test_intermediate_cleanup_keeps_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            html = root / "05_bolum_raporu.html"
-            md = root / "05_bolum_raporu.md"
+            html = root / "05_analiz.html"
+            md = root / "05_analiz.md"
             csv = root / "ara.csv"
             html.write_text("<html></html>", encoding="utf-8")
             md.write_text("# rapor", encoding="utf-8")
@@ -177,9 +238,9 @@ class CleanupTests(unittest.TestCase):
     def test_all_cleanup_removes_html_but_keeps_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            html = root / "05_bolum_raporu.html"
+            html = root / "05_analiz.html"
             html.write_text("<html></html>", encoding="utf-8")
-            manifest = root / "05_bolum_raporu.manifest.json"
+            manifest = root / "05_analiz.manifest.json"
             write_manifest(manifest, "test", [(html, "html")])
             with redirect_stdout(io.StringIO()):
                 cleanup_manifest(manifest, scope="all", yes=True)

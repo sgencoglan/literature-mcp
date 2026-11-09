@@ -5,7 +5,7 @@
     "example-project": {
       "title": "Example literature project",
       "description": "Replace with your own project. Keep every project isolated.",
-      "paper_directory": "~/Documents/literature/example-project/02_bolum_taslagi/fulltext",
+      "paper_directory": "~/Documents/literature/example-project/04_taslak/fulltext",
       "include_subdirectories": false,
       "manifest": "~/Documents/literature/example-project/.literature-mcp/manifest.csv",
       "index_directory": "~/Documents/literature/example-project/.literature-mcp/indexes",

@@ -219,6 +219,19 @@ th {
 ul, ol { margin: .5rem 0; padding-left: 1.3rem; }
 li { margin: .3rem 0; }
 .empty { color: var(--muted); font-style: italic; }
+.doi-copy {
+  font: .68rem -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--muted);
+  padding: .1rem .35rem;
+  margin-left: .25rem;
+  cursor: pointer;
+  vertical-align: .05em;
+}
+.doi-copy:hover { border-color: var(--accent); color: var(--accent); }
+.doi-copy.copied { border-color: #9ccfae; background: #eefaf2; color: #1e6b33; }
 @media (max-width: 600px) {
   body { padding: 1.4rem 1rem 3rem; }
   table { font-size: .76rem; }
@@ -232,4 +245,5 @@ li { margin: .3rem 0; }
   }
   thead { display: table-header-group; }
   a { color: inherit; }
+  .doi-copy { display: none; }
 }

@@ -1,0 +1,269 @@
+{
+  "schema": "search-coverage/1",
+  "generated_at": "2026-11-08T12:00:00+00:00",
+  "project": "ornek-proje",
+  "query": "ADHD okul performansı müdahale",
+  "coverage": {
+    "sources_queried": [
+      "openalex",
+      "semantic_scholar",
+      "pubmed",
+      "europepmc"
+    ],
+    "per_source": {
+      "openalex": {
+        "returned": 10,
+        "unique_dois": 9,
+        "high_quality": 4,
+        "status": "ok",
+        "note": "OpenAlex relevance search; yıl/OA filtreleri uygulandı.",
+        "requested_limit": 10,
+        "duration_ms": 640,
+        "rate_limited": false
+      },
+      "semantic_scholar": {
+        "returned": 10,
+        "unique_dois": 8,
+        "high_quality": 3,
+        "status": "ok",
+        "note": "Atıf ve influential citation alanları dahil.",
+        "requested_limit": 10,
+        "duration_ms": 1180,
+        "rate_limited": false
+      },
+      "pubmed": {
+        "returned": 8,
+        "unique_dois": 7,
+        "high_quality": 3,
+        "status": "ok",
+        "note": "MeSH/eş anlamlı genişletme ajan tarafından sağlandı.",
+        "requested_limit": 8,
+        "duration_ms": 520,
+        "rate_limited": false
+      },
+      "europepmc": {
+        "returned": 7,
+        "unique_dois": 6,
+        "high_quality": 2,
+        "status": "ok",
+        "note": "Europe PMC REST; OA PDF bağlantıları dahil.",
+        "requested_limit": 7,
+        "duration_ms": 430,
+        "rate_limited": false
+      }
+    },
+    "total_unique_dois": 18,
+    "high_quality_total": 4,
+    "high_quality_threshold": 0.6,
+    "evidence_scarcity": true,
+    "evidence_scarcity_message": "Bu konuda yüksek kaliteli kanıt sınırlı görünüyor. Yüksek kaliteli sonuç sayısı: 4 (eşik: 5). En yakın 3 çalışma: ADHD okul performansı müdahalesi: sistematik derleme (2025), DOI: 10.5555/example.2026.001; Sınıf temelli davranış müdahalesi (2024); Hibrit öğrenme ve dikkat (2023). Araştırma boşluğu olasılığı yüksektir.",
+    "closest_studies": [
+      {
+        "title": "ADHD okul performansı müdahalesi: sistematik derleme",
+        "year": 2025,
+        "doi": "10.5555/example.2026.001",
+        "score": 0.82,
+        "study_design": "Systematic review / meta-analysis"
+      },
+      {
+        "title": "Sınıf temelli davranış müdahalesi",
+        "year": 2024,
+        "doi": "10.5555/example.2026.002",
+        "score": 0.71,
+        "study_design": "Randomized controlled trial"
+      },
+      {
+        "title": "Hibrit öğrenme ve dikkat",
+        "year": 2023,
+        "doi": null,
+        "score": 0.54,
+        "study_design": "Cohort study"
+      }
+    ],
+    "query_expansion": {
+      "original": "ADHD okul performansı müdahale",
+      "expanded": [
+        "attention deficit hyperactivity disorder school performance intervention",
+        "ADHD academic achievement behavioral intervention children"
+      ],
+      "mesh": [
+        "Attention Deficit Disorder with Hyperactivity[Mesh]",
+        "Academic Performance"
+      ],
+      "languages": [
+        "Türkçe → İngilizce"
+      ],
+      "transformations": [
+        "synonym",
+        "MeSH",
+        "language"
+      ],
+      "notes": [
+        "Türkçe sorgu İngilizce eş anlamlılara çevrildi.",
+        "PubMed ve Europe PMC için MeSH terimleri kullanıldı."
+      ]
+    },
+    "evidence_density": {
+      "total_results": 18,
+      "high_quality_total": 4,
+      "q1_total": 7,
+      "q1_ratio": 0.3889,
+      "recent_window_years": 5,
+      "recent_window_start": 2022,
+      "recent_total": 11,
+      "recent_ratio": 0.6111,
+      "randomized_controlled_trial_total": 3,
+      "systematic_review_or_meta_analysis_total": 2,
+      "clinical_trial_total": 1,
+      "preprint_total": 2,
+      "study_designs": {
+        "Unspecified design": 6,
+        "Cross-sectional study": 3,
+        "Randomized controlled trial": 3,
+        "Systematic review / meta-analysis": 2,
+        "Preprint": 2,
+        "Cohort study": 1,
+        "Clinical trial (interventional)": 1
+      },
+      "high_quality_strict_total": 2,
+      "high_quality_strict_ratio": 0.1111,
+      "high_quality_strict_rule": "Q1/Q2 + en az 10 atıf + RCT veya sistematik derleme/meta-analiz",
+      "trend": {
+        "window_years": 3,
+        "years": [
+          2024,
+          2025,
+          2026
+        ],
+        "counts": {
+          "2024": 4,
+          "2025": 6,
+          "2026": 5
+        },
+        "slope": 0.5,
+        "direction": "artıyor",
+        "change_ratio": 0.25,
+        "undated_total": 1
+      }
+    },
+    "query_variants": [
+      "attention deficit hyperactivity disorder school performance intervention",
+      "ADHD academic achievement behavioral intervention children"
+    ],
+    "timestamp": "2026-11-08T12:00:00+00:00",
+    "skipped_sources": [
+      {
+        "source": "arxiv",
+        "reason": "preprint istenmedi (include_arxiv=false)"
+      },
+      {
+        "source": "clinicaltrials",
+        "reason": "klinik çalışma araması istenmedi"
+      }
+    ],
+    "warnings": [
+      "arxiv bu koşuda sorgulanmadı: preprint istenmedi (include_arxiv=false).",
+      "clinicaltrials bu koşuda sorgulanmadı: klinik çalışma araması istenmedi."
+    ],
+    "publisher_distribution": {
+      "total": 18,
+      "counts": {
+        "ovid_lww": 2,
+        "sciencedirect": 5,
+        "springerlink": 2,
+        "wiley": 2,
+        "taylor_francis": 3,
+        "other": 2,
+        "unknown": 2
+      },
+      "labels": {
+        "ovid_lww": "Ovid LWW",
+        "sciencedirect": "ScienceDirect",
+        "springerlink": "SpringerLink",
+        "wiley": "Wiley",
+        "taylor_francis": "Taylor & Francis",
+        "other": "Diğer yayıncı",
+        "unknown": "Yayıncı bilinmiyor"
+      },
+      "ratios": {
+        "ovid_lww": 0.1111,
+        "sciencedirect": 0.2778,
+        "springerlink": 0.1111,
+        "wiley": 0.1111,
+        "taylor_francis": 0.1667,
+        "other": 0.1111,
+        "unknown": 0.1111
+      },
+      "open_access_total": 6,
+      "open_access_ratio": 0.3333,
+      "preprint_total": 2,
+      "preprint_ratio": 0.1111,
+      "pdf_link_total": 8,
+      "pdf_link_ratio": 0.4444
+    }
+  },
+  "definitions": {
+    "score_formula": "0.35 × anlamsal alaka + 0.25 × log10(atıf+1)/4 + 0.15 × güncellik + 0.15 × dergi quartile + 0.10 × çalışma türü",
+    "high_quality": "Yüksek kalite: preprint değil, skor ≥ 0.60 ve çalışma türü bileşeni ≥ 0.40.",
+    "evidence_scarcity": "Yüksek kaliteli sonuç sayısı 5'in altındaysa evidence_scarcity=true olur.",
+    "source_status": "ok = sorgulandı; error = hata; rate_limited = 429 cooldown; skipped = istenmedi.",
+    "publisher_distribution": "Diğer yayıncı = beş öncelikli platform dışı; bilinmiyor = yayıncı linki çözülemedi.",
+    "high_quality_strict": "Katı yüksek kalite: Q1/Q2 + en az 10 atıf + RCT veya sistematik derleme/meta-analiz.",
+    "trend": "Son 3 yılın yıllık yayın sayısı eğimi; |eğim| < 0.34 ise sabit kabul edilir."
+  },
+  "results": [
+    {
+      "title": "ADHD okul performansı müdahalesi: sistematik derleme",
+      "journal": "Journal of Example Work",
+      "year": 2025,
+      "study_design": "Systematic review / meta-analysis",
+      "score": 0.82,
+      "cited_by": 44,
+      "doi": "10.5555/example.2026.001"
+    },
+    {
+      "title": "Sınıf temelli davranış müdahalesi",
+      "journal": "Example Applied Psychology",
+      "year": 2024,
+      "study_design": "Randomized controlled trial",
+      "score": 0.71,
+      "cited_by": 19,
+      "doi": "10.5555/example.2026.002"
+    },
+    {
+      "title": "Hibrit öğrenme ve dikkat",
+      "journal": "Example Education Review",
+      "year": 2023,
+      "study_design": "Cohort study",
+      "score": 0.54,
+      "cited_by": 6,
+      "doi": null
+    }
+  ],
+  "selected": [
+    {
+      "doi": "10.5555/example.2026.001",
+      "title": "ADHD okul performansı müdahalesi: sistematik derleme",
+      "year": 2025,
+      "journal": "Journal of Example Work",
+      "priority": "A",
+      "quartile": "Q1",
+      "citations": 44,
+      "open_access": true,
+      "rationale": "Müdahale bileşenlerini doğrudan sentezleyen sistematik derleme; rehberin temel kanıtı.",
+      "transfer_note": "Fulltext HTML'e aktarıldı; PDF indirildi"
+    },
+    {
+      "doi": "10.5555/example.2026.002",
+      "title": "Sınıf temelli davranış müdahalesi",
+      "year": 2024,
+      "journal": "Example Applied Psychology",
+      "priority": "B",
+      "quartile": "Q2",
+      "citations": 19,
+      "open_access": false,
+      "rationale": "Öğretmen uygulamalı müdahale örneği; yönlendirme akışını somutlaştırır.",
+      "transfer_note": "Fulltext HTML'e aktarıldı; PDF bekliyor"
+    }
+  ]
+}

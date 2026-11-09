@@ -373,6 +373,86 @@ class ProjectRegistryTests(unittest.TestCase):
         self.assertEqual(paperqa_mcp._llama_active_asks, 0)
 
 
+class PromoteFulltextTests(unittest.TestCase):
+    """Akış 1 PDF'lerini akış 2'ye taşıma ve DOI adlandırma."""
+
+    def _write_pdf(self, path: Path) -> None:
+        path.write_bytes(b"%PDF-1.4\n%%EOF\n")
+
+    def test_copies_and_renames_by_filename(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "03_kaynak_kesfi" / "fulltext"
+            source.mkdir(parents=True)
+            self._write_pdf(source / "10.1007s10864-022-09491-4.pdf")
+            self._write_pdf(source / "10.4073csr.2011.4.pdf")
+
+            result = asyncio.run(
+                paperqa_mcp.paperqa_promote_fulltext(str(root), "4")
+            )
+
+            target = root / "04_taslak" / "fulltext"
+            self.assertEqual(result["copied"], 2)
+            self.assertEqual(result["unresolved"], [])
+            self.assertTrue((target / "10.1007s10864-022-09491-4.pdf").is_file())
+            self.assertTrue((target / "10.4073csr.2011.4.pdf").is_file())
+            # Kaynak dosyalar silinmez.
+            self.assertTrue((source / "10.4073csr.2011.4.pdf").is_file())
+
+    def test_skips_existing_and_respects_dry_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "03_kaynak_kesfi" / "fulltext"
+            target = root / "04_taslak" / "fulltext"
+            source.mkdir(parents=True)
+            target.mkdir(parents=True)
+            self._write_pdf(source / "10.1000abc.1.pdf")
+            self._write_pdf(target / "10.1000abc.1.pdf")
+
+            dry = asyncio.run(
+                paperqa_mcp.paperqa_promote_fulltext(str(root), "4", dry_run=True)
+            )
+            self.assertEqual(dry["already_present"], 1)
+            self.assertEqual(dry["copied"], 0)
+
+    def test_resolves_doi_anywhere_in_filename(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "03_kaynak_kesfi" / "fulltext"
+            source.mkdir(parents=True)
+            self._write_pdf(source / "Yilmaz_2024_10.1000_xyz.123.pdf")
+
+            result = asyncio.run(
+                paperqa_mcp.paperqa_promote_fulltext(str(root), "4")
+            )
+
+            target = root / "04_taslak" / "fulltext"
+            self.assertEqual(result["copied"], 1)
+            self.assertTrue((target / "10.1000xyz.123.pdf").is_file())
+
+    def test_renames_prefixed_pdf_in_target(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / "04_taslak" / "fulltext"
+            target.mkdir(parents=True)
+            self._write_pdf(target / "Yilmaz_2024_10.1000_xyz.123.pdf")
+
+            result = asyncio.run(
+                paperqa_mcp.paperqa_promote_fulltext(str(root), "4")
+            )
+
+            self.assertEqual(result["renamed"], 1)
+            self.assertTrue((target / "10.1000xyz.123.pdf").is_file())
+            self.assertFalse((target / "Yilmaz_2024_10.1000_xyz.123.pdf").exists())
+
+    def test_rejects_unknown_workflow(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError):
+                asyncio.run(
+                    paperqa_mcp.paperqa_promote_fulltext(tmp, "9")
+                )
+
+
 class LlamaLifecycleTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()

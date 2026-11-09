@@ -500,13 +500,34 @@ class LocalResearchTests(unittest.TestCase):
             local_research.LIT_PROJECTS_REGISTRY = original_registry
             local_research._PROJECTS_CACHE.update({"mtime": None, "data": {}})
 
+    def test_redact_secrets_in_error_text(self) -> None:
+        from sciencedirect_meta import server
+
+        original_openalex = server.OPENALEX_API_KEY
+        original_pubmed = server.PUBMED_API_KEY
+        server.OPENALEX_API_KEY = "test-openalex-key"
+        server.PUBMED_API_KEY = "test-pubmed-key"
+        try:
+            text = server.redact_secrets(
+                "url?api_key=test-openalex-key and api_key=test-pubmed-key"
+            )
+            self.assertNotIn("test-openalex-key", text)
+            self.assertNotIn("test-pubmed-key", text)
+            self.assertEqual(text.count("<redacted>"), 2)
+        finally:
+            server.OPENALEX_API_KEY = original_openalex
+            server.PUBMED_API_KEY = original_pubmed
+
     def test_single_mcp_exposes_all_tools(self) -> None:
         from sciencedirect_meta import unified
 
         tools = asyncio.run(unified.handle_list_tools())
         names = {tool.name for tool in tools}
-        self.assertEqual(len(names), 19)
+        self.assertEqual(len(names), 22)
         self.assertIn("get_links", names)
+        self.assertIn("search_semantic_scholar", names)
+        self.assertIn("search_arxiv", names)
+        self.assertIn("search_clinicaltrials", names)
         self.assertIn("search_literature", names)
         self.assertIn("doi_provenance", names)
         self.assertIn("journal_rank", names)

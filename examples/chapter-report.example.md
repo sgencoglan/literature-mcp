@@ -246,4 +246,4 @@ _Her kaynağın bu çalışmadaki olası katkısı ve sınırları ayrı değerl
 **Değerlendirme dayanağı:** Sayfa numarası doğrulanmış tam metin · incelenen sayfa(lar): 5–6
 
 
-_literature-mcp · chapter-report v2.5.1 · Sentetik örnek; gerçek kaynak değildir._
+_literature-mcp · chapter-report v2.7.0 · Sentetik örnek; gerçek kaynak değildir._

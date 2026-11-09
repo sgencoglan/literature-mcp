@@ -48,10 +48,12 @@ from sciencedirect_meta.server import (
     _finalize_links,
     _merge,
     _normalized_allowed_publishers,
+    _openalex_params,
     _paper,
     _rank,
     _sciencedirect_link,
     _truncate,
+    redact_secrets,
     enrich_sciencedirect_links,
     get_article,
     normalize_doi,
@@ -59,6 +61,7 @@ from sciencedirect_meta.server import (
     search_openalex,
     search_pubmed,
 )
+from sciencedirect_meta import sources as extra_sources
 
 # --------------------------------------------------------------------------- #
 # Configuration
@@ -97,7 +100,18 @@ LIT_PROJECTS_REGISTRY = Path(
 
 _PROJECTS_CACHE: Dict[str, Any] = {"mtime": None, "data": {}}
 
-AVAILABLE_SOURCES = ["openalex", "pubmed", "europepmc", "crossref"]
+AVAILABLE_SOURCES = [
+    "openalex",
+    "semantic_scholar",
+    "pubmed",
+    "europepmc",
+    "crossref",
+    "arxiv",
+    "clinicaltrials",
+]
+# Workflow defaults keep the long-standing core plus Semantic Scholar; arXiv
+# and ClinicalTrials.gov are opt-in through `sources`.
+DEFAULT_SOURCES = ["openalex", "semantic_scholar", "pubmed", "europepmc", "crossref"]
 
 _JOURNAL_RANK_CACHE: Optional[Dict[str, Any]] = None
 
@@ -118,7 +132,7 @@ def _json_text(payload: Any) -> List[types.TextContent]:
 
 
 def _error(message: str, **extra: Any) -> Dict[str, Any]:
-    payload: Dict[str, Any] = {"error": message}
+    payload: Dict[str, Any] = {"error": redact_secrets(message)}
     payload.update(extra)
     return payload
 
@@ -300,6 +314,7 @@ async def search_literature(
     allowed_publishers: Optional[Sequence[str]] = None,
     include_local_pdf: bool = True,
     project: Optional[str] = None,
+    query_expansion: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Search metadata sources; ``project`` scopes the local_pdf annotations.
 
@@ -311,9 +326,9 @@ async def search_literature(
         scope_dir, scope_recurse = _project_scope(project)
     except KeyError as exc:
         return _error(str(exc))
-    requested = [s for s in (sources or AVAILABLE_SOURCES) if s in AVAILABLE_SOURCES]
+    requested = [s for s in (sources or DEFAULT_SOURCES) if s in AVAILABLE_SOURCES]
     if not requested:
-        requested = list(AVAILABLE_SOURCES)
+        requested = list(DEFAULT_SOURCES)
 
     tasks: Dict[str, Any] = {}
     if "openalex" in requested:
@@ -322,25 +337,48 @@ async def search_literature(
             elsevier_only=False,
             priority_publishers_only=priority_only,
         )
+    if "semantic_scholar" in requested:
+        tasks["semantic_scholar"] = extra_sources.search_semantic_scholar(
+            query, limit, year_from, year_to
+        )
     if "pubmed" in requested:
-        tasks["pubmed"] = search_pubmed(query, limit)
+        tasks["pubmed"] = search_pubmed(query, limit, year_from, year_to)
     if "europepmc" in requested:
-        tasks["europepmc"] = search_europepmc(query, limit)
+        tasks["europepmc"] = search_europepmc(query, limit, year_from, year_to)
     if "crossref" in requested:
         tasks["crossref"] = search_crossref(query, limit, year_from, year_to)
+    if "arxiv" in requested:
+        tasks["arxiv"] = extra_sources.search_arxiv(query, limit, year_from, year_to)
+    if "clinicaltrials" in requested:
+        tasks["clinicaltrials"] = extra_sources.search_clinicaltrials(
+            query, limit, year_from, year_to
+        )
 
-    gathered = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    gathered = await asyncio.gather(
+        *(
+            extra_sources.run_source(
+                name,
+                coro,
+                requested_limit=limit,
+                rate_limited_when_empty=(name == "semantic_scholar"),
+            )
+            for name, coro in tasks.items()
+        )
+    )
 
     merged: Dict[str, Dict[str, Any]] = {}
     notes: List[str] = []
     status: Dict[str, str] = {}
+    per_source: Dict[str, List[Dict[str, Any]]] = {}
+    source_meta: Dict[str, Dict[str, Any]] = {}
     for name, result in zip(tasks.keys(), gathered):
-        if isinstance(result, Exception):
-            status[name] = "error"
-            notes.append(f"{name}: {result}")
-            continue
-        status[name] = "ok"
-        for item in result:
+        meta = {key: value for key, value in result.items() if key != "items"}
+        source_meta[name] = meta
+        status[name] = meta.get("status", "ok")
+        per_source[name] = result["items"]
+        if meta.get("status") == "error":
+            notes.append(f"{name}: {meta.get('error')}")
+        for item in result["items"]:
             key = _dedupe_key(item)
             if not key or key == "title:":
                 continue
@@ -349,6 +387,11 @@ async def search_literature(
             else:
                 merged[key] = item
 
+    skipped: List[Dict[str, str]] = [
+        {"source": name, "reason": "kullanıcı seçmedi (sources listesinde yok)"}
+        for name in AVAILABLE_SOURCES
+        if name not in requested
+    ]
     items = list(merged.values())
     for item in items:
         _finalize_links(item)
@@ -360,11 +403,24 @@ async def search_literature(
     if priority_only:
         items = _filter_by_publisher(items, allowed_publishers)
 
-    items.sort(key=_rank)
+    _attach_quartiles(items)
+    extra_sources.score_results(items, query)
+    items.sort(key=lambda item: (-(item.get("score") or 0.0), _rank(item)))
     returned = items[: max(1, min(limit, 50))]
 
     if include_local_pdf:
         _annotate_local_pdfs(returned, scope_dir, scope_recurse)
+
+    coverage = extra_sources.build_coverage(
+        per_source,
+        items,
+        query_variants=[query],
+        original_query=query,
+        query_expansion=query_expansion,
+        source_meta=source_meta,
+        skipped_sources=skipped,
+        requested_limit=limit,
+    )
 
     return {
         "query": query,
@@ -376,6 +432,9 @@ async def search_literature(
         "priority_only": priority_only,
         "priority_order": PRIORITY_ORDER,
         "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
+        "coverage": coverage,
+        "evidence_scarcity": coverage["evidence_scarcity"],
+        "evidence_scarcity_message": coverage["evidence_scarcity_message"],
         "notes": notes,
         "results": returned,
     }
@@ -501,7 +560,8 @@ async def doi_provenance(doi: str) -> Dict[str, Any]:
     # OpenAlex
     try:
         response = await _client.get(
-            f"https://api.openalex.org/works/doi:{quote(doi, safe='')}"
+            f"https://api.openalex.org/works/doi:{quote(doi, safe='')}",
+            params=_openalex_params(),
         )
         if response.status_code == 200:
             work = response.json()
@@ -525,7 +585,7 @@ async def doi_provenance(doi: str) -> Dict[str, Any]:
         checks["openalex"] = {
             "found": False,
             "checked": False,
-            "error": str(exc),
+            "error": redact_secrets(exc),
         }
 
     # Europe PMC
@@ -554,7 +614,7 @@ async def doi_provenance(doi: str) -> Dict[str, Any]:
         checks["europepmc"] = {
             "found": False,
             "checked": False,
-            "error": str(exc),
+            "error": redact_secrets(exc),
         }
 
     # PubMed
@@ -581,7 +641,7 @@ async def doi_provenance(doi: str) -> Dict[str, Any]:
         checks["pubmed"] = {
             "found": False,
             "checked": False,
-            "error": str(exc),
+            "error": redact_secrets(exc),
         }
 
     found_in = [name for name, check in checks.items() if check.get("found")]
@@ -754,6 +814,26 @@ def _find_journal_rank(
     if close:
         return data["index"][close[0]], "fuzzy"
     return None, "not_found"
+
+
+def _attach_quartiles(items: Sequence[Dict[str, Any]]) -> None:
+    """Attach SCImago quartiles from the local dataset when available."""
+    if not items:
+        return
+    try:
+        data = _load_journal_rank_data()
+    except Exception as exc:  # noqa: BLE001 - optional local dataset
+        logger.info("Quartile dataset unavailable: %s", exc)
+        return
+    for item in items:
+        if item.get("quartile"):
+            continue
+        journal = item.get("journal")
+        if not journal:
+            continue
+        entry, _match = _find_journal_rank(str(journal), data)
+        if entry and entry.get("quartile"):
+            item["quartile"] = entry["quartile"]
 
 
 async def journal_rank(
@@ -1146,10 +1226,9 @@ async def _openalex_flags(doi: str) -> Dict[str, Any]:
     try:
         response = await _client.get(
             f"https://api.openalex.org/works/doi:{quote(key, safe='')}",
-            params={
+            params=_openalex_params({
                 "select": "id,doi,is_retracted,cited_by_count,counts_by_year",
-                "mailto": MAILTO,
-            },
+            }),
         )
         if response.status_code == 200:
             data = response.json()
@@ -1162,7 +1241,7 @@ async def _openalex_flags(doi: str) -> Dict[str, Any]:
                 ],
             }
     except Exception as exc:  # noqa: BLE001
-        logger.info("OpenAlex flags failed for %s: %s", key, exc)
+        logger.info("OpenAlex flags failed for %s: %s", key, redact_secrets(exc))
     _openalex_flags_cache[key] = payload
     return payload
 
@@ -1285,7 +1364,7 @@ async def project_audit(
                 meta = await _metadata_for(doi)
             except Exception as exc:  # noqa: BLE001
                 meta = {}
-                row["metadata_error"] = str(exc)
+                row["metadata_error"] = redact_secrets(exc)
             row.update(
                 {
                     "title": meta.get("title"),
@@ -1302,7 +1381,7 @@ async def project_audit(
                 checks = provenance.get("checks") or {}
             except Exception as exc:  # noqa: BLE001
                 checks = {}
-                row["provenance_error"] = str(exc)
+                row["provenance_error"] = redact_secrets(exc)
             for source_name in ("crossref", "openalex", "europepmc", "pubmed"):
                 check = checks.get(source_name) or {}
                 row[f"{source_name}_found"] = bool(check.get("found"))
@@ -1777,6 +1856,7 @@ async def deep_research(
     sources: Optional[Sequence[str]] = None,
     priority_only: bool = True,
     allowed_publishers: Optional[Sequence[str]] = None,
+    query_expansion: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     if not question.strip():
         return _error("question is required")
@@ -1824,8 +1904,32 @@ async def deep_research(
     for item in items:
         _finalize_links(item)
     await enrich_sciencedirect_links(items, limit=min(10, MAX_ENRICH))
+    _attach_quartiles(items)
+    extra_sources.score_results_best(items, [entry["query"] for entry in plan])
     _annotate_local_pdfs(items)
-    items.sort(key=_rank)
+    items.sort(key=lambda item: (-(item.get("score") or 0.0), _rank(item)))
+
+    coverage_blocks = [
+        batch.get("coverage")
+        for batch in batches
+        if not isinstance(batch, Exception) and batch.get("coverage")
+    ]
+    coverage = extra_sources.merge_coverage(
+        coverage_blocks,
+        items,
+        query_variants=[entry["query"] for entry in plan],
+        original_query=question,
+        query_expansion=query_expansion or {
+            "original": question,
+            "expanded": [entry["query"] for entry in plan],
+            "transformations": ["heuristic facet decomposition"],
+            "notes": [
+                "Sorgu genişletmesi sezgisel facet ayrıştırmasıyla üretildi; "
+                "MeSH terimleri ve dil dönüşümü ayrıca sağlanmadı."
+            ],
+        },
+        requested_limit=results_per_topic,
+    )
 
     return {
         "question": question,
@@ -1834,9 +1938,13 @@ async def deep_research(
         "total_found": len(items),
         "priority_only": priority_only,
         "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
+        "coverage": coverage,
+        "evidence_scarcity": coverage["evidence_scarcity"],
+        "evidence_scarcity_message": coverage["evidence_scarcity_message"],
         "notes": sorted(set(notes)) + [
             "Heuristic query decomposition; pass explicit subtopics for full control.",
             "local_pdf shows which results already have a full text in the library.",
+            "Coverage per-source counts are summed across facets; unique_dois is a sum, not a global distinct count.",
         ],
         "results": items[:50],
     }
@@ -2537,11 +2645,13 @@ async def handle_list_tools() -> List[types.Tool]:
         types.Tool(
             name="search_literature",
             description=(
-                "Find DOIs and metadata across OpenAlex, PubMed, Europe PMC and Crossref. "
-                "By default only records with a real publisher link from the allowed set "
-                "are returned (Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis). "
-                "Adds local_pdf when a matching PDF is already available; pass project=... "
-                "to check only that project's folder."
+                "Find DOIs and metadata across OpenAlex, Semantic Scholar, PubMed, Europe PMC "
+                "and Crossref; arXiv and ClinicalTrials.gov are opt-in through sources. "
+                "Returns a quality score per result, a per-source coverage block and an "
+                "evidence_scarcity signal. By default only records with a real publisher link "
+                "from the allowed set are returned (Ovid LWW, ScienceDirect, SpringerLink, "
+                "Wiley, Taylor & Francis). Adds local_pdf when a matching PDF is already "
+                "available; pass project=... to check only that project's folder."
             ),
             inputSchema={
                 "type": "object",
@@ -2555,6 +2665,23 @@ async def handle_list_tools() -> List[types.Tool]:
                     "allowed_publishers": publisher_schema,
                     "include_local_pdf": {"type": "boolean", "default": True},
                     "project": project_schema,
+                    "query_expansion": {
+                        "type": "object",
+                        "description": (
+                            "Explicit query-expansion record for the coverage report. "
+                            "Fields: original, expanded/queries, mesh, languages, "
+                            "transformations, notes."
+                        ),
+                        "properties": {
+                            "original": {"type": "string"},
+                            "expanded": {"type": "array", "items": {"type": "string"}},
+                            "queries": {"type": "array", "items": {"type": "string"}},
+                            "mesh": {"type": "array", "items": {"type": "string"}},
+                            "languages": {"type": "array", "items": {"type": "string"}},
+                            "transformations": {"type": "array", "items": {"type": "string"}},
+                            "notes": {"type": "array", "items": {"type": "string"}},
+                        },
+                    },
                 },
                 "required": ["query"],
             },
@@ -2564,8 +2691,9 @@ async def handle_list_tools() -> List[types.Tool]:
             description=(
                 "Decompose a research question into facets (overview, reviews, prevalence, "
                 "risk factors, interventions, qualitative) and run multi-source DOI searches. "
-                "By default only allowed publisher records are returned. Pass subtopics to "
-                "control the decomposition explicitly."
+                "Returns a quality score per result and a combined coverage block with an "
+                "evidence_scarcity signal. By default only allowed publisher records are "
+                "returned. Pass subtopics to control the decomposition explicitly."
             ),
             inputSchema={
                 "type": "object",
@@ -2579,6 +2707,23 @@ async def handle_list_tools() -> List[types.Tool]:
                     "sources": source_schema,
                     "priority_only": {"type": "boolean", "default": True},
                     "allowed_publishers": publisher_schema,
+                    "query_expansion": {
+                        "type": "object",
+                        "description": (
+                            "Explicit query-expansion record for the coverage report. "
+                            "Fields: original, expanded/queries, mesh, languages, "
+                            "transformations, notes."
+                        ),
+                        "properties": {
+                            "original": {"type": "string"},
+                            "expanded": {"type": "array", "items": {"type": "string"}},
+                            "queries": {"type": "array", "items": {"type": "string"}},
+                            "mesh": {"type": "array", "items": {"type": "string"}},
+                            "languages": {"type": "array", "items": {"type": "string"}},
+                            "transformations": {"type": "array", "items": {"type": "string"}},
+                            "notes": {"type": "array", "items": {"type": "string"}},
+                        },
+                    },
                 },
                 "required": ["question"],
             },
@@ -2831,6 +2976,7 @@ async def handle_call_tool(
                     allowed_publishers=args.get("allowed_publishers"),
                     include_local_pdf=bool(args.get("include_local_pdf", True)),
                     project=args.get("project"),
+                    query_expansion=args.get("query_expansion"),
                 )
             )
 
@@ -2846,6 +2992,7 @@ async def handle_call_tool(
                     sources=args.get("sources"),
                     priority_only=bool(args.get("priority_only", True)),
                     allowed_publishers=args.get("allowed_publishers"),
+                    query_expansion=args.get("query_expansion"),
                 )
             )
 
