@@ -1106,6 +1106,41 @@ class WritingPlanTests(unittest.TestCase):
         plan.pop("genre")
         self.assertTrue(wp.validate(plan))
 
+    def test_writing_plan_enforces_word_budget_tolerance(self) -> None:
+        import build_writing_plan as wp
+
+        plan = self._plan()
+        # %10 tolerance: target 1000, allowed planned is 900-1100.
+        # Planned is 1000, target 1050 (+5%): passes
+        plan["target_total_words"] = 1050
+        self.assertEqual(wp.validate(plan), [])
+
+        # Target 1200 (planned is 1000, -16.7%): fails
+        plan["target_total_words"] = 1200
+        errors = wp.validate(plan)
+        self.assertTrue(any("Kelime bütçesi dengesiz" in e for e in errors))
+
+    def test_writing_plan_validates_section_id_format(self) -> None:
+        import build_writing_plan as wp
+
+        plan = self._plan()
+        plan["sections"][0]["id"] = "Giris"
+        errors = wp.validate(plan)
+        self.assertTrue(any("geçersiz kimlik" in e for e in errors))
+
+    def test_writing_plan_validates_plan_status(self) -> None:
+        import build_writing_plan as wp
+
+        plan = self._plan()
+        plan["plan_status"] = "invalid_status"
+        errors = wp.validate(plan)
+        self.assertTrue(any("plan_status" in e for e in errors))
+
+        plan["plan_status"] = "draft"
+        self.assertEqual(wp.validate(plan), [])
+        plan["plan_status"] = "approved"
+        self.assertEqual(wp.validate(plan), [])
+
     def test_assignment_matches_designs(self) -> None:
         import build_assignment_matrix as am
 

@@ -20,12 +20,13 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Optional
 
 try:
-    from output_naming import add_timestamp_argument
+    from output_naming import add_timestamp, add_timestamp_argument
 except ImportError:
-    from scripts.output_naming import add_timestamp_argument
+    from scripts.output_naming import add_timestamp, add_timestamp_argument
 
 GENRE_LABELS = {
     "kitap_bolumu": "Kitap bölümü",
@@ -52,6 +53,8 @@ STATUS_LABELS = {
     "gap": "Kanıt boşluğu",
 }
 
+SECTION_ID_RE = re.compile(r"^S[0-9]{1,3}$")
+
 
 def esc(value: Any) -> str:
     return html.escape("" if value is None else str(value), quote=True)
@@ -71,6 +74,9 @@ def validate(data: Any) -> List[str]:
     total = data.get("target_total_words")
     if not isinstance(total, int) or isinstance(total, bool) or total < 300:
         errors.append("target_total_words en az 300 olan tam sayı olmalı.")
+    status = data.get("plan_status")
+    if status is not None and status not in ("draft", "approved"):
+        errors.append("plan_status 'draft' veya 'approved' olmalı.")
     sections = data.get("sections")
     if not isinstance(sections, list) or len(sections) < 3:
         errors.append("sections en az 3 alt başlık içermeli.")
@@ -86,6 +92,10 @@ def validate(data: Any) -> List[str]:
         sid = str(section.get("id") or "")
         if not sid:
             errors.append(f"{path}.id: zorunlu.")
+        elif not SECTION_ID_RE.match(sid):
+            errors.append(
+                f"{path}.id: geçersiz kimlik {sid!r}; 'S1', 'S2' gibi 'S' ile başlayan 1-3 basamaklı olmalı."
+            )
         elif sid in seen:
             errors.append(f"{path}.id: yinelenen kimlik {sid!r}.")
         else:
@@ -112,6 +122,15 @@ def validate(data: Any) -> List[str]:
                     errors.append(
                         f"{path}.evidence_needs[{need_index}].design: bilinmeyen tür."
                     )
+
+    if isinstance(total, int) and not isinstance(total, bool) and total >= 300:
+        min_allowed = int(total * 0.90)
+        max_allowed = int(total * 1.10)
+        if planned < min_allowed or planned > max_allowed:
+            errors.append(
+                f"Kelime bütçesi dengesiz: alt başlıkların toplamı ({planned} kelime), "
+                f"hedef kelime sayısının ({total}) ±%10 aralığında ({min_allowed}–{max_allowed}) olmalı."
+            )
     return errors
 
 
@@ -278,8 +297,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--force", action="store_true", help="Var olan çıktının üzerine yaz")
     add_timestamp_argument(parser)
     args = parser.parse_args(argv)
-
-    from output_naming import add_timestamp
 
     if not args.input.is_file():
         print(f"Hata: girdi bulunamadı: {args.input}", file=sys.stderr)

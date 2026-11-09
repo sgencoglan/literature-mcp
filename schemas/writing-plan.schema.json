@@ -23,6 +23,7 @@
     "plan_status": {
       "type": "string",
       "enum": ["draft", "approved"],
+      "default": "draft",
       "description": "Kullanıcı iskeleti onaylamadan 'approved' yapılmaz; akış 3 onay ister."
     },
     "approved_at": {"type": ["string", "null"]},
