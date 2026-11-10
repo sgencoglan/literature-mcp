@@ -382,8 +382,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    from output_naming import add_timestamp
-
     if not args.plan.is_file():
         print(f"Hata: plan bulunamadı: {args.plan}", file=sys.stderr)
         return 2
@@ -410,21 +408,31 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     output_dir = (args.output_dir or workflow_dir(args.plan.parent.parent, "3")).expanduser()
     output_dir.mkdir(parents=True, exist_ok=True)
-    stem = add_timestamp(output_dir / "00_atama_matrisi.json", enabled=args.timestamp)
-    stem = stem.with_suffix("")
-    json_path = stem.with_suffix(".json")
-    html_path = stem.with_suffix(".html")
-    if not args.force:
-        for path in (json_path, html_path):
-            if path.exists():
-                print(f"Hata: çıktı zaten var: {path}", file=sys.stderr)
-                return 2
-    json_path.write_text(
-        json.dumps(matrix, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    html_path.write_text(render_html(matrix), encoding="utf-8")
-    print(f"Yazıldı: {json_path}")
-    print(f"Yazıldı: {html_path}")
+
+    from output_naming import write_versioned_pair
+
+    json_text = json.dumps(matrix, ensure_ascii=False, indent=2) + "\n"
+    html_text = render_html(matrix)
+    try:
+        result = write_versioned_pair(
+            output_dir / "00_atama_matrisi.json",
+            {".json": json_text, ".html": html_text},
+            enabled=args.timestamp,
+            force=args.force,
+        )
+    except FileExistsError as exc:
+        print(f"Hata: {exc}", file=sys.stderr)
+        return 2
+
+    json_path = result["path"]
+    html_path = json_path.with_suffix(".html")
+    if result["status"] == "unchanged":
+        print(f"Değişiklik yok; mevcut sürüm korundu: {json_path}")
+    else:
+        print(f"Yazıldı: {json_path}")
+        print(f"Yazıldı: {html_path}")
+        if result["archived"]:
+            print(f"Eski sürümler arşivlendi: {len(result['archived'])} dosya")
 
     if args.update_plan:
         by_id = {section["section_id"]: section for section in matrix["sections"]}

@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:  # scripts/ içinden çalışırken
-    from output_naming import timestamp_suffix
+    from output_naming import timestamp_suffix  # noqa: F401
 except ImportError:  # python -m scripts.build_search_coverage
     from scripts.output_naming import timestamp_suffix
 
@@ -1314,44 +1314,37 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     output_dir = (args.output_dir or args.input.parent).expanduser()
     output_dir.mkdir(parents=True, exist_ok=True)
-    moment = datetime.now().astimezone()
-    stem = f"{OUTPUT_STEM}_{timestamp_suffix(moment)}" if args.timestamp else OUTPUT_STEM
-    suffixes = [".json", ".html"]
-    if args.markdown:
-        suffixes.append(".md")
-    if args.compare:
-        suffixes.extend(["_karsilastirma.json", "_karsilastirma.html"])
-    if not args.force:
-        stem = _unique_stem(output_dir, stem, suffixes)
-    json_path = output_dir / f"{stem}.json"
-    html_path = output_dir / f"{stem}.html"
-    markdown_path = output_dir / f"{stem}.md"
-    comparison_json_path = output_dir / f"{stem}_karsilastirma.json"
-    comparison_html_path = output_dir / f"{stem}_karsilastirma.html"
-    planned = [json_path, html_path]
-    if markdown_text is not None:
-        planned.append(markdown_path)
-    if args.compare:
-        planned.extend([comparison_json_path, comparison_html_path])
-    if not args.force:
-        for path in planned:
-            if path.exists():
-                print(
-                    f"Hata: çıktı zaten var: {path}\n"
-                    "Üzerine yazmak için --force kullanın.",
-                    file=sys.stderr,
-                )
-                return 2
 
-    json_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    html_path.write_text(html_text, encoding="utf-8")
-    print(f"Yazıldı: {json_path}")
-    print(f"Yazıldı: {html_path}")
+    from output_naming import write_versioned_pair
+
+    texts = {
+        ".json": json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+        ".html": html_text,
+    }
     if markdown_text is not None:
-        markdown_path.write_text(markdown_text, encoding="utf-8")
-        print(f"Yazıldı: {markdown_path}")
+        texts[".md"] = markdown_text
+    try:
+        result = write_versioned_pair(
+            output_dir / f"{OUTPUT_STEM}.json",
+            texts,
+            enabled=args.timestamp,
+            force=args.force,
+        )
+    except FileExistsError as exc:
+        print(f"Hata: {exc}", file=sys.stderr)
+        return 2
+    if result["status"] == "unchanged":
+        print(f"Değişiklik yok; mevcut sürüm korundu: {result['path']}")
+    else:
+        for suffix in texts:
+            print(f"Yazıldı: {result['path'].with_suffix(suffix)}")
+        if result["archived"]:
+            print(f"Eski sürümler arşivlendi: {len(result['archived'])} dosya")
+    json_path = result["path"]
+    html_path = json_path.with_suffix(".html")
+    markdown_path = json_path.with_suffix(".md")
+    comparison_json_path = json_path.with_name(f"{json_path.stem}_karsilastirma.json")
+    comparison_html_path = json_path.with_name(f"{json_path.stem}_karsilastirma.html")
 
     if args.compare:
         if not args.compare.is_file():

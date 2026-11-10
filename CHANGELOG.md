@@ -1,5 +1,23 @@
 # Değişiklik Günlüğü
 
+## v2.7.1 — 2026-11-10
+
+### Değişti
+
+- Üreticiler artık her çalıştırmada yeni sürüm biriktirmez. `output_naming`
+  modülüne `write_versioned` / `write_versioned_pair` eklendi: içerik
+  değişmediyse mevcut çıktı korunur (`Değişiklik yok; mevcut sürüm korundu`),
+  değiştiyse yeni sürüm yazılır ve eskiler `<akış>/arsiv/` altına taşınır.
+  Dosya silinmez.
+- JSON karşılaştırmasında `generated_at`, `timestamp`, `created_at`,
+  `updated_at`, `searched_at`, `oa_checked_at`, `approved_at` gibi değişken
+  alanlar yok sayılır; aksi hâlde her koşu “yeni sürüm” sayılırdı.
+- Bağlanan üreticiler: `build_assignment_matrix.py` (JSON+HTML çifti birlikte),
+  `build_search_coverage.py` (JSON+HTML+Markdown), `build_fulltext_list.py`,
+  `build_writing_plan.py`, `build_topic_discovery.py`,
+  `build_study_design.py`.
+- `docs/output-spec.md` “Tek sürüm kuralı” ile güncellendi.
+
 ## v2.7.0 — 2026-11-09
 
 ### Değişti

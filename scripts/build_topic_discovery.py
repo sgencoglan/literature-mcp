@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Any
 
 try:  # scripts/ içinden çalışırken
-    from output_naming import add_timestamp, add_timestamp_argument
+    from output_naming import add_timestamp_argument
 except ImportError:  # python -m scripts.build_topic_discovery
-    from scripts.output_naming import add_timestamp, add_timestamp_argument
+    from scripts.output_naming import add_timestamp_argument
 
 DOI_RE = re.compile(r"^10\.\d{4,9}/\S+$")
 DATABASE_LABELS = {
@@ -214,14 +214,26 @@ def main() -> int:
         return 0
     if not args.output:
         parser.error("--check kullanılmadığında -o/--output zorunludur")
-    output_path = add_timestamp(args.output, enabled=args.timestamp)
-    if output_path.exists() and not args.force:
-        print(f"Çıktı zaten var: {output_path}; üzerine yazmak için --force kullanın.", file=sys.stderr)
-        return 2
+    from output_naming import write_versioned
+
     output = render(data)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(output, encoding="utf-8")
-    print(f"Yazıldı: {output_path} ({len(output):,} bayt)")
+    try:
+        result = write_versioned(
+            args.output,
+            output,
+            enabled=args.timestamp,
+            force=args.force,
+        )
+    except FileExistsError as exc:
+        print(f"Hata: {exc}", file=sys.stderr)
+        return 2
+    output_path = result["path"]
+    if result["status"] == "unchanged":
+        print(f"Değişiklik yok; mevcut sürüm korundu: {output_path}")
+    else:
+        print(f"Yazıldı: {output_path} ({len(output):,} bayt)")
+        if result["archived"]:
+            print(f"Eski sürümler arşivlendi: {len(result['archived'])} dosya")
     return 0
 
 

@@ -82,6 +82,64 @@ class OutputNamingTests(unittest.TestCase):
             second = output_naming.add_timestamp(Path(tmp) / "liste.html", moment)
             self.assertEqual(second.name, "liste_20261108-134506-01.html")
 
+    def test_canonical_text_ignores_volatile_timestamps(self) -> None:
+        first = '{"generated_at": "2026-11-09T10:00:00", "value": 1}'
+        second = '{"generated_at": "2026-11-10T11:00:00", "value": 1}'
+        self.assertEqual(
+            output_naming.canonical_text(first, ".json"),
+            output_naming.canonical_text(second, ".json"),
+        )
+        self.assertNotEqual(
+            output_naming.canonical_text('{"value": 1}', ".json"),
+            output_naming.canonical_text('{"value": 2}', ".json"),
+        )
+
+    def test_write_versioned_skips_identical_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / "rapor.json"
+            payload = '{"generated_at": "2026-11-09T10:00:00", "x": 1}'
+            first = output_naming.write_versioned(base, payload)
+            self.assertEqual(first["status"], "written")
+            second = output_naming.write_versioned(
+                base, '{"generated_at": "2026-11-10T10:00:00", "x": 1}'
+            )
+            self.assertEqual(second["status"], "unchanged")
+            self.assertEqual(first["path"], second["path"])
+            self.assertEqual(len(output_naming.versions_of(base)), 1)
+
+    def test_write_versioned_archives_old_versions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / "rapor.json"
+            first = output_naming.write_versioned(base, '{"x": 1}')
+            second = output_naming.write_versioned(base, '{"x": 2}')
+            self.assertEqual(second["status"], "written")
+            self.assertTrue(second["archived"])
+            self.assertEqual(len(output_naming.versions_of(base)), 1)
+            archive = Path(tmp) / "arsiv"
+            self.assertTrue(archive.is_dir())
+            self.assertEqual(
+                sorted(p.name for p in archive.iterdir()), [first["path"].name]
+            )
+
+    def test_write_versioned_pair_keeps_json_and_html_together(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / "matris.json"
+            first = output_naming.write_versioned_pair(
+                base, {".json": '{"x": 1}', ".html": "<p>1</p>"}
+            )
+            self.assertEqual(first["status"], "written")
+            self.assertTrue(first["path"].with_suffix(".html").exists())
+            second = output_naming.write_versioned_pair(
+                base, {".json": '{"x": 1}', ".html": "<p>1</p>"}
+            )
+            self.assertEqual(second["status"], "unchanged")
+            third = output_naming.write_versioned_pair(
+                base, {".json": '{"x": 2}', ".html": "<p>2</p>"}
+            )
+            self.assertEqual(third["status"], "written")
+            archived = sorted(p.suffix for p in (Path(tmp) / "arsiv").iterdir())
+            self.assertEqual(archived, [".html", ".json"])
+
 
 class FulltextListTests(unittest.TestCase):
     def _payload(self) -> dict:
@@ -909,12 +967,27 @@ class NoDeletionTests(unittest.TestCase):
             self.assertEqual(len(first), 1)
             first_bytes = first[0].read_bytes()
 
+            # Aynı içerikle tekrar çalıştırma yeni sürüm üretmez.
+            self.assertEqual(cov.main([str(source)]), 0)
+            unchanged = sorted(root.glob("01_arama_kapsam_raporu_*.json"))
+            self.assertEqual(
+                len(unchanged), 1, "değişmeyen çıktı yeni sürüm üretmemeli"
+            )
+            self.assertEqual(unchanged[0].read_bytes(), first_bytes)
+
+            # İçerik değişince yeni sürüm yazılır, eskisi arşive taşınır.
+            payload = json.loads(source.read_text(encoding="utf-8"))
+            payload["coverage"]["total_unique_dois"] = 99
+            source.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
             self.assertEqual(cov.main([str(source)]), 0)
             after = sorted(root.glob("01_arama_kapsam_raporu_*.json"))
-            self.assertEqual(len(after), 2, "ikinci çalıştırma yeni sürüm eklemeli")
-            self.assertIn(first[0], after)
+            self.assertEqual(len(after), 1, "klasörde tek güncel sürüm kalmalı")
+            archived = sorted((root / "arsiv").glob("01_arama_kapsam_raporu_*"))
+            self.assertTrue(archived, "eski sürüm arşivlenmeli")
             self.assertEqual(
-                first[0].read_bytes(), first_bytes, "ilk sürümün içeriği değişmemeli"
+                [p for p in archived if p.suffix == ".json"][0].read_bytes(),
+                first_bytes,
+                "arşivlenen ilk sürümün içeriği değişmemeli",
             )
 
     def test_second_fulltext_list_run_keeps_first_version(self) -> None:
@@ -938,13 +1011,47 @@ class NoDeletionTests(unittest.TestCase):
             self.assertEqual(
                 fl.main([str(source), "-o", str(out), "--no-timestamp"]), 0
             )
-            stamped = root / "liste_20260101-000000.html"
-            stamped.write_text("eski sürüm", encoding="utf-8")
-            # Zaman sonekli ikinci çalıştırma ayrı dosya üretmeli.
+
+            # Aynı içerikle ikinci çalıştırma yeni sürüm üretmez.
+            self.assertEqual(
+                fl.main([str(source), "-o", str(out), "--no-timestamp"]), 0
+            )
+            self.assertEqual(len(list(root.glob("liste*.html"))), 1)
+            self.assertFalse((root / "arsiv").exists())
+
+            # İçerik değişince sabit ad --force olmadan ezilmez.
+            payload = json.loads(source.read_text(encoding="utf-8"))
+            payload["title"] = "T2"
+            source.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            self.assertEqual(
+                fl.main([str(source), "-o", str(out), "--no-timestamp"]), 2
+            )
+            self.assertEqual(len(list(root.glob("liste*.html"))), 1)
+
+            # --force ile aynı ad yeniden yazılır (arşiv gerekmez).
+            self.assertEqual(
+                fl.main([str(source), "-o", str(out), "--no-timestamp", "--force"]), 0
+            )
+            self.assertIn("T2", out.read_text(encoding="utf-8"))
+            self.assertEqual(len(list(root.glob("liste*.html"))), 1)
+
+            # Zaman sonekli modda içerik değişince yeni sürüm yazılır, eskisi arşivlenir.
+            source.write_text(
+                json.dumps(
+                    {
+                        "project": "p",
+                        "title": "T3",
+                        "query": "q",
+                        "generated_at": "2026-11-09",
+                        "candidates": [sample_candidate()],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
             self.assertEqual(fl.main([str(source), "-o", str(out)]), 0)
-            self.assertTrue(stamped.is_file(), "eski sürüm silinmemeli")
-            self.assertEqual(stamped.read_text(encoding="utf-8"), "eski sürüm")
-            self.assertGreaterEqual(len(list(root.glob("liste*.html"))), 3)
+            self.assertTrue(list((root / "arsiv").glob("liste*.html")))
+            self.assertEqual(len(list(root.glob("liste*.html"))), 1)
 
     def test_index_refuses_overwrite_without_force(self) -> None:
         import build_fulltext_index as idx

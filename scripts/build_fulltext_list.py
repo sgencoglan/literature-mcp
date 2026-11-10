@@ -30,10 +30,10 @@ from urllib.parse import quote, urlparse
 
 try:  # scripts/ içinden çalışırken
     from project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
-    from output_naming import add_timestamp, add_timestamp_argument
+    from output_naming import add_timestamp_argument
 except ImportError:  # python -m scripts.build_fulltext_list
     from scripts.project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
-    from scripts.output_naming import add_timestamp, add_timestamp_argument
+    from scripts.output_naming import add_timestamp_argument
 
 PRIORITY_ORDER = ["A", "B", "C"]
 PRIORITY_LABEL = {
@@ -803,24 +803,30 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("Hata: --check verilmediyse -o/--output zorunludur.", file=sys.stderr)
         return 2
 
-    output = add_timestamp(args.output, enabled=args.timestamp)
-    if output.exists() and not args.force:
-        print(
-            f"Hata: çıktı zaten var: {output}\n"
-            f"Üzerine yazmak için --force kullanın.",
-            file=sys.stderr,
-        )
-        return 2
+    from output_naming import write_versioned
 
     downloaded_dois = detect_downloaded_dois(data, args.input, args.fulltext_dir)
     html_text = build_html(data, downloaded_dois)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(html_text, encoding="utf-8")
-    print(
-        f"Yazıldı: {output} ({len(html_text):,} bayt, "
-        f"{len(data['candidates'])} aday, {len(downloaded_dois)} indirilmiş)"
-    )
-    print("Not: önceki listeler silinmedi; zaman soneki sayesinde yeni dosya eklendi.")
+    try:
+        result = write_versioned(
+            args.output,
+            html_text,
+            enabled=args.timestamp,
+            force=args.force,
+        )
+    except FileExistsError as exc:
+        print(f"Hata: {exc}", file=sys.stderr)
+        return 2
+    output = result["path"]
+    if result["status"] == "unchanged":
+        print(f"Değişiklik yok; mevcut sürüm korundu: {output}")
+    else:
+        print(
+            f"Yazıldı: {output} ({len(html_text):,} bayt, "
+            f"{len(data['candidates'])} aday, {len(downloaded_dois)} indirilmiş)"
+        )
+        if result["archived"]:
+            print(f"Eski sürümler arşivlendi: {len(result['archived'])} dosya")
     return 0
 
 
