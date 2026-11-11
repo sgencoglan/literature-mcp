@@ -26,14 +26,16 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Dict, List, Optional, Sequence, Tuple
 
+from sciencedirect_meta import server as meta_server
 from sciencedirect_meta.server import (
     PRIORITY_LABELS,
     PRIORITY_ORDER,
-    SEMANTIC_SCHOLAR_API_KEY,
+    RateLimitedError,
     _client,
     _paper,
     _truncate,
     normalize_doi,
+    polite_get,
     redact_secrets,
 )
 
@@ -61,6 +63,10 @@ _S2_COOLDOWN_UNTIL = 0.0
 ANONYMOUS_S2_COOLDOWN_SECONDS = 120.0
 KEYED_S2_COOLDOWN_SECONDS = 8.0
 
+# Sources that returned 429 stay disabled for the rest of the run so the
+# remaining facets do not keep hitting them.
+_SOURCE_COOLDOWN: Dict[str, float] = {}
+
 # Human-readable per-source notes shown in the coverage table. They describe
 # how the source was used, not what it returned, so they stay factual even
 # when the source returns nothing.
@@ -82,7 +88,7 @@ def _s2_in_cooldown() -> bool:
 def _s2_cooldown_seconds() -> float:
     return (
         KEYED_S2_COOLDOWN_SECONDS
-        if SEMANTIC_SCHOLAR_API_KEY
+        if meta_server.SEMANTIC_SCHOLAR_API_KEY
         else ANONYMOUS_S2_COOLDOWN_SECONDS
     )
 
@@ -110,13 +116,42 @@ async def run_source(
 
     The returned ``items`` list is always safe to merge; ``status`` is one of
     ``ok``, ``error`` or ``rate_limited`` so the coverage report can show why a
-    source contributed nothing without aborting the other sources.
+    source contributed nothing without aborting the other sources. A source
+    that already answered 429 is skipped for the rest of the run instead of
+    being hit again by every remaining facet.
     """
+    now = time.monotonic()
+    cooldown_until = _SOURCE_COOLDOWN.get(name, 0.0)
+    if cooldown_until > now:
+        if hasattr(awaitable, "close"):
+            awaitable.close()  # type: ignore[attr-defined]
+        return {
+            "items": [],
+            "status": "rate_limited",
+            "error": None,
+            "rate_limited": True,
+            "requested_limit": requested_limit,
+            "duration_ms": 0,
+            "note": (
+                note
+                or f"{name}: hız limiti nedeniyle {int(cooldown_until - now)} sn "
+                "devre dışı bırakıldı."
+            ),
+        }
+
     started = time.monotonic()
     status = "ok"
     error: Optional[str] = None
     try:
         items = list(await awaitable or [])
+    except RateLimitedError as exc:
+        items = []
+        status = "rate_limited"
+        error = redact_secrets(exc)
+        cooldown = exc.retry_after or meta_server.RATE_LIMIT_COOLDOWN_SECONDS
+        _SOURCE_COOLDOWN[name] = time.monotonic() + cooldown
+        note = str(exc)
+        logger.info("%s rate limited: %s", name, error)
     except Exception as exc:  # noqa: BLE001 - best effort source
         items = []
         status = "error"
@@ -124,15 +159,14 @@ async def run_source(
         logger.info("%s source failed: %s", name, error)
     duration_ms = int((time.monotonic() - started) * 1000)
 
-    rate_limited = False
-    if status == "ok" and not items and rate_limited_when_empty and _s2_in_cooldown():
+    rate_limited = status == "rate_limited"
+    if not rate_limited and status == "ok" and not items and rate_limited_when_empty and _s2_in_cooldown():
         status = "rate_limited"
         rate_limited = True
 
-    if status == "rate_limited":
+    if status == "rate_limited" and not note:
         note = (
-            note
-            or f"Semantic Scholar hız limiti (429); kaynak "
+            f"{name}: hız limiti (429); kaynak "
             f"{int(_s2_cooldown_seconds())} sn devre dışı bırakıldı."
         )
 
@@ -257,11 +291,12 @@ async def search_semantic_scholar(
         params["openAccessPdf"] = ""
 
     headers: Dict[str, str] = {}
-    if SEMANTIC_SCHOLAR_API_KEY:
-        headers["x-api-key"] = SEMANTIC_SCHOLAR_API_KEY
+    api_key = meta_server.SEMANTIC_SCHOLAR_API_KEY
+    if api_key:
+        headers["x-api-key"] = api_key
 
     last_error: Optional[Exception] = None
-    attempts = 3 if SEMANTIC_SCHOLAR_API_KEY else 2
+    attempts = 3 if api_key else 2
     for attempt in range(attempts):
         try:
             await _s2_wait_turn()
@@ -395,14 +430,13 @@ async def search_arxiv(
         "sortOrder": "descending",
     }
     try:
-        response = await _client.get(ARXIV_API, params=params)
-        if response.status_code == 429:
-            await asyncio.sleep(3.0)
-            response = await _client.get(ARXIV_API, params=params)
+        response = await polite_get(ARXIV_API, params=params, attempts=2)
         if response.status_code != 200:
             logger.info("arXiv HTTP %s for %r", response.status_code, query)
             return []
         root = ET.fromstring(response.text)
+    except RateLimitedError:
+        raise
     except Exception as exc:  # noqa: BLE001 - best effort source
         logger.info("arXiv failed: %s", redact_secrets(exc))
         return []
@@ -498,11 +532,13 @@ async def search_clinicaltrials(
     if intervention_only:
         params["filter.advanced"] = "AREA[StudyType]INTERVENTIONAL"
     try:
-        response = await _client.get(CLINICALTRIALS_API, params=params)
+        response = await polite_get(CLINICALTRIALS_API, params=params, attempts=3)
         if response.status_code != 200:
             logger.info("ClinicalTrials.gov HTTP %s for %r", response.status_code, query)
             return []
         payload = response.json()
+    except RateLimitedError:
+        raise
     except Exception as exc:  # noqa: BLE001 - best effort source
         logger.info("ClinicalTrials.gov failed: %s", redact_secrets(exc))
         return []

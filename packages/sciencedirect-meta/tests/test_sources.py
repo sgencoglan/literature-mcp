@@ -542,7 +542,7 @@ class ServerCoverageTests(unittest.TestCase):
     def test_search_all_reports_status_skipped_and_warnings(self) -> None:
         from unittest import mock
 
-        from sciencedirect_meta import server
+        from sciencedirect_meta import local_research, server
 
         async def ok_openalex(*args, **kwargs):
             return [self._paper("openalex", "10.1/a", "A")]
@@ -558,29 +558,41 @@ class ServerCoverageTests(unittest.TestCase):
                  mock.patch.object(server, "search_pubmed", failing_pubmed), \
                  mock.patch.object(server, "search_europepmc", empty), \
                  mock.patch.object(sources, "search_semantic_scholar", empty), \
+                 mock.patch.object(sources, "search_arxiv", empty), \
+                 mock.patch.object(sources, "search_clinicaltrials", empty), \
+                 mock.patch.object(local_research, "search_crossref", empty), \
                  mock.patch.object(server, "enrich_sciencedirect_links", mock.AsyncMock()), \
                  mock.patch.object(server, "_attach_quartiles_best_effort", lambda items: None):
-                return await server.search_all("q", limit=5)
+                full = await server.search_all("q", limit=5)
+                narrow = await server.search_all("q", limit=5, sources=["openalex"])
+                return full, narrow
 
-        payload = asyncio.run(main())
+        payload, narrow = asyncio.run(main())
         coverage = payload["coverage"]
         self.assertEqual(payload["sources"]["pubmed"], "error")
         self.assertEqual(coverage["per_source"]["pubmed"]["status"], "error")
         self.assertIn("pubmed down", coverage["per_source"]["pubmed"]["error"])
         self.assertEqual(coverage["per_source"]["openalex"]["status"], "ok")
         self.assertEqual(coverage["per_source"]["openalex"]["requested_limit"], 5)
-        skipped = {entry["source"] for entry in coverage["skipped_sources"]}
+        # Defaults query every available source, including Crossref.
+        self.assertEqual(
+            set(payload["sources_requested"]),
+            {"openalex", "semantic_scholar", "pubmed", "europepmc", "crossref",
+             "arxiv", "clinicaltrials"},
+        )
+        self.assertEqual(payload["coverage"]["skipped_sources"], [])
+        skipped = {entry["source"] for entry in narrow["coverage"]["skipped_sources"]}
         self.assertIn("arxiv", skipped)
         self.assertIn("clinicaltrials", skipped)
+        self.assertIn("crossref", skipped)
         self.assertTrue(any("pubmed" in value for value in coverage["warnings"]))
-        self.assertTrue(any("arxiv" in value for value in coverage["warnings"]))
         self.assertIn("publisher_distribution", coverage)
         self.assertIn("trend", coverage["evidence_density"])
 
     def test_search_all_marks_rate_limited_semantic_scholar(self) -> None:
         from unittest import mock
 
-        from sciencedirect_meta import server
+        from sciencedirect_meta import local_research, server
 
         async def ok(*args, **kwargs):
             return [self._paper("openalex", "10.1/a", "A")]
@@ -596,6 +608,9 @@ class ServerCoverageTests(unittest.TestCase):
                      mock.patch.object(server, "search_pubmed", empty), \
                      mock.patch.object(server, "search_europepmc", empty), \
                      mock.patch.object(sources, "search_semantic_scholar", empty), \
+                     mock.patch.object(sources, "search_arxiv", empty), \
+                     mock.patch.object(sources, "search_clinicaltrials", empty), \
+                     mock.patch.object(local_research, "search_crossref", empty), \
                      mock.patch.object(server, "enrich_sciencedirect_links", mock.AsyncMock()), \
                  mock.patch.object(server, "_attach_quartiles_best_effort", lambda items: None):
                     return await server.search_all("q", limit=5)
@@ -665,6 +680,72 @@ class BootstrapTests(unittest.TestCase):
                 self.assertEqual(os.environ["OPENALEX_API_KEY"], "oa-file")
         self.assertIn("SEMANTIC_SCHOLAR_API_KEY", status["skipped"])
 
+    def test_load_for_project_overrides_previous_setup_values(self) -> None:
+        from sciencedirect_meta import bootstrap
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "a"
+            first.mkdir()
+            (first / "setup.txt").write_text(
+                "openalex_key=first\nemail=first@example.org\n", encoding="utf-8"
+            )
+            second = root / "b"
+            second.mkdir()
+            (second / "setup.txt").write_text(
+                "openalex_key=second\npubmed_key=pm-second\n", encoding="utf-8"
+            )
+            with mock.patch.dict(
+                os.environ,
+                {"OPENALEX_API_KEY": "", "PUBMED_API_KEY": "", "CROSSREF_MAILTO": ""},
+                clear=False,
+            ):
+                bootstrap.load(first / "setup.txt")
+                self.assertEqual(os.environ["OPENALEX_API_KEY"], "first")
+                status = bootstrap.load_for_project(second)
+                self.assertEqual(os.environ["OPENALEX_API_KEY"], "second")
+                self.assertEqual(os.environ["PUBMED_API_KEY"], "pm-second")
+                self.assertIn(str(second / "setup.txt"), status["path"])
+
+    def test_load_for_project_keeps_explicit_environment(self) -> None:
+        from sciencedirect_meta import bootstrap
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "setup.txt").write_text(
+                "openalex_key=from-file\n", encoding="utf-8"
+            )
+            with mock.patch.dict(
+                os.environ, {"OPENALEX_API_KEY": "explicit-env"}, clear=False
+            ):
+                bootstrap.BOOTSTRAP_KEYS.discard("OPENALEX_API_KEY")
+                bootstrap.load_for_project(root)
+                self.assertEqual(os.environ["OPENALEX_API_KEY"], "explicit-env")
+
+    def test_load_for_project_drops_keys_missing_from_new_file(self) -> None:
+        from sciencedirect_meta import bootstrap
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "a"
+            first.mkdir()
+            (first / "setup.txt").write_text(
+                "openalex_key=oa-first\npubmed_key=pm-first\n", encoding="utf-8"
+            )
+            second = root / "b"
+            second.mkdir()
+            (second / "setup.txt").write_text(
+                "openalex_key=oa-second\n", encoding="utf-8"
+            )
+            with mock.patch.dict(
+                os.environ, {"OPENALEX_API_KEY": "", "PUBMED_API_KEY": ""}, clear=False
+            ):
+                bootstrap.load(first / "setup.txt")
+                self.assertEqual(os.environ["PUBMED_API_KEY"], "pm-first")
+                bootstrap.load_for_project(second)
+                self.assertEqual(os.environ["OPENALEX_API_KEY"], "oa-second")
+                self.assertNotIn("PUBMED_API_KEY", os.environ)
+
     def test_candidate_paths_prefers_explicit_file(self) -> None:
         from sciencedirect_meta import bootstrap
 
@@ -689,6 +770,62 @@ class BootstrapTests(unittest.TestCase):
 
         elapsed = asyncio.run(main())
         self.assertGreaterEqual(elapsed, sources._S2_MIN_INTERVAL * 2)
+
+
+class RateLimitTests(unittest.TestCase):
+    def tearDown(self) -> None:
+        from sciencedirect_meta import server
+
+        server._HOST_COOLDOWN_UNTIL.clear()
+        sources._SOURCE_COOLDOWN.clear()
+
+    def test_polite_get_raises_rate_limited_after_retries(self) -> None:
+        from sciencedirect_meta import server
+
+        response = mock.Mock(status_code=429, headers={"Retry-After": "0"})
+        fake_get = mock.AsyncMock(return_value=response)
+        with mock.patch.object(server._client, "get", fake_get):
+            with self.assertRaises(server.RateLimitedError):
+                asyncio.run(
+                    server.polite_get("https://api.openalex.org/works", attempts=2)
+                )
+        self.assertEqual(fake_get.await_count, 2)
+
+    def test_host_throttle_spaces_requests(self) -> None:
+        from sciencedirect_meta import server
+
+        response = mock.Mock(status_code=200, headers={})
+        fake_get = mock.AsyncMock(return_value=response)
+        with mock.patch.dict(
+            server._RATE_INTERVALS, {"api.crossref.org": (0.2, 0.2)}, clear=False
+        ), mock.patch.object(server._client, "get", fake_get):
+            server._HOST_LAST_CALL.pop("api.crossref.org", None)
+
+            async def main() -> float:
+                started = time.monotonic()
+                await server.polite_get("https://api.crossref.org/works")
+                await server.polite_get("https://api.crossref.org/works")
+                return time.monotonic() - started
+
+            self.assertGreaterEqual(asyncio.run(main()), 0.19)
+
+    def test_run_source_marks_rate_limited_and_skips_remaining_facets(self) -> None:
+        from sciencedirect_meta import server
+
+        async def limited():
+            raise server.RateLimitedError("429", source="openalex", retry_after=5.0)
+
+        first = asyncio.run(sources.run_source("openalex", limited(), 10))
+        self.assertEqual(first["status"], "rate_limited")
+        self.assertTrue(first["rate_limited"])
+        self.assertIn("429", first["note"])
+
+        async def never():
+            raise AssertionError("cooldown should skip the request")
+
+        second = asyncio.run(sources.run_source("openalex", never(), 10))
+        self.assertEqual(second["status"], "rate_limited")
+        self.assertEqual(second["duration_ms"], 0)
 
 
 if __name__ == "__main__":

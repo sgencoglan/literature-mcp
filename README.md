@@ -4,7 +4,7 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.7.0. Son public sürüm v2.6.0. Depoda PDF, indeks,
+> **Sürüm:** v2.8.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
@@ -19,9 +19,10 @@ klasörünü aç → kullanıcıya “0 Konu/başlık keşfi, 1 Kaynak keşfi, 2
 bölüm taslağı, 3 Mevcut taslağı denetleme” seçeneklerini sor → seçilen akışın
 girdilerini işle.
 
-0. **Konu, çalışma başlığı ve amaç keşfi:** varsayılan OpenAlex, PubMed,
-   Europe PMC ve Crossref aramalarından konu sinyalleri ve en yakın çalışmaları
-   çıkar → olası araştırma boşluklarına dayalı başlık/amaç önerilerini sırala →
+0. **Konu, çalışma başlığı ve amaç keşfi:** varsayılan olarak yedi kaynağın
+   tümü (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv,
+   ClinicalTrials.gov) taranır; konu sinyalleri ve en yakın çalışmalar bu
+   sonuçlardan çıkarılır → olası araştırma boşluklarına dayalı başlık/amaç önerilerini sırala →
    `01_konu_belirleme/` içine JSON ve tek dosyalık HTML raporu yaz →
    kullanıcı bir başlığı seçince varsayımları açık yöntem/tasarım önerisini
    aynı klasöre JSON ve HTML olarak kaydet.
@@ -181,6 +182,14 @@ ortam değişkeni tanımlamak gerekmez. Var olan ortam değişkeni her zaman
 dosyadaki değerden önceliklidir. Aramayı sabitlemek için `LIT_SETUP_FILE`
 veya `LIT_PROJECT_ROOT` kullanılabilir.
 
+Arama araçları (`search_all`, `search_literature`, `deep_research`) ayrıca
+`project_directory` parametresi alır. Bu parametre verildiğinde **o proje
+klasöründeki `setup.txt`** yeniden okunur ve API anahtarları ile iletişim
+e-postası bu çağrıda kullanılır; başka bir projenin anahtarı geçerli projenin
+anahtarını ezmez. `project_directory` verilmezse kayıtlı `project` adının
+`output_directory` değeri, o da yoksa `LIT_PROJECT_ROOT` kullanılır. Yanıttaki
+`setup_file` alanı hangi dosyanın etkin olduğunu gösterir.
+
 `setup.txt` biçimi:
 
 ```text
@@ -307,6 +316,23 @@ raporda maskelenir. Doğrudan PDF bağlantısı olmayan açılış sayfalarında
 `search_all`, `search_literature` ve `deep_research` cevapları artık her sonuç
 için bir `score`, her arama için bir `coverage` bloğu ve bir
 `evidence_scarcity` sinyali döndürür.
+
+**Varsayılan tarama kapsamı:** üç araç da yedi kaynağın tümünü sorgular
+(OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv,
+ClinicalTrials.gov) ve `priority_only` varsayılan olarak `false` olduğu için
+tüm yayıncılar döner. `sources=[...]` ile kaynak kümesi, `priority_only=true`
+ile yalnızca beş öncelikli platform daraltılabilir. Her kaynak için
+`coverage.per_source` içindeki `status` (`ok`/`error`/`rate_limited`) ve
+`notes` alanları hangi veritabanının gerçekten tarandığını gösterir; sessizce
+atlanan kaynak olmaz.
+
+**Hız limitleri:** istekler servis başına sıraya konur (OpenAlex anahtarsız
+~2/sn, anahtarla ~10/sn; NCBI anahtarsız ~3/sn, anahtarla ~10/sn; Europe PMC
+ve Crossref ~5–8/sn; arXiv 3 sn). 429 alındığında `Retry-After` kadar beklenir,
+yeniden denenir ve kaynak yine sınırlıysa yalnızca o kaynak için
+`rate_limited` durumu raporlanır; diğer kaynaklar ve tool çağrısı hata
+döndürmez. Aynı çalıştırmadaki kalan facet'ler devre dışı kaynağı tekrar
+zorlamaz.
 
 - `score`: 0.35 anlamsal alaka + 0.25 log ölçekli atıf + 0.15 güncellik +
   0.15 SCImago quartile + 0.10 çalışma türü. Preprint skoru 0.85 ile çarpılır.

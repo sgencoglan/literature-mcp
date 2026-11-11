@@ -13,6 +13,13 @@ Resolution order for ``setup.txt``:
 4. ``setup.txt`` in the current directory or one of its parents
 5. ``setup.txt`` in the repository root
 
+A tool call that names a concrete project root (``project_directory``) re-reads
+that project's own ``setup.txt`` through :func:`load_for_project`, so the API
+keys of the project being worked on always win over keys read from another
+registered project at process start. Values supplied explicitly in the process
+environment (``opencode.json``) keep precedence unless they were themselves
+loaded from an earlier ``setup.txt``.
+
 Only the four known keys are imported; unknown keys are ignored so a stray
 value cannot inject arbitrary environment variables.
 """
@@ -63,6 +70,13 @@ EMAIL_KEYS = {
 
 # Filled by load(); tests and callers can inspect what happened.
 STATUS: Dict[str, object] = {"path": None, "loaded": [], "skipped": []}
+
+# Environment variables that this module wrote itself. A later load() may
+# replace them (for example when a different project's setup.txt is used),
+# while values that came from the real process environment never change.
+BOOTSTRAP_KEYS: set[str] = set()
+
+EMAIL_ENV_NAMES = ("CROSSREF_MAILTO", "NCBI_EMAIL", "UNPAYWALL_EMAIL")
 
 
 def parse_setup_file(path: Path) -> Dict[str, str]:
@@ -181,30 +195,78 @@ def find_setup_file() -> Optional[Path]:
     return None
 
 
-def load(path: Optional[Path] = None) -> Dict[str, object]:
-    """Populate ``os.environ`` from setup.txt; existing values win."""
+def project_setup_candidates(project_root: str | Path) -> List[Path]:
+    """``setup.txt`` locations for one project root, nearest first.
+
+    The root itself wins; the two parents are checked because agents are
+    often given a workflow folder (``03_kaynak_kesfi``) instead of the root.
+    """
+    root = Path(project_root).expanduser()
+    candidates: List[Path] = []
+    current = root
+    for _ in range(3):
+        candidates.append(current / SETUP_FILENAME)
+        if current.parent == current:
+            break
+        current = current.parent
+    return candidates
+
+
+def find_project_setup_file(project_root: str | Path) -> Optional[Path]:
+    for path in project_setup_candidates(project_root):
+        if path.is_file():
+            return path
+    return None
+
+
+def _apply(values: Dict[str, str], setup_path: Path, override_loaded: bool) -> Dict[str, object]:
+    status: Dict[str, object] = {"path": str(setup_path), "loaded": [], "skipped": []}
+    email = values.pop("email", "")
+    pairs: Dict[str, str] = {}
+    if email:
+        for name in EMAIL_ENV_NAMES:
+            pairs[name] = email
+    pairs.update(values)
+
+    if override_loaded:
+        # Keys that came from a previous setup.txt but are absent here must not
+        # leak from another project into this one.
+        for name in list(BOOTSTRAP_KEYS - set(pairs)):
+            os.environ.pop(name, None)
+            BOOTSTRAP_KEYS.discard(name)
+
+    for name, value in pairs.items():
+        current = os.environ.get(name, "").strip()
+        replaceable = name in BOOTSTRAP_KEYS
+        if current and not (override_loaded and replaceable):
+            status["skipped"].append(name)
+            continue
+        os.environ[name] = value
+        BOOTSTRAP_KEYS.add(name)
+        status["loaded"].append(name)
+    return status
+
+
+def load(path: Optional[Path] = None, *, override_loaded: bool = False) -> Dict[str, object]:
+    """Populate ``os.environ`` from setup.txt; existing values win.
+
+    ``override_loaded=True`` lets a project-specific file replace values that
+    an earlier ``setup.txt`` load wrote; explicit process environment values
+    are still never overwritten.
+    """
     setup_path = path or find_setup_file()
-    STATUS["path"] = str(setup_path) if setup_path else None
-    STATUS["loaded"] = []
-    STATUS["skipped"] = []
     if setup_path is None:
+        STATUS["path"] = None
+        STATUS["loaded"] = []
+        STATUS["skipped"] = []
         logger.info("setup.txt bulunamadı; yalnızca ortam değişkenleri kullanılacak")
         return STATUS
 
     values = parse_setup_file(setup_path)
-    email = values.pop("email", "")
-    if email:
-        for name in ("CROSSREF_MAILTO", "NCBI_EMAIL", "UNPAYWALL_EMAIL"):
-            if not os.environ.get(name, "").strip():
-                os.environ[name] = email
-                STATUS["loaded"].append(name)
-
-    for name, value in values.items():
-        if os.environ.get(name, "").strip():
-            STATUS["skipped"].append(name)
-            continue
-        os.environ[name] = value
-        STATUS["loaded"].append(name)
+    applied = _apply(values, setup_path, override_loaded)
+    STATUS["path"] = applied["path"]
+    STATUS["loaded"] = applied["loaded"]
+    STATUS["skipped"] = applied["skipped"]
 
     try:
         mode = setup_path.stat().st_mode
@@ -223,3 +285,21 @@ def load(path: Optional[Path] = None) -> Dict[str, object]:
         len(STATUS["skipped"]),
     )
     return STATUS
+
+
+def load_for_project(project_root: Optional[str | Path]) -> Dict[str, object]:
+    """Apply the ``setup.txt`` of one project root, if it has one.
+
+    Safe to call repeatedly: with no file nothing changes and an empty status
+    is returned, so tools keep working with process-environment credentials.
+    """
+    if not project_root:
+        return {"path": None, "loaded": [], "skipped": []}
+    setup_path = find_project_setup_file(project_root)
+    if setup_path is None:
+        return {"path": None, "loaded": [], "skipped": []}
+    # Re-reading the same file for every facet is pointless; its values are
+    # already in os.environ.
+    if str(setup_path) == str(STATUS.get("path") or ""):
+        return STATUS
+    return load(setup_path, override_loaded=True)

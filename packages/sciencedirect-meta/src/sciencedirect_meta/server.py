@@ -23,6 +23,7 @@ import logging
 import os
 import re
 import sys
+import time
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import quote
@@ -102,6 +103,28 @@ CROSSREF_CONCURRENCY = 3
 
 USER_AGENT = f"sciencedirect-meta-mcp/0.1 (mailto:{MAILTO})"
 
+
+def refresh_credentials() -> None:
+    """Re-read API keys from the environment after a setup.txt reload."""
+    global MAILTO, OPENALEX_API_KEY, PUBMED_API_KEY, SEMANTIC_SCHOLAR_API_KEY
+    global NCBI_EMAIL, USER_AGENT
+
+    MAILTO = (
+        os.environ.get("CROSSREF_MAILTO", DEFAULT_MAILTO).strip() or DEFAULT_MAILTO
+    )
+    OPENALEX_API_KEY = os.environ.get("OPENALEX_API_KEY", "").strip()
+    PUBMED_API_KEY = os.environ.get("PUBMED_API_KEY", "").strip()
+    SEMANTIC_SCHOLAR_API_KEY = os.environ.get("SEMANTIC_SCHOLAR_API_KEY", "").strip()
+    NCBI_EMAIL = os.environ.get("NCBI_EMAIL", MAILTO).strip() or MAILTO
+    USER_AGENT = f"sciencedirect-meta-mcp/0.1 (mailto:{MAILTO})"
+    _client.headers["User-Agent"] = USER_AGENT
+
+
+def active_setup_path() -> Optional[str]:
+    """Path of the setup.txt currently in effect (for diagnostics)."""
+    path = bootstrap.STATUS.get("path")
+    return str(path) if path else None
+
 logging.basicConfig(
     level=logging.INFO,
     stream=sys.stderr,
@@ -159,41 +182,153 @@ def _pubmed_params(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return params
 
 
-async def _get_with_retry(
-    url: str,
-    params: Dict[str, Any],
-    attempts: int = 4,
-) -> httpx.Response:
-    """GET with backoff for 429 and transient network errors.
+class RateLimitedError(RuntimeError):
+    """Raised when a source keeps answering 429 after all polite retries."""
 
-    * ``429``: honour ``Retry-After`` when present, else exponential backoff.
-    * ``5xx`` and DNS/timeout/connection errors: retried as well; a temporary
-      name-resolution failure (common in container/offline setups) should not
-      drop the source for the whole run.
+    def __init__(self, message: str, source: str = "", retry_after: float = 0.0) -> None:
+        super().__init__(message)
+        self.source = source
+        self.retry_after = retry_after
+
+
+# Requests per second per service, kept deliberately below the published
+# limits so a multi-facet search never trips a 429. Keys raise the quota, so
+# the interval shrinks when one is configured.
+_RATE_INTERVALS: Dict[str, Tuple[float, float]] = {
+    # host: (interval without a key, interval with a key)
+    "api.openalex.org": (0.5, 0.1),
+    "eutils.ncbi.nlm.nih.gov": (0.35, 0.11),
+    "www.ebi.ac.uk": (0.2, 0.2),
+    "api.crossref.org": (0.2, 0.12),
+    "export.arxiv.org": (3.0, 3.0),
+    "clinicaltrials.gov": (0.5, 0.5),
+    "api.unpaywall.org": (0.2, 0.2),
+    "doi.org": (0.5, 0.5),
+}
+_HOST_LOCKS: Dict[str, asyncio.Lock] = {}
+_HOST_LAST_CALL: Dict[str, float] = {}
+_HOST_COOLDOWN_UNTIL: Dict[str, float] = {}
+
+# How long a source stays disabled after a 429, so the remaining facets in the
+# same run do not hammer it again.
+RATE_LIMIT_COOLDOWN_SECONDS = 20.0
+MAX_RETRY_AFTER = 20.0
+# Per-host ceilings for Retry-After; arXiv answers 429 aggressively and a long
+# wait would stall the whole combined search.
+_MAX_RETRY_AFTER_BY_HOST = {"export.arxiv.org": 5.0}
+
+
+def _host(url: str) -> str:
+    try:
+        return (httpx.URL(url).host or "").lower()
+    except Exception:  # noqa: BLE001 - never fail a search over URL parsing
+        return ""
+
+
+def _has_key_for(host: str) -> bool:
+    if host == "api.openalex.org":
+        return bool(OPENALEX_API_KEY)
+    if host == "eutils.ncbi.nlm.nih.gov":
+        return bool(PUBMED_API_KEY)
+    return False
+
+
+def _rate_interval(host: str) -> float:
+    anonymous, keyed = _RATE_INTERVALS.get(host, (0.0, 0.0))
+    return keyed if _has_key_for(host) else anonymous
+
+
+def host_in_cooldown(url: str) -> bool:
+    return time.monotonic() < _HOST_COOLDOWN_UNTIL.get(_host(url), 0.0)
+
+
+def _retry_after_seconds(response: httpx.Response, attempt: int, host: str) -> float:
+    ceiling = min(MAX_RETRY_AFTER, _MAX_RETRY_AFTER_BY_HOST.get(host, MAX_RETRY_AFTER))
+    raw = (response.headers.get("Retry-After") or "").strip()
+    if raw.isdigit():
+        return min(float(raw), ceiling)
+    return min(2.0 * (attempt + 1), ceiling)
+
+
+async def _throttle(url: str) -> None:
+    """Space requests to the same host so rate limits are respected."""
+    host = _host(url)
+    interval = _rate_interval(host)
+    if not host or interval <= 0:
+        return
+    lock = _HOST_LOCKS.setdefault(host, asyncio.Lock())
+    async with lock:
+        elapsed = time.monotonic() - _HOST_LAST_CALL.get(host, 0.0)
+        if elapsed < interval:
+            await asyncio.sleep(interval - elapsed)
+        _HOST_LAST_CALL[host] = time.monotonic()
+
+
+async def polite_get(
+    url: str,
+    params: Optional[Dict[str, Any]] = None,
+    headers: Optional[Dict[str, str]] = None,
+    attempts: int = 4,
+    follow_redirects: Optional[bool] = None,
+) -> httpx.Response:
+    """Throttled GET that retries 429/5xx and never returns a 429 silently.
+
+    A source that is still rate limited after ``attempts`` raises
+    :class:`RateLimitedError`; callers record it as ``rate_limited`` instead
+    of aborting the whole combined search.
     """
+    host = _host(url)
+    if host_in_cooldown(url):
+        raise RateLimitedError(
+            f"{host}: hız limiti nedeniyle geçici olarak devre dışı", source=host
+        )
+
     last_error: Optional[Exception] = None
     response: Optional[httpx.Response] = None
+    request_kwargs: Dict[str, Any] = {}
+    if follow_redirects is not None:
+        request_kwargs["follow_redirects"] = follow_redirects
     for attempt in range(attempts):
+        await _throttle(url)
         try:
-            response = await _client.get(url, params=params)
+            response = await _client.get(
+                url, params=params, headers=headers, **request_kwargs
+            )
         except httpx.RequestError as exc:
             last_error = exc
             if attempt < attempts - 1:
                 await asyncio.sleep(0.8 * (attempt + 1))
                 continue
             raise
-        if response.status_code == 429 or response.status_code >= 500:
+
+        if response.status_code == 429:
             if attempt < attempts - 1:
-                retry_after = response.headers.get("Retry-After", "")
-                delay = None
-                if retry_after.strip().isdigit():
-                    delay = min(float(retry_after.strip()), 10.0)
-                await asyncio.sleep(delay if delay is not None else 1.0 * (attempt + 1))
+                await asyncio.sleep(_retry_after_seconds(response, attempt, host))
                 continue
+            _HOST_COOLDOWN_UNTIL[host] = time.monotonic() + RATE_LIMIT_COOLDOWN_SECONDS
+            raise RateLimitedError(
+                f"{host}: HTTP 429 (deneme {attempts}); kaynak "
+                f"{int(RATE_LIMIT_COOLDOWN_SECONDS)} sn devre dışı",
+                source=host,
+                retry_after=RATE_LIMIT_COOLDOWN_SECONDS,
+            )
+        if response.status_code >= 500 and attempt < attempts - 1:
+            await asyncio.sleep(_retry_after_seconds(response, attempt, host))
+            continue
         return response
+
     if response is not None:
         return response
     raise last_error or httpx.ConnectError("istek tamamlanamadı")
+
+
+async def _get_with_retry(
+    url: str,
+    params: Dict[str, Any],
+    attempts: int = 4,
+) -> httpx.Response:
+    """Backwards-compatible wrapper around :func:`polite_get`."""
+    return await polite_get(url, params=params, attempts=attempts)
 
 
 def redact_secrets(value: Any) -> str:
@@ -469,10 +604,7 @@ async def crossref_pii(doi: str) -> Optional[str]:
     async with _crossref_sem:
         try:
             url = f"https://api.crossref.org/works/{quote(key, safe='')}"
-            response = await _client.get(url, params={"mailto": MAILTO})
-            if response.status_code == 429:
-                await asyncio.sleep(1.5)
-                response = await _client.get(url, params={"mailto": MAILTO})
+            response = await polite_get(url, params={"mailto": MAILTO}, attempts=3)
             if response.status_code != 200:
                 logger.info("Crossref %s -> HTTP %s", key, response.status_code)
                 _pii_cache[key] = None
@@ -712,7 +844,7 @@ async def search_europepmc(
             f"({query}) AND FIRST_PDATE:[{year_from or 1800}-01-01 "
             f"TO {year_to or 3000}-12-31]"
         )
-    response = await _client.get(
+    response = await polite_get(
         "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
         params={
             "query": epmc_query,
@@ -764,6 +896,38 @@ async def search_europepmc(
 # Combined search / lookup
 # --------------------------------------------------------------------------- #
 
+AVAILABLE_SOURCES = (
+    "openalex",
+    "semantic_scholar",
+    "pubmed",
+    "europepmc",
+    "crossref",
+    "arxiv",
+    "clinicaltrials",
+)
+DEFAULT_SOURCES = list(AVAILABLE_SOURCES)
+
+
+def _resolve_sources(
+    sources: Optional[Sequence[str]] = None,
+    include_semantic_scholar: bool = True,
+    include_arxiv: bool = True,
+    include_clinicaltrials: bool = True,
+) -> List[str]:
+    """Every available source by default; ``sources`` narrows the selection."""
+    if sources:
+        requested = [s for s in sources if s in AVAILABLE_SOURCES]
+    else:
+        requested = list(DEFAULT_SOURCES)
+        if not include_semantic_scholar:
+            requested = [s for s in requested if s != "semantic_scholar"]
+        if not include_arxiv:
+            requested = [s for s in requested if s != "arxiv"]
+        if not include_clinicaltrials:
+            requested = [s for s in requested if s != "clinicaltrials"]
+    return requested or list(DEFAULT_SOURCES)
+
+
 async def search_all(
     query: str,
     limit: int = 10,
@@ -772,39 +936,64 @@ async def search_all(
     priority_only: bool = False,
     allowed_publishers: Optional[Sequence[str]] = None,
     include_semantic_scholar: bool = True,
-    include_arxiv: bool = False,
-    include_clinicaltrials: bool = False,
+    include_arxiv: bool = True,
+    include_clinicaltrials: bool = True,
     query_variants: Optional[Sequence[str]] = None,
     query_expansion: Optional[Dict[str, Any]] = None,
+    sources: Optional[Sequence[str]] = None,
+    project_directory: Optional[str] = None,
 ) -> Dict[str, Any]:
-    from sciencedirect_meta import sources
+    from sciencedirect_meta import sources as extra_sources
 
-    tasks: Dict[str, Any] = {
-        "openalex": search_openalex(
+    # The project's own setup.txt provides the API keys for this call.
+    project_root = (
+        project_directory
+        or os.environ.get("LIT_PROJECT_ROOT", "").strip()
+        or None
+    )
+    if project_root:
+        bootstrap.load_for_project(project_root)
+        refresh_credentials()
+
+    requested = _resolve_sources(
+        sources,
+        include_semantic_scholar=include_semantic_scholar,
+        include_arxiv=include_arxiv,
+        include_clinicaltrials=include_clinicaltrials,
+    )
+
+    tasks: Dict[str, Any] = {}
+    if "openalex" in requested:
+        tasks["openalex"] = search_openalex(
             query,
             limit,
             year_from,
             year_to,
             elsevier_only=False,
             priority_publishers_only=priority_only,
-        ),
-    }
-    if include_semantic_scholar:
-        tasks["semantic_scholar"] = sources.search_semantic_scholar(
+        )
+    if "semantic_scholar" in requested:
+        tasks["semantic_scholar"] = extra_sources.search_semantic_scholar(
             query, limit, year_from, year_to
         )
-    tasks["pubmed"] = search_pubmed(query, limit, year_from, year_to)
-    tasks["europepmc"] = search_europepmc(query, limit, year_from, year_to)
-    if include_arxiv:
-        tasks["arxiv"] = sources.search_arxiv(query, limit, year_from, year_to)
-    if include_clinicaltrials:
-        tasks["clinicaltrials"] = sources.search_clinicaltrials(
+    if "pubmed" in requested:
+        tasks["pubmed"] = search_pubmed(query, limit, year_from, year_to)
+    if "europepmc" in requested:
+        tasks["europepmc"] = search_europepmc(query, limit, year_from, year_to)
+    if "crossref" in requested:
+        from sciencedirect_meta.local_research import search_crossref
+
+        tasks["crossref"] = search_crossref(query, limit, year_from, year_to)
+    if "arxiv" in requested:
+        tasks["arxiv"] = extra_sources.search_arxiv(query, limit, year_from, year_to)
+    if "clinicaltrials" in requested:
+        tasks["clinicaltrials"] = extra_sources.search_clinicaltrials(
             query, limit, year_from, year_to
         )
 
     gathered = await asyncio.gather(
         *(
-            sources.run_source(
+            extra_sources.run_source(
                 name,
                 coro,
                 requested_limit=limit,
@@ -824,6 +1013,8 @@ async def search_all(
         per_source[name] = result["items"]
         if meta.get("status") == "error":
             notes.append(f"{name}: {meta.get('error')}")
+        elif meta.get("status") == "rate_limited":
+            notes.append(f"{name}: {meta.get('note')}")
         for item in result["items"]:
             key = _dedupe_key(item)
             if not key or key == "title:":
@@ -833,17 +1024,11 @@ async def search_all(
             else:
                 merged[key] = item
 
-    skipped: List[Dict[str, str]] = []
-    if not include_semantic_scholar:
-        skipped.append(
-            {"source": "semantic_scholar", "reason": "include_semantic_scholar=false"}
-        )
-    if not include_arxiv:
-        skipped.append({"source": "arxiv", "reason": "include_arxiv=false"})
-    if not include_clinicaltrials:
-        skipped.append(
-            {"source": "clinicaltrials", "reason": "include_clinicaltrials=false"}
-        )
+    skipped: List[Dict[str, str]] = [
+        {"source": name, "reason": "kullanıcı seçmedi (sources listesinde yok)"}
+        for name in AVAILABLE_SOURCES
+        if name not in requested
+    ]
 
     items = list(merged.values())
     for item in items:
@@ -857,10 +1042,10 @@ async def search_all(
         items = _filter_by_publisher(items, allowed_publishers)
 
     _attach_quartiles_best_effort(items)
-    sources.score_results(items, query)
+    extra_sources.score_results(items, query)
     items.sort(key=lambda item: (-(item.get("score") or 0.0), _rank(item)))
     returned = items[: max(1, min(limit, 50))]
-    coverage = sources.build_coverage(
+    coverage = extra_sources.build_coverage(
         per_source,
         items,
         query_variants=query_variants or [query],
@@ -878,6 +1063,8 @@ async def search_all(
         "priority_only": priority_only,
         "priority_order": PRIORITY_ORDER,
         "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
+        "sources_requested": requested,
+        "setup_file": active_setup_path(),
         "sources": {
             name: meta.get("status", "ok") for name, meta in source_meta.items()
         },
@@ -910,7 +1097,7 @@ async def get_article(identifier: str, id_type: str = "doi") -> Dict[str, Any]:
 
     if doi:
         try:
-            response = await _client.get(
+            response = await polite_get(
                 f"https://api.openalex.org/works/doi:{quote(doi, safe='')}",
                 params=_openalex_params(),
             )
@@ -992,6 +1179,10 @@ async def handle_list_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string", "description": "Topic, title or keyword query."},
+                    "project_directory": {
+                        "type": "string",
+                        "description": "Project root; its setup.txt supplies the API keys for this call.",
+                    },
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
                     "year_from": {"type": "integer", "description": "Earliest publication year."},
                     "year_to": {"type": "integer", "description": "Latest publication year."},
@@ -1011,6 +1202,10 @@ async def handle_list_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string"},
+                    "project_directory": {
+                        "type": "string",
+                        "description": "Project root; its setup.txt supplies the API keys for this call.",
+                    },
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
                 },
                 "required": ["query"],
@@ -1026,6 +1221,10 @@ async def handle_list_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string"},
+                    "project_directory": {
+                        "type": "string",
+                        "description": "Project root; its setup.txt supplies the API keys for this call.",
+                    },
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
                 },
                 "required": ["query"],
@@ -1043,6 +1242,10 @@ async def handle_list_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string"},
+                    "project_directory": {
+                        "type": "string",
+                        "description": "Project root; its setup.txt supplies the API keys for this call.",
+                    },
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 100},
                     "year_from": {"type": "integer"},
                     "year_to": {"type": "integer"},
@@ -1068,6 +1271,10 @@ async def handle_list_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string"},
+                    "project_directory": {
+                        "type": "string",
+                        "description": "Project root; its setup.txt supplies the API keys for this call.",
+                    },
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
                     "year_from": {"type": "integer"},
                     "year_to": {"type": "integer"},
@@ -1091,6 +1298,10 @@ async def handle_list_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string"},
+                    "project_directory": {
+                        "type": "string",
+                        "description": "Project root; its setup.txt supplies the API keys for this call.",
+                    },
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
                     "year_from": {"type": "integer"},
                     "year_to": {"type": "integer"},
@@ -1102,12 +1313,15 @@ async def handle_list_tools() -> List[types.Tool]:
         types.Tool(
             name="search_all",
             description=(
-                "Combined search across OpenAlex (all publishers), Semantic Scholar, PubMed and "
-                "Europe PMC; arXiv and ClinicalTrials.gov are opt-in. Adds a relevance/quality "
-                "score, a transparent per-source coverage block and an evidence-scarcity signal. "
-                "Deduplicates results and ranks links in this order: Ovid LWW, ScienceDirect, "
-                "SpringerLink, Wiley, Taylor & Francis. Set priority_only=true to "
-                "restrict results to these publishers."
+                "Combined search across every metadata source by default: OpenAlex (all "
+                "publishers), Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv and "
+                "ClinicalTrials.gov. Narrow the set with sources=[...]. Adds a "
+                "relevance/quality score, a transparent per-source coverage block and an "
+                "evidence-scarcity signal. Deduplicates results and ranks links in this "
+                "order: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis. "
+                "Set priority_only=true to restrict results to these publishers; the "
+                "default returns every publisher. Pass project_directory to use that "
+                "project's setup.txt API keys."
             ),
             inputSchema={
                 "type": "object",
@@ -1116,6 +1330,13 @@ async def handle_list_tools() -> List[types.Tool]:
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
                     "year_from": {"type": "integer"},
                     "year_to": {"type": "integer"},
+                    "sources": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(AVAILABLE_SOURCES)},
+                        "description": (
+                            "Metadata sources to query. Default: all available sources."
+                        ),
+                    },
                     "priority_only": {
                         "type": "boolean",
                         "default": False,
@@ -1136,8 +1357,15 @@ async def handle_list_tools() -> List[types.Tool]:
                         ),
                     },
                     "include_semantic_scholar": {"type": "boolean", "default": True},
-                    "include_arxiv": {"type": "boolean", "default": False},
-                    "include_clinicaltrials": {"type": "boolean", "default": False},
+                    "include_arxiv": {"type": "boolean", "default": True},
+                    "include_clinicaltrials": {"type": "boolean", "default": True},
+                    "project_directory": {
+                        "type": "string",
+                        "description": (
+                            "Project root; its setup.txt supplies the API keys and "
+                            "contact email for this call."
+                        ),
+                    },
                     "query_variants": {
                         "type": "array",
                         "items": {"type": "string"},
@@ -1209,6 +1437,12 @@ async def handle_list_tools() -> List[types.Tool]:
 async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> List[types.TextContent]:
     args = arguments or {}
     try:
+        project_root = (
+            str(args.get("project_directory") or "").strip()
+            or os.environ.get("LIT_PROJECT_ROOT", "").strip()
+        )
+        if project_root and bootstrap.load_for_project(project_root).get("path"):
+            refresh_credentials()
         if name == "search_sciencedirect":
             query = str(args.get("query", "")).strip()
             if not query:
@@ -1338,10 +1572,12 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
                 priority_only=bool(args.get("priority_only", False)),
                 allowed_publishers=args.get("allowed_publishers"),
                 include_semantic_scholar=bool(args.get("include_semantic_scholar", True)),
-                include_arxiv=bool(args.get("include_arxiv", False)),
-                include_clinicaltrials=bool(args.get("include_clinicaltrials", False)),
+                include_arxiv=bool(args.get("include_arxiv", True)),
+                include_clinicaltrials=bool(args.get("include_clinicaltrials", True)),
                 query_variants=args.get("query_variants"),
                 query_expansion=args.get("query_expansion"),
+                sources=args.get("sources"),
+                project_directory=args.get("project_directory"),
             )
             return _text(payload)
 
@@ -1379,6 +1615,18 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
             )
 
         return _text({"error": f"unknown tool: {name}"})
+    except RateLimitedError as exc:
+        # A rate-limited source is not a tool failure: report it without an
+        # ``error`` field so callers keep the other evidence they already have.
+        logger.info("Tool %s rate limited: %s", name, exc)
+        return _text(
+            {
+                "tool": name,
+                "rate_limited": True,
+                "note": redact_secrets(exc),
+                "results": [],
+            }
+        )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Tool %s failed", name)
         return _text({"error": redact_secrets(exc), "tool": name})

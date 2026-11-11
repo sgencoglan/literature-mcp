@@ -6,6 +6,7 @@ import asyncio
 import csv
 import gzip
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -536,6 +537,56 @@ class LocalResearchTests(unittest.TestCase):
         self.assertIn("library_status", names)
         self.assertIn("list_projects", names)
         self.assertIn("project_audit", names)
+
+
+class DefaultSearchScopeTests(unittest.TestCase):
+    def test_every_source_is_searched_by_default(self) -> None:
+        import inspect
+
+        self.assertEqual(
+            set(local_research.DEFAULT_SOURCES),
+            set(local_research.AVAILABLE_SOURCES),
+        )
+        self.assertIn("crossref", local_research.DEFAULT_SOURCES)
+        self.assertIn("arxiv", local_research.DEFAULT_SOURCES)
+        self.assertIn("clinicaltrials", local_research.DEFAULT_SOURCES)
+
+        for function in (local_research.search_literature, local_research.deep_research):
+            signature = inspect.signature(function)
+            self.assertIs(signature.parameters["priority_only"].default, False)
+
+    def test_tool_schema_defaults_match_code(self) -> None:
+        async def main():
+            return await local_research.handle_list_tools()
+
+        tools = {tool.name: tool for tool in asyncio.run(main())}
+        for name in ("search_literature", "deep_research"):
+            properties = tools[name].inputSchema["properties"]
+            self.assertIs(properties["priority_only"]["default"], False)
+            self.assertIn("project_directory", properties)
+
+
+class ProjectSetupTests(unittest.TestCase):
+    def test_apply_project_setup_uses_project_directory(self) -> None:
+        from sciencedirect_meta import bootstrap, server
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "setup.txt").write_text(
+                "openalex_key=project-key\nemail=p@example.org\n", encoding="utf-8"
+            )
+            with mock.patch.dict(
+                os.environ, {"OPENALEX_API_KEY": "", "CROSSREF_MAILTO": ""}, clear=False
+            ):
+                status = local_research._apply_project_setup(
+                    project_directory=str(root)
+                )
+                self.assertEqual(os.environ["OPENALEX_API_KEY"], "project-key")
+                self.assertEqual(server.OPENALEX_API_KEY, "project-key")
+                self.assertEqual(server.MAILTO, "p@example.org")
+                self.assertIn(str(root / "setup.txt"), str(status["path"]))
+            # Restore module globals for the remaining tests.
+            server.refresh_credentials()
 
 
 if __name__ == "__main__":

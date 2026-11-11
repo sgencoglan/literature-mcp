@@ -16,6 +16,10 @@
                 "type": "string",
                 "description": "Topic, title or keyword query."
               },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root; its setup.txt supplies the API keys for this call."
+              },
               "limit": {
                 "type": "integer",
                 "default": 10,
@@ -49,6 +53,10 @@
               "query": {
                 "type": "string"
               },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root; its setup.txt supplies the API keys for this call."
+              },
               "limit": {
                 "type": "integer",
                 "default": 10,
@@ -70,6 +78,10 @@
               "query": {
                 "type": "string"
               },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root; its setup.txt supplies the API keys for this call."
+              },
               "limit": {
                 "type": "integer",
                 "default": 10,
@@ -90,6 +102,10 @@
             "properties": {
               "query": {
                 "type": "string"
+              },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root; its setup.txt supplies the API keys for this call."
               },
               "limit": {
                 "type": "integer",
@@ -129,6 +145,10 @@
               "query": {
                 "type": "string"
               },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root; its setup.txt supplies the API keys for this call."
+              },
               "limit": {
                 "type": "integer",
                 "default": 10,
@@ -163,6 +183,10 @@
               "query": {
                 "type": "string"
               },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root; its setup.txt supplies the API keys for this call."
+              },
               "limit": {
                 "type": "integer",
                 "default": 10,
@@ -187,7 +211,7 @@
         },
         {
           "name": "search_all",
-          "description": "Combined search across OpenAlex (all publishers), Semantic Scholar, PubMed and Europe PMC; arXiv and ClinicalTrials.gov are opt-in. Adds a relevance/quality score, a transparent per-source coverage block and an evidence-scarcity signal. Deduplicates results and ranks links in this order: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis. Set priority_only=true to restrict results to these publishers.",
+          "description": "Combined search across every metadata source by default: OpenAlex (all publishers), Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv and ClinicalTrials.gov. Narrow the set with sources=[...]. Adds a relevance/quality score, a transparent per-source coverage block and an evidence-scarcity signal. Deduplicates results and ranks links in this order: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis. Set priority_only=true to restrict results to these publishers; the default returns every publisher. Pass project_directory to use that project's setup.txt API keys.",
           "input_schema": {
             "type": "object",
             "properties": {
@@ -205,6 +229,22 @@
               },
               "year_to": {
                 "type": "integer"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "openalex",
+                    "semantic_scholar",
+                    "pubmed",
+                    "europepmc",
+                    "crossref",
+                    "arxiv",
+                    "clinicaltrials"
+                  ]
+                },
+                "description": "Metadata sources to query. Default: all available sources."
               },
               "priority_only": {
                 "type": "boolean",
@@ -231,11 +271,15 @@
               },
               "include_arxiv": {
                 "type": "boolean",
-                "default": false
+                "default": true
               },
               "include_clinicaltrials": {
                 "type": "boolean",
-                "default": false
+                "default": true
+              },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root; its setup.txt supplies the API keys and contact email for this call."
               },
               "query_variants": {
                 "type": "array",
@@ -383,7 +427,7 @@
         },
         {
           "name": "search_literature",
-          "description": "Find DOIs and metadata across OpenAlex, Semantic Scholar, PubMed, Europe PMC and Crossref; arXiv and ClinicalTrials.gov are opt-in through sources. Returns a quality score per result, a per-source coverage block and an evidence_scarcity signal. By default only records with a real publisher link from the allowed set are returned (Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis). Adds local_pdf when a matching PDF is already available; pass project=... to check only that project's folder.",
+          "description": "Find DOIs and metadata across every available source; narrow the set with sources. Returns a quality score per result, a per-source coverage block and an evidence_scarcity signal. Every available source is queried by default (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, ClinicalTrials.gov); all publishers are returned. Adds local_pdf when a matching PDF is already available; pass project=... to check only that project's folder and to use its setup.txt API keys.",
           "input_schema": {
             "type": "object",
             "properties": {
@@ -420,7 +464,7 @@
               },
               "priority_only": {
                 "type": "boolean",
-                "default": true
+                "default": false
               },
               "allowed_publishers": {
                 "type": "array",
@@ -443,6 +487,10 @@
               "project": {
                 "type": "string",
                 "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root path. Its setup.txt supplies the API keys (OpenAlex, PubMed/NCBI, Semantic Scholar) and contact e-mail."
               },
               "query_expansion": {
                 "type": "object",
@@ -497,7 +545,7 @@
         },
         {
           "name": "deep_research",
-          "description": "Decompose a research question into facets (overview, reviews, prevalence, risk factors, interventions, qualitative) and run multi-source DOI searches. Returns a quality score per result and a combined coverage block with an evidence_scarcity signal. By default only allowed publisher records are returned. Pass subtopics to control the decomposition explicitly.",
+          "description": "Decompose a research question into facets (overview, reviews, prevalence, risk factors, interventions, qualitative) and run multi-source DOI searches. Searches every available source and returns all publishers by default; set priority_only=true to keep only the priority publisher set. Returns a quality score per result and a combined coverage block with an evidence_scarcity signal. Pass subtopics to control the decomposition explicitly.",
           "input_schema": {
             "type": "object",
             "properties": {
@@ -546,7 +594,7 @@
               },
               "priority_only": {
                 "type": "boolean",
-                "default": true
+                "default": false
               },
               "allowed_publishers": {
                 "type": "array",
@@ -561,6 +609,14 @@
                   ]
                 },
                 "description": "Publisher/source allowlist. Default: Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis."
+              },
+              "project": {
+                "type": "string",
+                "description": "Registered project name (see list_projects). Scopes local PDF lookups to that project's folder only; projects never mix."
+              },
+              "project_directory": {
+                "type": "string",
+                "description": "Project root path. Its setup.txt supplies the API keys (OpenAlex, PubMed/NCBI, Semantic Scholar) and contact e-mail."
               },
               "query_expansion": {
                 "type": "object",

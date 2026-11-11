@@ -35,13 +35,14 @@ from urllib.parse import quote, urljoin
 import mcp.types as types
 import pymupdf
 
+from sciencedirect_meta import bootstrap
+from sciencedirect_meta import server as meta_server
 from sciencedirect_meta.server import (
     DEFAULT_ALLOWED_PUBLISHERS,
-    MAILTO,
     MAX_ENRICH,
     PRIORITY_ORDER,
+    RateLimitedError,
     _build_links,
-    _client,
     _dedupe_key,
     _extract_pii,
     _filter_by_publisher,
@@ -53,6 +54,7 @@ from sciencedirect_meta.server import (
     _rank,
     _sciencedirect_link,
     _truncate,
+    polite_get,
     redact_secrets,
     enrich_sciencedirect_links,
     get_article,
@@ -109,9 +111,9 @@ AVAILABLE_SOURCES = [
     "arxiv",
     "clinicaltrials",
 ]
-# Workflow defaults keep the long-standing core plus Semantic Scholar; arXiv
-# and ClinicalTrials.gov are opt-in through `sources`.
-DEFAULT_SOURCES = ["openalex", "semantic_scholar", "pubmed", "europepmc", "crossref"]
+# Every available source is searched by default; the agent narrows the set only
+# when a workflow needs it (for example skipping preprints/registries).
+DEFAULT_SOURCES = list(AVAILABLE_SOURCES)
 
 _JOURNAL_RANK_CACHE: Optional[Dict[str, Any]] = None
 
@@ -191,26 +193,25 @@ async def crossref_work(doi: str) -> Optional[Dict[str, Any]]:
 
     async with _crossref_sem:
         url = f"https://api.crossref.org/works/{quote(key, safe='')}"
-        for attempt in range(3):
-            try:
-                response = await _client.get(url, params={"mailto": MAILTO})
-                if response.status_code == 429:
-                    await asyncio.sleep(1.5 * (attempt + 1))
-                    continue
-                if response.status_code == 404:
-                    _crossref_cache[key] = None
-                    return None
-                if response.status_code != 200:
-                    logger.info("Crossref %s -> HTTP %s", key, response.status_code)
-                    return None
-                message = response.json().get("message")
-                _crossref_cache[key] = message
-                await asyncio.sleep(0.15)
-                return message
-            except Exception as exc:  # noqa: BLE001
-                logger.info("Crossref lookup failed for %s: %s", key, exc)
-                return None
-    return None
+        try:
+            response = await polite_get(
+                url, params={"mailto": meta_server.MAILTO}, attempts=3
+            )
+        except RateLimitedError as exc:
+            logger.info("Crossref rate limited for %s: %s", key, exc)
+            return None
+        except Exception as exc:  # noqa: BLE001
+            logger.info("Crossref lookup failed for %s: %s", key, exc)
+            return None
+        if response.status_code == 404:
+            _crossref_cache[key] = None
+            return None
+        if response.status_code != 200:
+            logger.info("Crossref %s -> HTTP %s", key, response.status_code)
+            return None
+        message = response.json().get("message")
+        _crossref_cache[key] = message
+        return message
 
 
 def _crossref_paper(item: Dict[str, Any]) -> Dict[str, Any]:
@@ -259,7 +260,7 @@ async def search_crossref(
             "DOI,title,author,container-title,issued,abstract,URL,link,type,"
             "publisher,is-referenced-by-count,alternative-id"
         ),
-        "mailto": MAILTO,
+        "mailto": meta_server.MAILTO,
     }
     filters: List[str] = []
     if year_from:
@@ -269,12 +270,9 @@ async def search_crossref(
     if filters:
         params["filter"] = ",".join(filters)
 
-    response = await _client.get("https://api.crossref.org/works", params=params)
-    if response.status_code == 429:
-        await asyncio.sleep(2.0)
-        response = await _client.get("https://api.crossref.org/works", params=params)
-    if response.status_code == 429:
-        raise RuntimeError("Crossref rate limit (HTTP 429); try again shortly")
+    response = await polite_get(
+        "https://api.crossref.org/works", params=params, attempts=3
+    )
     response.raise_for_status()
     items = response.json().get("message", {}).get("items", [])
     return [_crossref_paper(item) for item in items]
@@ -310,22 +308,27 @@ async def search_literature(
     limit: int = 10,
     year_from: Optional[int] = None,
     year_to: Optional[int] = None,
-    priority_only: bool = True,
+    priority_only: bool = False,
     allowed_publishers: Optional[Sequence[str]] = None,
     include_local_pdf: bool = True,
     project: Optional[str] = None,
     query_expansion: Optional[Dict[str, Any]] = None,
+    project_directory: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Search metadata sources; ``project`` scopes the local_pdf annotations.
+    """Search every metadata source by default; ``project`` scopes local PDFs.
 
-    When ``project`` is given, the "already have the PDF?" flag is computed
-    against that project's folder only, so hits from other projects are not
-    mixed in.
+    When ``project`` or ``project_directory`` is given, that project's
+    ``setup.txt`` supplies the API keys (OpenAlex, PubMed/NCBI, Semantic
+    Scholar) and the contact e-mail used for the polite pools.
+
+    The "already have the PDF?" flag is computed against that project's folder
+    only, so hits from other projects are not mixed in.
     """
     try:
         scope_dir, scope_recurse = _project_scope(project)
     except KeyError as exc:
         return _error(str(exc))
+    setup = _apply_project_setup(project, project_directory)
     requested = [s for s in (sources or DEFAULT_SOURCES) if s in AVAILABLE_SOURCES]
     if not requested:
         requested = list(DEFAULT_SOURCES)
@@ -378,6 +381,8 @@ async def search_literature(
         per_source[name] = result["items"]
         if meta.get("status") == "error":
             notes.append(f"{name}: {meta.get('error')}")
+        elif meta.get("status") == "rate_limited":
+            notes.append(f"{name}: {meta.get('note')}")
         for item in result["items"]:
             key = _dedupe_key(item)
             if not key or key == "title:":
@@ -432,6 +437,7 @@ async def search_literature(
         "priority_only": priority_only,
         "priority_order": PRIORITY_ORDER,
         "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
+        "setup_file": setup.get("path"),
         "coverage": coverage,
         "evidence_scarcity": coverage["evidence_scarcity"],
         "evidence_scarcity_message": coverage["evidence_scarcity_message"],
@@ -457,10 +463,11 @@ async def verify_doi_and_publisher(doi: str) -> Dict[str, Any]:
     resolved_url: Optional[str] = None
     resolution_error: Optional[str] = None
     try:
-        response = await _client.get(
+        response = await polite_get(
             f"https://doi.org/{quote(doi, safe='/')}",
             follow_redirects=False,
             headers={"Accept": "text/html"},
+            attempts=2,
         )
         resolution_status = response.status_code
         location = response.headers.get("location")
@@ -559,7 +566,7 @@ async def doi_provenance(doi: str) -> Dict[str, Any]:
 
     # OpenAlex
     try:
-        response = await _client.get(
+        response = await polite_get(
             f"https://api.openalex.org/works/doi:{quote(doi, safe='')}",
             params=_openalex_params(),
         )
@@ -1141,6 +1148,43 @@ def _project_scope(project: Optional[str]) -> Tuple[Optional[Path], bool]:
     return directory, bool(config.get("include_subdirectories", False))
 
 
+def _apply_project_setup(
+    project: Optional[str] = None,
+    project_directory: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Load the API keys of the project being worked on.
+
+    ``project_directory`` is the authoritative root. When only a registered
+    ``project`` name is given, its ``output_directory`` is used. Values from
+    an explicit process environment still win; another project's setup.txt
+    never overrides the current project's keys.
+    """
+    root = (
+        (project_directory or "").strip()
+        or os.environ.get("LIT_PROJECT_ROOT", "").strip()
+        or None
+    )
+    if root is None and project:
+        try:
+            config = _project_config(project)
+        except KeyError:
+            return {"path": None, "loaded": [], "skipped": []}
+        root = (
+            str(
+                config.get("output_directory")
+                or config.get("paper_directory")
+                or ""
+            ).strip()
+            or None
+        )
+    if not root:
+        return {"path": None, "loaded": [], "skipped": []}
+    status = bootstrap.load_for_project(root)
+    if status.get("path"):
+        meta_server.refresh_credentials()
+    return status
+
+
 def _project_analysis_path(config: Dict[str, Any]) -> Optional[Path]:
     """Where a project's analysis_updates JSON lives.
 
@@ -1224,7 +1268,7 @@ async def _openalex_flags(doi: str) -> Dict[str, Any]:
         return _openalex_flags_cache[key]
     payload: Dict[str, Any] = {}
     try:
-        response = await _client.get(
+        response = await polite_get(
             f"https://api.openalex.org/works/doi:{quote(key, safe='')}",
             params=_openalex_params({
                 "select": "id,doi,is_retracted,cited_by_count,counts_by_year",
@@ -1854,13 +1898,16 @@ async def deep_research(
     year_from: Optional[int] = None,
     year_to: Optional[int] = None,
     sources: Optional[Sequence[str]] = None,
-    priority_only: bool = True,
+    priority_only: bool = False,
     allowed_publishers: Optional[Sequence[str]] = None,
     query_expansion: Optional[Dict[str, Any]] = None,
+    project: Optional[str] = None,
+    project_directory: Optional[str] = None,
 ) -> Dict[str, Any]:
     if not question.strip():
         return _error("question is required")
 
+    setup = _apply_project_setup(project, project_directory)
     plan = _research_plan(question, subtopics, max_subtopics)
     semaphore = asyncio.Semaphore(3)
 
@@ -1874,6 +1921,8 @@ async def deep_research(
                 year_to=year_to,
                 priority_only=priority_only,
                 allowed_publishers=allowed_publishers,
+                project=project,
+                project_directory=project_directory,
             )
             payload["facet"] = entry["facet"]
             return payload
@@ -1938,6 +1987,7 @@ async def deep_research(
         "total_found": len(items),
         "priority_only": priority_only,
         "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
+        "setup_file": setup.get("path"),
         "coverage": coverage,
         "evidence_scarcity": coverage["evidence_scarcity"],
         "evidence_scarcity_message": coverage["evidence_scarcity_message"],
@@ -2611,6 +2661,13 @@ async def handle_list_tools() -> List[types.Tool]:
             "lookups to that project's folder only; projects never mix."
         ),
     }
+    project_directory_schema = {
+        "type": "string",
+        "description": (
+            "Project root path. Its setup.txt supplies the API keys "
+            "(OpenAlex, PubMed/NCBI, Semantic Scholar) and contact e-mail."
+        ),
+    }
     return [
         types.Tool(
             name="list_projects",
@@ -2645,13 +2702,13 @@ async def handle_list_tools() -> List[types.Tool]:
         types.Tool(
             name="search_literature",
             description=(
-                "Find DOIs and metadata across OpenAlex, Semantic Scholar, PubMed, Europe PMC "
-                "and Crossref; arXiv and ClinicalTrials.gov are opt-in through sources. "
-                "Returns a quality score per result, a per-source coverage block and an "
-                "evidence_scarcity signal. By default only records with a real publisher link "
-                "from the allowed set are returned (Ovid LWW, ScienceDirect, SpringerLink, "
-                "Wiley, Taylor & Francis). Adds local_pdf when a matching PDF is already "
-                "available; pass project=... to check only that project's folder."
+                "Find DOIs and metadata across every available source; narrow the set with "
+                "sources. Returns a quality score per result, a per-source coverage block "
+                "and an evidence_scarcity signal. Every available source is queried by default "
+                "(OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, "
+                "ClinicalTrials.gov); all publishers are returned. Adds local_pdf when a "
+                "matching PDF is already available; pass project=... to check only that "
+                "project's folder and to use its setup.txt API keys."
             ),
             inputSchema={
                 "type": "object",
@@ -2661,10 +2718,11 @@ async def handle_list_tools() -> List[types.Tool]:
                     "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
                     "year_from": {"type": "integer"},
                     "year_to": {"type": "integer"},
-                    "priority_only": {"type": "boolean", "default": True},
+                    "priority_only": {"type": "boolean", "default": False},
                     "allowed_publishers": publisher_schema,
                     "include_local_pdf": {"type": "boolean", "default": True},
                     "project": project_schema,
+                    "project_directory": project_directory_schema,
                     "query_expansion": {
                         "type": "object",
                         "description": (
@@ -2691,9 +2749,10 @@ async def handle_list_tools() -> List[types.Tool]:
             description=(
                 "Decompose a research question into facets (overview, reviews, prevalence, "
                 "risk factors, interventions, qualitative) and run multi-source DOI searches. "
-                "Returns a quality score per result and a combined coverage block with an "
-                "evidence_scarcity signal. By default only allowed publisher records are "
-                "returned. Pass subtopics to control the decomposition explicitly."
+                "Searches every available source and returns all publishers by default; set "
+                "priority_only=true to keep only the priority publisher set. Returns a "
+                "quality score per result and a combined coverage block with an "
+                "evidence_scarcity signal. Pass subtopics to control the decomposition explicitly."
             ),
             inputSchema={
                 "type": "object",
@@ -2705,8 +2764,10 @@ async def handle_list_tools() -> List[types.Tool]:
                     "year_from": {"type": "integer"},
                     "year_to": {"type": "integer"},
                     "sources": source_schema,
-                    "priority_only": {"type": "boolean", "default": True},
+                    "priority_only": {"type": "boolean", "default": False},
                     "allowed_publishers": publisher_schema,
+                    "project": project_schema,
+                    "project_directory": project_directory_schema,
                     "query_expansion": {
                         "type": "object",
                         "description": (
@@ -2945,6 +3006,13 @@ async def handle_call_tool(
 ) -> List[types.TextContent]:
     args = arguments or {}
     try:
+        project_root = (
+            str(args.get("project_directory") or "").strip()
+            or os.environ.get("LIT_PROJECT_ROOT", "").strip()
+        )
+        if project_root and bootstrap.load_for_project(project_root).get("path"):
+            meta_server.refresh_credentials()
+
         if name == "list_projects":
             return _json_text(list_projects())
 
@@ -2972,10 +3040,11 @@ async def handle_call_tool(
                     limit=int(args.get("limit", 10)),
                     year_from=args.get("year_from"),
                     year_to=args.get("year_to"),
-                    priority_only=bool(args.get("priority_only", True)),
+                    priority_only=bool(args.get("priority_only", False)),
                     allowed_publishers=args.get("allowed_publishers"),
                     include_local_pdf=bool(args.get("include_local_pdf", True)),
                     project=args.get("project"),
+                    project_directory=args.get("project_directory"),
                     query_expansion=args.get("query_expansion"),
                 )
             )
@@ -2990,9 +3059,11 @@ async def handle_call_tool(
                     year_from=args.get("year_from"),
                     year_to=args.get("year_to"),
                     sources=args.get("sources"),
-                    priority_only=bool(args.get("priority_only", True)),
+                    priority_only=bool(args.get("priority_only", False)),
                     allowed_publishers=args.get("allowed_publishers"),
                     query_expansion=args.get("query_expansion"),
+                    project=args.get("project"),
+                    project_directory=args.get("project_directory"),
                 )
             )
 
@@ -3093,6 +3164,16 @@ async def handle_call_tool(
             return _json_text(library_status(args.get("project")))
 
         return _json_text(_error(f"unknown tool: {name}"))
+    except RateLimitedError as exc:
+        logger.info("Tool %s rate limited: %s", name, exc)
+        return _json_text(
+            {
+                "tool": name,
+                "rate_limited": True,
+                "note": redact_secrets(exc),
+                "results": [],
+            }
+        )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Tool %s failed", name)
         return _json_text(_error(str(exc), tool=name))

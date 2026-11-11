@@ -1,5 +1,37 @@
 # Değişiklik Günlüğü
 
+## v2.8.0 — 2026-11-11
+
+### Değişti
+
+- **Tüm veritabanları varsayılan.** `search_all`, `search_literature` ve
+  `deep_research` artık yedi kaynağın tümünü sorgular: OpenAlex, Semantic
+  Scholar, PubMed, Europe PMC, Crossref, arXiv ve ClinicalTrials.gov.
+  `search_all` önceden Crossref'i hiç çağırmıyor, arXiv/ClinicalTrials'ı ise
+  varsayılan olarak atlıyordu; `sources` parametresi eklendi.
+- **`priority_only` varsayılanı `false`.** Sonuçlar artık tüm yayıncılardan
+  döner; yalnızca beş öncelikli platformu istemek için açıkça
+  `priority_only=true` verilir. Önceki varsayılan, sorgulanan kaynakların
+  sonuçlarını sessizce eliyordu.
+- **Proje `setup.txt` önceliği.** Yeni `project_directory` parametresi
+  (`search_all`, `search_literature`, `deep_research`) o proje klasöründeki
+  `setup.txt` dosyasını çağrı anında okur; `bootstrap.load_for_project`
+  önceki bir `setup.txt` yüklemesinin yazdığı anahtarları geçersiz kılar,
+  ancak süreç ortamında açıkça verilen değerleri korur. Yanıtta `setup_file`
+  alanı etkin dosyayı gösterir. `LIT_PROJECT_ROOT` yedek olarak kullanılır.
+- **Nazik hız limitleri.** Tüm HTTP istekleri `polite_get` üzerinden geçer:
+  host başına aralık (OpenAlex ~2/sn anahtarsız, ~10/sn anahtarlı; NCBI
+  ~3/sn → ~10/sn; Europe PMC ve Crossref ~5–8/sn; arXiv 3 sn), `Retry-After`
+  desteği ve 5xx yeniden denemesi. Kalıcı 429 artık tool hatası değil:
+  kaynak `rate_limited` olarak raporlanır, 20 sn devre dışı kalır ve kalan
+  facet'ler onu tekrar zorlamaz.
+- `coverage.per_source`/`notes` her kaynağın `ok`/`error`/`rate_limited`
+  durumunu ve nedenini gösterir; `search_literature` yanıtına
+  `sources_requested` ve `setup_file` eklendi.
+- Testler: varsayılan kaynak kümesi, `priority_only=false`, proje
+  `setup.txt` yükleme/öncelik ve `polite_get`/`run_source` hız limiti
+  davranışı için yeni birim testleri.
+
 ## v2.7.1 — 2026-11-10
 
 ### Değişti

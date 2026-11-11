@@ -17,17 +17,17 @@ Açık metadata kaynaklarını kullanır; LLM çağırmaz. `project` parametresi
 
 | Araç | Amaç | Zorunlu girdi | Önemli isteğe bağlı | Çıktı |
 |---|---|---|---|---|
-| `search_sciencedirect` | Elsevier/ScienceDirect endeksli makale arama (OpenAlex + Crossref PII; siteye girmez) | `query` | `limit`, `year_from`, `year_to`, `open_access_only` | DOI, metadata, öncelikli linkler |
-| `search_pubmed` | PubMed E-utilities araması | `query` | `limit` | Abstract, DOI, PMID |
-| `search_europepmc` | Europe PMC REST araması | `query` | `limit` | Abstract, DOI, PMID, atıf, OA PDF |
-| `search_semantic_scholar` | Semantic Scholar Graph API araması (`semantic_scholar_key` setup.txt'den okunur; 1 istek/sn sınırına uyulur) | `query` | `limit`, yıl aralığı, `fields_of_study`, `open_access_only` | DOI, atıf/influential atıf, OA PDF, venue, paperId, URL |
-| `search_arxiv` | arXiv Atom API araması (anahtarsız) | `query` | `limit`, yıl aralığı, `categories` | arXiv id, PDF/abs URL, kategori, `is_preprint=true` |
-| `search_clinicaltrials` | ClinicalTrials.gov API v2 araması (anahtarsız) | `query` | `limit`, yıl aralığı, `intervention_only` | NCT id, durum, çalışma türü, faz, koşul, girişim |
-| `search_all` | OpenAlex + Semantic Scholar + PubMed + Europe PMC birleşik arama; arXiv ve ClinicalTrials.gov isteğe bağlı | `query` | `limit`, yıl aralığı, `priority_only`, `allowed_publishers`, `include_semantic_scholar`, `include_arxiv`, `include_clinicaltrials`, `query_variants` | Tekilleştirilmiş kayıtlar, `score`, `coverage`, `evidence_scarcity` |
+| `search_sciencedirect` | Elsevier/ScienceDirect endeksli makale arama (OpenAlex + Crossref PII; siteye girmez) | `query` | `limit`, `year_from`, `year_to`, `open_access_only`, `project_directory` | DOI, metadata, öncelikli linkler |
+| `search_pubmed` | PubMed E-utilities araması | `query` | `limit`, `project_directory` | Abstract, DOI, PMID |
+| `search_europepmc` | Europe PMC REST araması | `query` | `limit`, `project_directory` | Abstract, DOI, PMID, atıf, OA PDF |
+| `search_semantic_scholar` | Semantic Scholar Graph API araması (`semantic_scholar_key` setup.txt'den okunur; 1 istek/sn sınırına uyulur) | `query` | `limit`, yıl aralığı, `fields_of_study`, `open_access_only`, `project_directory` | DOI, atıf/influential atıf, OA PDF, venue, paperId, URL |
+| `search_arxiv` | arXiv Atom API araması (anahtarsız) | `query` | `limit`, yıl aralığı, `categories`, `project_directory` | arXiv id, PDF/abs URL, kategori, `is_preprint=true` |
+| `search_clinicaltrials` | ClinicalTrials.gov API v2 araması (anahtarsız) | `query` | `limit`, yıl aralığı, `intervention_only`, `project_directory` | NCT id, durum, çalışma türü, faz, koşul, girişim |
+| `search_all` | Varsayılan olarak tüm kaynaklar (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, ClinicalTrials.gov) birleşik arama; tüm yayıncılar döner | `query` | `sources`, `limit`, yıl aralığı, `priority_only`, `allowed_publishers`, `include_semantic_scholar`, `include_arxiv`, `include_clinicaltrials`, `project_directory`, `query_variants` | Tekilleştirilmiş kayıtlar, `score`, `coverage`, `evidence_scarcity`, `sources_requested` |
 | `get_article` | DOI veya PMID ile tek makale | `identifier` | `id_type` | Metadata, abstract, atıf, linkler |
 | `get_links` | Tek DOI/PMID için öncelikli linkler | `identifier` | `id_type` | `links`, `preferred_url`, `publisher_url` |
-| `search_literature` | OpenAlex + Semantic Scholar + PubMed + Europe PMC + Crossref DOI arama; arXiv/ClinicalTrials.gov `sources` ile seçilebilir; `local_pdf` ekler | `query` | `sources`, `limit`, yıl aralığı, `priority_only`, `allowed_publishers`, `include_local_pdf`, `project` | DOI, metadata, yerel PDF eşleşmesi, `score`, `coverage` |
-| `deep_research` | Soruyu facet'lere bölüp çok kaynaklı arama | `question` | `subtopics`, `max_subtopics`, `results_per_topic`, yıl aralığı, `sources`, `priority_only`, `allowed_publishers` | Facet bazlı DOI sonuçları + birleşik `coverage` |
+| `search_literature` | Varsayılan olarak yedi kaynağın tümünde DOI arama; tüm yayıncılar döner; `local_pdf` ekler | `query` | `sources`, `limit`, yıl aralığı, `priority_only`, `allowed_publishers`, `include_local_pdf`, `project`, `project_directory` | DOI, metadata, yerel PDF eşleşmesi, `score`, `coverage`, `setup_file` |
+| `deep_research` | Soruyu facet'lere bölüp tüm kaynaklarda arama | `question` | `subtopics`, `max_subtopics`, `results_per_topic`, yıl aralığı, `sources`, `priority_only`, `allowed_publishers`, `project`, `project_directory` | Facet bazlı DOI sonuçları + birleşik `coverage` |
 
 ### Doğrulama ve değerlendirme
 
