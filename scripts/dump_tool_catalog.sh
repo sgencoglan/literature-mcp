@@ -11,6 +11,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PY="${PYTHON:-python3}"
 META_PY="${META_PY:-$PY}"
 PAPER_PY="${PAPER_PY:-$PY}"
+# The paperqa-local step runs inside its own directory, so a relative
+# interpreter path such as .venv/bin/python would no longer resolve.
+case "$META_PY" in /*) ;; *) META_PY="$ROOT/$META_PY" ;; esac
+case "$PAPER_PY" in /*) ;; *) PAPER_PY="$ROOT/$PAPER_PY" ;; esac
+case "$PY" in /*) ;; *) PY="$ROOT/$PY" ;; esac
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

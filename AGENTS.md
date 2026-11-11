@@ -102,7 +102,7 @@ python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
 
 13. **Özgün anlatım.** Yeni taslakta kaynak bulgularını paragraf bağlamına uygun, özgün cümlelerle aktar. Kaynak cümlelerini aynen kopyalama; doğrudan alıntı gerekiyorsa kısa tut, alıntı olarak işaretle ve PDF sayfasını belirt. Yeniden yazım kanıtın kapsamını genişletmez.
 14. **Proje klasörü ve akış seçimi.** Yeni projede kök yolu iste ve `paperqa_create_workspace` çağır; sonra kullanıcıya beş seçenekten birini sor: `1. konu belirleme`, `2. yazım planı`, `3. kaynak keşfi ve fulltext seçimi`, `4. taslak yazma`, `5. taslak analizi`. Seçim gelmeden başlamazsın. Akış 1'de ürün türünü (`kitap_bolumu` / `uygulama_rehberi` / `derleme_makale` / `ampirik_makale`) ve hedef kelime sayısını mutlaka sor; varsayılan tür yoktur. Her akışa özgü PaperQA projesi ve indeksi kullan; manifestler `.literature-mcp/projects/<akış-proje-adı>/`, indeksler `.literature-mcp/indexes/` altındadır.
-15. **Kimlik bilgileri ve ilk kurulum.** Yeni proje kökü verildiğinde önce `<proje-kökü>/setup.txt` dosyasını ara. Arama araçlarına `project_directory=<proje-kökü>` ver; araç o klasördeki `setup.txt` dosyasını kendisi okur ve API anahtarlarını o çağrıda kullanır (`setup_file` alanıyla doğrula). Varsa `python3 scripts/setup_credentials.py --project <proje-kökü>` ile bilgileri otomatik al; yoksa kullanıcıya sor: (a) Crossref/NCBI/OpenAlex ve Unpaywall için e-posta, (b) OpenAlex API anahtarı, (c) PubMed/NCBI API anahtarı, (d) Semantic Scholar API anahtarı (isteğe bağlı; 1 istek/sn). MCP sunucusu `setup.txt` dosyasını süreç başında kendisi de okur (`sciencedirect_meta.bootstrap`); bu yüzden anahtarları yalnızca bu dosyada tutmak yeterlidir, ayrıca `opencode.json` düzenlemek gerekmez. Bilgileri ayrıca OpenCode MCP yapılandırmasına yazmak istersen aynı betiği kullan. Anahtarları repoya, rapora veya teslim dosyalarına kopyalama. `setup.txt` düz metin sır içerir; iznini `600` tut ve sürüm kontrolüne ekleme. Anahtarlar isteğe bağlıdır; yoksa araçlar çalışır ancak 429 riski artar. Unpaywall anahtar istemez, yalnızca e-posta ister; `download_open_access.py` bu adresi `setup.txt` içinden okur ve raporda maskeler.
+15. **Kimlik bilgileri ve ilk kurulum.** Yeni proje kökü verildiğinde önce `<proje-kökü>/setup.txt` dosyasını ara. Arama araçlarına `project_directory=<proje-kökü>` ver; araç o klasördeki `setup.txt` dosyasını kendisi okur ve API anahtarlarını o çağrıda kullanır (`setup_file` alanıyla doğrula). Varsa `python3 scripts/setup_credentials.py --project <proje-kökü>` ile bilgileri otomatik al; yoksa kullanıcıya sor: (a) Crossref/NCBI/OpenAlex ve Unpaywall için e-posta, (b) OpenAlex API anahtarı, (c) PubMed/NCBI API anahtarı, (d) Semantic Scholar API anahtarı (isteğe bağlı; 1 istek/sn). MCP sunucusu `setup.txt` dosyasını süreç başında kendisi de okur (`sciencedirect_meta.bootstrap`); bu yüzden anahtarları yalnızca bu dosyada tutmak yeterlidir, ayrıca `opencode.json` düzenlemek gerekmez. Bilgileri ayrıca OpenCode MCP yapılandırmasına yazmak istersen aynı betiği kullan. Anahtarları repoya, rapora veya teslim dosyalarına kopyalama. `setup.txt` düz metin sır içerir; iznini `600` tut ve sürüm kontrolüne ekleme. Anahtarlar isteğe bağlıdır; yoksa araçlar çalışır ancak 429 riski artar. Grup/diğer kullanıcıların okuyabildiği `setup.txt` yüklenmez (`setup_insecure=true`); `chmod 600` uygulanmalıdır. Unpaywall anahtar istemez, yalnızca e-posta ister; `download_open_access.py` bu adresi `setup.txt` içinden okur ve raporda maskeler.
 
 ## 3. Araç politikası
 
@@ -122,6 +122,7 @@ python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
 | `analysis_updates` | Kayıtlı denetim verisini okuma | Yeni analiz üretme |
 | `export_review` | Markdown/CSV/JSON rapor | HTML teslim (ayrıca üretilir) |
 | `list_projects` / `library_status` | Proje ve PDF envanteri | Arama |
+| `search_diagnostics` | Etkin `setup.txt`, anahtar varlığı, cooldown'lar | Arama sonucu üretme |
 | `paperqa_create_workspace` | Seçilen proje kökünde 01–05 akış klasörlerini açma; kayıt/akış/tür seçimi yapmaz | Kullanıcı proje yolunu vermeden |
 | `paperqa_promote_fulltext` | Akış 3 PDF'lerini akış 4/5'e kopyalar, DOI adına çevirir | Kaynak seçmeden |
 | `paperqa_projects` | Kayıtlı projeler | Arama |
@@ -278,7 +279,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.8.0; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.9.0; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 22 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
@@ -294,6 +295,9 @@ Teslimden önce:
 ## 11. Hızlı komutlar
 
 ```bash
+# Statik kontroller (sürüm + ruff)
+bash scripts/lint.sh
+
 # MCP testleri
 PYTHONPATH=packages/sciencedirect-meta/src \
   .venv/bin/python -m unittest discover -s packages/sciencedirect-meta/tests -v

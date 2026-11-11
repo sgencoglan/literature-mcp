@@ -30,6 +30,7 @@ METADATA_TOOLS = {
     "search_all",
     "get_article",
     "get_links",
+    "search_diagnostics",
 }
 
 LOCAL_TOOLS = {

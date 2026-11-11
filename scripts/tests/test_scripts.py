@@ -13,10 +13,10 @@ from unittest import mock
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
 
-import download_open_access as oa  # noqa: E402
-import output_naming  # noqa: E402
 import build_fulltext_list as fl  # noqa: E402
 import build_search_coverage as cov  # noqa: E402
+import download_open_access as oa  # noqa: E402
+import output_naming  # noqa: E402
 import promote_fulltext as pf  # noqa: E402
 
 
@@ -1129,8 +1129,8 @@ class LayoutTests(unittest.TestCase):
         repo = _Path(__file__).resolve().parents[2]
         sys.path.insert(0, str(repo / "packages" / "sciencedirect-meta" / "src"))
         sys.path.insert(0, str(repo / "packages" / "paperqa-local"))
-        from sciencedirect_meta import layout as meta_layout  # noqa: E402
         import paperqa_mcp  # noqa: E402
+        from sciencedirect_meta import layout as meta_layout  # noqa: E402
 
         self.assertEqual(
             meta_layout.WORKFLOW_DIRECTORIES, project_layout.WORKFLOW_DIRECTORIES

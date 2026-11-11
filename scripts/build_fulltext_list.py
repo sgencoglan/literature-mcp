@@ -29,11 +29,11 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote, urlparse
 
 try:  # scripts/ içinden çalışırken
-    from project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
     from output_naming import add_timestamp_argument
+    from project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
 except ImportError:  # python -m scripts.build_fulltext_list
-    from scripts.project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
     from scripts.output_naming import add_timestamp_argument
+    from scripts.project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
 
 PRIORITY_ORDER = ["A", "B", "C"]
 PRIORITY_LABEL = {

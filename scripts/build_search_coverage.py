@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Arama kapsam raporunu (coverage) JSON ve çevrimdışı HTML olarak yazar.
 
 Girdi, ``search_all`` / ``search_literature`` / ``deep_research`` cevabının
@@ -22,11 +21,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-try:  # scripts/ içinden çalışırken
-    from output_naming import timestamp_suffix  # noqa: F401
-except ImportError:  # python -m scripts.build_search_coverage
-    from scripts.output_naming import timestamp_suffix
 
 SCHEMA_ID = "search-coverage/1"
 OUTPUT_STEM = "01_arama_kapsam_raporu"
@@ -1341,8 +1335,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         if result["archived"]:
             print(f"Eski sürümler arşivlendi: {len(result['archived'])} dosya")
     json_path = result["path"]
-    html_path = json_path.with_suffix(".html")
-    markdown_path = json_path.with_suffix(".md")
     comparison_json_path = json_path.with_name(f"{json_path.stem}_karsilastirma.json")
     comparison_html_path = json_path.with_name(f"{json_path.stem}_karsilastirma.html")
 

@@ -1,5 +1,57 @@
 # Değişiklik Günlüğü
 
+## v2.9.0 — 2026-11-11
+
+### Değişti
+
+- **Tek arama motoru.** `search_all` ile `search_literature` aynı 150 satırlık
+  boru hattını iki kez taşıyordu (109 satır birebir aynı). Ortak mantık yeni
+  `sciencedirect_meta.pipeline` modülüne taşındı: görev kurulumu, paralel
+  toplama, tekilleştirme, PII zenginleştirme, filtre, skorlama ve kapsam
+  raporu artık tek yerde. İki araç yalnızca kendi yanıt alanlarını ekliyor.
+  v2.8.0'daki "Crossref bir araçta eksik kaldı" hatası bu yapıyla tekrar
+  edemez.
+- **Tekilleştirme anahtarı güçlendi.** DOI yoksa başlık tek başına yeterli
+  değildi; aynı başlıklı editöryel/düzeltme ve farklı yıllardaki çalışmalar
+  birleşiyordu. Anahtar artık `başlık + yıl + ilk yazar` taşıyor. Başlığı boş
+  kayıtlar birleştirilmiyor, atlanıyor.
+- **Event loop sorunu giderildi.** `httpx.AsyncClient` ve `asyncio.Lock`
+  nesneleri ilk kullanıldıkları loop'a bağlı kalıyordu; tekrarlanan
+  `asyncio.run` çağrılarında "Event loop is closed" ve taşınmamış transport
+  uyarıları çıkıyordu. İstemci ve kilitler artık loop değişince yeniden
+  oluşturuluyor (`client_for_loop`, `_host_lock`).
+- **arXiv politikası.** İstekler 5 sn aralıkla sıraya konuyor ve User-Agent
+  iletişim e-postasını içeriyor (`literature-mcp/<sürüm> (mailto:...)`).
+  Önceden 3 sn aralık + genel UA ile 429 alınıyordu.
+- **`search_diagnostics` aracı (yeni).** Etkin `setup.txt`, hangi API
+  anahtarlarının tanımlı olduğu (değerler asla döndürülmez), varsayılan
+  kaynak listesi, host/kaynak cooldown'ları ve güvensiz izin durumu tek
+  çağrıda görülür. "Neden az sonuç geldi?" sorusu kodu okumadan yanıtlanır.
+- **`setup.txt` sertleştirildi.** Grup/diğer kullanıcıların okuyabildiği bir
+  dosyadaki anahtarlar artık **yüklenmez**; durum `setup_insecure=true` olarak
+  raporlanır ve log'da `chmod 600` önerilir. Bilinçli istisna için
+  `LIT_ALLOW_INSECURE_SETUP=1`.
+- **Tek sürüm kaynağı.** `__version__` artık kök `VERSION` dosyasından
+  okunuyor; `scripts/check_version.py` beş kopyanın (VERSION, iki
+  `pyproject.toml`, iki `__version__`, README/AGENTS banner'ı) uyuşmasını
+  zorunlu kılıyor. `--set X.Y.Z` hepsini birlikte günceller.
+- **Statik kontroller.** `ruff.toml` + `scripts/lint.sh`; `F821` (tanımsız ad),
+  `F841` (kullanılmayan değişken), `F401`, `B904` ve import düzeni denetleniyor.
+  Bu turda 3 tanımsız ad (PaperQA anotasyonları), 3 kullanılmayan değişken ve
+  1 `raise ... from` eksiği düzeltildi.
+- **CI matrisi.** GitHub Actions artık Python 3.10–3.13 arasında çalışıyor ve
+  `ruff` kuruyor.
+- **Katalog kayması testi.** `docs/tool-catalog.json` ile sunucunun gerçek
+  araç şemaları karşılaştırılıyor; katalog elle güncellenmeyi unutursa test
+  kırılıyor.
+- `dump_tool_catalog.sh` göreli yorumlayıcı yolu verildiğinde
+  (`PAPER_PY=.venv/bin/python`) alt dizinde dosyayı bulamıyordu; yollar
+  mutlaklaştırılıyor.
+- `deep_research` aynı facet sorgusunu iki kez göndermiyor.
+- Hata yanıtlarına kararlı `error_code` alanı eklendi
+  (`unknown_project`, `rate_limited`, `error`); ajanlar Türkçe hata metnini
+  ayrıştırmak zorunda değil.
+
 ## v2.8.0 — 2026-11-11
 
 ### Değişti

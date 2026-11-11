@@ -1,0 +1,45 @@
+# Ruff configuration shared by the CI and `bash scripts/lint.sh`.
+#
+# The rule set is deliberately conservative: it catches real defects
+# (undefined names, unused imports/variables, broken f-strings, import order)
+# without forcing a repo-wide reformat. Widen it as the codebase is cleaned up.
+
+target-version = "py310"
+line-length = 100
+
+exclude = [
+  ".venv",
+  "__pycache__",
+  "build",
+  "dist",
+  "packages/sciencedirect-meta/data",
+]
+
+[lint]
+select = [
+  "E9",    # syntax / IO errors
+  "F63",   # invalid print/assert syntax
+  "F7",    # invalid statements
+  "F82",   # undefined names
+  "F401",  # unused imports
+  "F811",  # redefinition of an unused name
+  "F841",  # unused local variable
+  "I",     # import order
+  "B006",  # mutable default argument
+  "B008",  # function call in default argument
+  "B904",  # raise ... from inside except
+  "UP",    # modernise syntax (safe subset only)
+]
+
+ignore = [
+  "UP006",  # Dict/List -> dict/list would touch every signature
+  "UP007",  # Optional[X] -> X | None likewise
+  "UP035",  # typing.Dict deprecated but still explicit
+  "UP037",  # quoted annotations are explicit about forward refs
+  "UP045",  # Optional[X] -> X | None would touch every signature
+  "B008",   # FastMCP/argparse idioms call functions in defaults
+]
+
+[lint.per-file-ignores]
+"packages/paperqa-local/tests/*" = ["F401", "F841"]
+"scripts/tests/*" = ["F401", "F841"]

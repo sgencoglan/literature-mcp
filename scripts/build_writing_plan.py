@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Yazım planı (iskelet) HTML üreticisi — akış 2.
 
 Girdi: ``schemas/writing-plan.schema.json`` biçiminde JSON.
@@ -17,10 +16,9 @@ from __future__ import annotations
 import argparse
 import html
 import json
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
 import re
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
@@ -210,7 +208,6 @@ def render(data: Dict[str, Any]) -> str:
     cards = "".join(
         _section_card(section, index) for index, section in enumerate(sections, 1)
     )
-    generated = data.get("generated_at") or datetime.now(timezone.utc).date().isoformat()
     plan_status = str(data.get("plan_status") or "draft")
 
     return f"""<!doctype html>

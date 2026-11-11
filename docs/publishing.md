@@ -1,6 +1,6 @@
 # Public repo kontrolü
 
-Son public sürüm **v2.6.0**'dır. Bu belge v2.7.0 ve sonraki sürümleri
+Son public sürüm **v2.8.0**'dır. Bu belge v2.9.0 ve sonraki sürümleri
 yayımlarken uygulanacak kontrol listesini korur.
 
 ## 1. Kişisel veri ve dosya kontrolü
@@ -59,9 +59,9 @@ branch protection ve zorunlu CI kontrolü açılmalıdır.
 
 1. Sürüm metadatası (`VERSION`, `pyproject.toml`, `__version__`), changelog ve README sürümünü eşleştirin.
 2. Yerel depoyu hazırlayın: `git add .`, `git commit`.
-3. `git tag -a v2.7.0 -m "Beş iş akışlı yapı ve plana dayalı kaynak keşfi"`.
-4. `git push origin main --tags`.
-5. `gh release create v2.7.0 --title "v2.7.0" --notes-file <sürüm-notları>`.
+3. `python3 scripts/check_version.py --set X.Y.Z` ile sürümü her yerde güncelleyin, sonra `git tag -a vX.Y.Z -m "<sürüm notu>"`.
+4. `bash scripts/lint.sh && bash scripts/validate_all.sh`, sonra `git push origin main --tags`.
+5. `gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <sürüm-notları>`.
 6. Bir kez daha `git ls-files` ve `git grep` ile sızıntı kontrolü yapın.
 7. Public görünürlüğü yalnızca kontrol listesi tamamsa değiştirin.
 

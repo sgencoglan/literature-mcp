@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """OpenAlex, PubMed ve Crossref için kimlik bilgilerini yapılandırır.
 
 Betik yalnızca standart kütüphaneyi kullanır. Sırları depoya yazmaz; OpenCode
@@ -227,9 +226,9 @@ def _prompt(label: str, current: str = "", secret: bool = False) -> str:
             value = getpass.getpass(prompt)
         else:
             value = input(prompt)
-    except (EOFError, KeyboardInterrupt):
+    except (EOFError, KeyboardInterrupt) as exc:
         print()
-        raise SystemExit("İptal edildi.")
+        raise SystemExit("İptal edildi.") from exc
     value = value.strip()
     return value or current
 

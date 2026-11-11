@@ -33,7 +33,7 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
-from sciencedirect_meta import bootstrap
+from sciencedirect_meta import __version__, bootstrap
 
 # Proje setup.txt dosyasını süreç başında oku; var olan ortam değişkenleri
 # her zaman önceliklidir.
@@ -134,13 +134,48 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger("sciencedirect-meta")
 
-_client = httpx.AsyncClient(
-    timeout=HTTP_TIMEOUT,
-    headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
-    follow_redirects=True,
-)
 
-_crossref_sem = asyncio.Semaphore(CROSSREF_CONCURRENCY)
+def _new_client() -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        timeout=HTTP_TIMEOUT,
+        headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+        follow_redirects=True,
+    )
+
+
+_client = _new_client()
+_client_loop: Optional[asyncio.AbstractEventLoop] = None
+# Multiprocess-safe (per-process) semaphore; created lazily so importing the
+# module outside an event loop cannot bind it to the wrong loop.
+_crossref_sem: Optional[asyncio.Semaphore] = None
+
+
+def client_for_loop() -> httpx.AsyncClient:
+    """Return an AsyncClient bound to the running event loop.
+
+    An ``httpx.AsyncClient`` keeps a connection pool tied to the loop it first
+    used. Tests and library callers create a fresh loop per ``asyncio.run``, so
+    reusing one client raised "Event loop is closed" and leaked transports.
+    The client is recreated whenever the loop changes.
+    """
+    global _client, _client_loop
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return _client
+    if _client_loop is not loop:
+        _client = _new_client()
+        _client_loop = loop
+    return _client
+
+
+def crossref_semaphore() -> asyncio.Semaphore:
+    global _crossref_sem
+    if _crossref_sem is None:
+        _crossref_sem = asyncio.Semaphore(CROSSREF_CONCURRENCY)
+    return _crossref_sem
+
+
 _pii_cache: Dict[str, Optional[str]] = {}
 
 _PII_IN_URL = re.compile(r"PII:([A-Z0-9]+)")
@@ -200,7 +235,7 @@ _RATE_INTERVALS: Dict[str, Tuple[float, float]] = {
     "eutils.ncbi.nlm.nih.gov": (0.35, 0.11),
     "www.ebi.ac.uk": (0.2, 0.2),
     "api.crossref.org": (0.2, 0.12),
-    "export.arxiv.org": (3.0, 3.0),
+    "export.arxiv.org": (5.0, 5.0),
     "clinicaltrials.gov": (0.5, 0.5),
     "api.unpaywall.org": (0.2, 0.2),
     "doi.org": (0.5, 0.5),
@@ -208,6 +243,7 @@ _RATE_INTERVALS: Dict[str, Tuple[float, float]] = {
 _HOST_LOCKS: Dict[str, asyncio.Lock] = {}
 _HOST_LAST_CALL: Dict[str, float] = {}
 _HOST_COOLDOWN_UNTIL: Dict[str, float] = {}
+_HOST_LOCKS_LOOP: Optional[asyncio.AbstractEventLoop] = None
 
 # How long a source stays disabled after a 429, so the remaining facets in the
 # same run do not hammer it again.
@@ -250,13 +286,26 @@ def _retry_after_seconds(response: httpx.Response, attempt: int, host: str) -> f
     return min(2.0 * (attempt + 1), ceiling)
 
 
+def _host_lock(host: str) -> asyncio.Lock:
+    """One lock per host, recreated when the event loop changes."""
+    global _HOST_LOCKS_LOOP
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop is not None and _HOST_LOCKS_LOOP is not loop:
+        _HOST_LOCKS.clear()
+        _HOST_LOCKS_LOOP = loop
+    return _HOST_LOCKS.setdefault(host, asyncio.Lock())
+
+
 async def _throttle(url: str) -> None:
     """Space requests to the same host so rate limits are respected."""
     host = _host(url)
     interval = _rate_interval(host)
     if not host or interval <= 0:
         return
-    lock = _HOST_LOCKS.setdefault(host, asyncio.Lock())
+    lock = _host_lock(host)
     async with lock:
         elapsed = time.monotonic() - _HOST_LAST_CALL.get(host, 0.0)
         if elapsed < interval:
@@ -291,7 +340,7 @@ async def polite_get(
     for attempt in range(attempts):
         await _throttle(url)
         try:
-            response = await _client.get(
+            response = await client_for_loop().get(
                 url, params=params, headers=headers, **request_kwargs
             )
         except httpx.RequestError as exc:
@@ -511,12 +560,40 @@ def _reconstruct_abstract(inverted: Optional[Dict[str, List[int]]]) -> Optional[
     return _truncate(" ".join(word for _, word in positions))
 
 
+def _first_author_token(item: Dict[str, Any]) -> str:
+    """Surname-ish token of the first author, for title-level deduplication."""
+    authors = item.get("authors") or []
+    if not authors:
+        return ""
+    first = str(authors[0] or "").strip()
+    if not first:
+        return ""
+    if "," in first:
+        # "Lovelace, Ada" -> surname is the part before the comma
+        surname = first.split(",", 1)[0]
+    else:
+        # "Ada Lovelace" -> surname is the last token
+        surname = first.split()[-1] if first.split() else ""
+    return re.sub(r"[^a-z0-9]+", "", surname.lower())[:24]
+
+
 def _dedupe_key(item: Dict[str, Any]) -> str:
+    """Stable identity for one record.
+
+    DOI wins because it is the only globally unique identifier. Without a DOI
+    the title alone is not enough: editorials, errata and same-titled papers
+    from different years would collapse into one row. The key therefore also
+    carries the publication year and the first author.
+    """
     doi = normalize_doi(item.get("doi"))
     if doi:
         return "doi:" + doi
     title = re.sub(r"[^a-z0-9]+", "", (item.get("title") or "").lower())
-    return "title:" + title[:140]
+    if not title:
+        return ""
+    year = str(item.get("year") or "").strip()
+    author = _first_author_token(item)
+    return f"title:{title[:140]}|{year}|{author}"
 
 
 def _rank(item: Dict[str, Any]) -> Tuple[int, int, int]:
@@ -566,6 +643,11 @@ def _merge(target: Dict[str, Any], extra: Dict[str, Any]) -> Dict[str, Any]:
             continue
         if value not in (None, "", [], 0, False) and not target.get(key):
             target[key] = value
+    # Prefer the richer record for the fields where "first wins" is wrong.
+    if extra.get("year") and not target.get("year"):
+        target["year"] = extra["year"]
+    if extra.get("journal") and not target.get("journal"):
+        target["journal"] = extra["journal"]
     merged_sources = set(target.get("sources") or [])
     if target.get("source"):
         merged_sources.add(target["source"])
@@ -601,7 +683,7 @@ async def crossref_pii(doi: str) -> Optional[str]:
     if key in _pii_cache:
         return _pii_cache[key]
 
-    async with _crossref_sem:
+    async with crossref_semaphore():
         try:
             url = f"https://api.crossref.org/works/{quote(key, safe='')}"
             response = await polite_get(url, params={"mailto": MAILTO}, attempts=3)
@@ -915,17 +997,14 @@ def _resolve_sources(
     include_clinicaltrials: bool = True,
 ) -> List[str]:
     """Every available source by default; ``sources`` narrows the selection."""
-    if sources:
-        requested = [s for s in sources if s in AVAILABLE_SOURCES]
-    else:
-        requested = list(DEFAULT_SOURCES)
-        if not include_semantic_scholar:
-            requested = [s for s in requested if s != "semantic_scholar"]
-        if not include_arxiv:
-            requested = [s for s in requested if s != "arxiv"]
-        if not include_clinicaltrials:
-            requested = [s for s in requested if s != "clinicaltrials"]
-    return requested or list(DEFAULT_SOURCES)
+    from sciencedirect_meta import pipeline
+
+    return pipeline.resolve_sources(
+        sources,
+        include_semantic_scholar=include_semantic_scholar,
+        include_arxiv=include_arxiv,
+        include_clinicaltrials=include_clinicaltrials,
+    )
 
 
 async def search_all(
@@ -943,137 +1022,28 @@ async def search_all(
     sources: Optional[Sequence[str]] = None,
     project_directory: Optional[str] = None,
 ) -> Dict[str, Any]:
-    from sciencedirect_meta import sources as extra_sources
+    """Combined search over every source; see ``pipeline.run_multi_source_search``.
 
-    # The project's own setup.txt provides the API keys for this call.
-    project_root = (
-        project_directory
-        or os.environ.get("LIT_PROJECT_ROOT", "").strip()
-        or None
-    )
-    if project_root:
-        bootstrap.load_for_project(project_root)
-        refresh_credentials()
+    The implementation lives in ``sciencedirect_meta.pipeline`` and is shared
+    with ``search_literature`` so both tools always behave the same way.
+    """
+    from sciencedirect_meta import pipeline
 
-    requested = _resolve_sources(
-        sources,
+    return await pipeline.run_multi_source_search(
+        query,
+        sources=sources,
+        limit=limit,
+        year_from=year_from,
+        year_to=year_to,
+        priority_only=priority_only,
+        allowed_publishers=allowed_publishers,
         include_semantic_scholar=include_semantic_scholar,
         include_arxiv=include_arxiv,
         include_clinicaltrials=include_clinicaltrials,
-    )
-
-    tasks: Dict[str, Any] = {}
-    if "openalex" in requested:
-        tasks["openalex"] = search_openalex(
-            query,
-            limit,
-            year_from,
-            year_to,
-            elsevier_only=False,
-            priority_publishers_only=priority_only,
-        )
-    if "semantic_scholar" in requested:
-        tasks["semantic_scholar"] = extra_sources.search_semantic_scholar(
-            query, limit, year_from, year_to
-        )
-    if "pubmed" in requested:
-        tasks["pubmed"] = search_pubmed(query, limit, year_from, year_to)
-    if "europepmc" in requested:
-        tasks["europepmc"] = search_europepmc(query, limit, year_from, year_to)
-    if "crossref" in requested:
-        from sciencedirect_meta.local_research import search_crossref
-
-        tasks["crossref"] = search_crossref(query, limit, year_from, year_to)
-    if "arxiv" in requested:
-        tasks["arxiv"] = extra_sources.search_arxiv(query, limit, year_from, year_to)
-    if "clinicaltrials" in requested:
-        tasks["clinicaltrials"] = extra_sources.search_clinicaltrials(
-            query, limit, year_from, year_to
-        )
-
-    gathered = await asyncio.gather(
-        *(
-            extra_sources.run_source(
-                name,
-                coro,
-                requested_limit=limit,
-                rate_limited_when_empty=(name == "semantic_scholar"),
-            )
-            for name, coro in tasks.items()
-        )
-    )
-
-    merged: Dict[str, Dict[str, Any]] = {}
-    notes: List[str] = []
-    per_source: Dict[str, List[Dict[str, Any]]] = {}
-    source_meta: Dict[str, Dict[str, Any]] = {}
-    for name, result in zip(tasks.keys(), gathered):
-        meta = {key: value for key, value in result.items() if key != "items"}
-        source_meta[name] = meta
-        per_source[name] = result["items"]
-        if meta.get("status") == "error":
-            notes.append(f"{name}: {meta.get('error')}")
-        elif meta.get("status") == "rate_limited":
-            notes.append(f"{name}: {meta.get('note')}")
-        for item in result["items"]:
-            key = _dedupe_key(item)
-            if not key or key == "title:":
-                continue
-            if key in merged:
-                _merge(merged[key], item)
-            else:
-                merged[key] = item
-
-    skipped: List[Dict[str, str]] = [
-        {"source": name, "reason": "kullanıcı seçmedi (sources listesinde yok)"}
-        for name in AVAILABLE_SOURCES
-        if name not in requested
-    ]
-
-    items = list(merged.values())
-    for item in items:
-        _finalize_links(item)
-
-    # Enrich before filtering so a ScienceDirect DOI without an initial PII
-    # still gets a chance to qualify.
-    await enrich_sciencedirect_links(items, limit=min(10, MAX_ENRICH))
-    if priority_only:
-        # Keep only records with a real publisher link in the allowlist.
-        items = _filter_by_publisher(items, allowed_publishers)
-
-    _attach_quartiles_best_effort(items)
-    extra_sources.score_results(items, query)
-    items.sort(key=lambda item: (-(item.get("score") or 0.0), _rank(item)))
-    returned = items[: max(1, min(limit, 50))]
-    coverage = extra_sources.build_coverage(
-        per_source,
-        items,
-        query_variants=query_variants or [query],
-        original_query=query,
+        query_variants=query_variants,
         query_expansion=query_expansion,
-        source_meta=source_meta,
-        skipped_sources=skipped,
-        requested_limit=limit,
+        project_directory=project_directory,
     )
-
-    return {
-        "query": query,
-        "count": len(returned),
-        "total_found": len(items),
-        "priority_only": priority_only,
-        "priority_order": PRIORITY_ORDER,
-        "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
-        "sources_requested": requested,
-        "setup_file": active_setup_path(),
-        "sources": {
-            name: meta.get("status", "ok") for name, meta in source_meta.items()
-        },
-        "coverage": coverage,
-        "evidence_scarcity": coverage["evidence_scarcity"],
-        "evidence_scarcity_message": coverage["evidence_scarcity_message"],
-        "notes": notes,
-        "results": returned,
-    }
 
 
 def _attach_quartiles_best_effort(items: Sequence[Dict[str, Any]]) -> None:
@@ -1165,6 +1135,66 @@ server = Server("sciencedirect-meta")
 
 
 @server.list_tools()
+def search_diagnostics(project_directory: Optional[str] = None) -> Dict[str, Any]:
+    """Describe the effective search configuration without leaking secrets."""
+    from sciencedirect_meta import pipeline
+
+    setup = pipeline.apply_project_setup(project_directory)
+    keys = {
+        "openalex": bool(OPENALEX_API_KEY),
+        "pubmed_ncbi": bool(PUBMED_API_KEY),
+        "semantic_scholar": bool(SEMANTIC_SCHOLAR_API_KEY),
+    }
+    now = time.monotonic()
+    cooldowns = {
+        host: round(until - now, 1)
+        for host, until in sorted(_HOST_COOLDOWN_UNTIL.items())
+        if until > now
+    }
+    source_cooldowns = {}
+    try:
+        from sciencedirect_meta import sources as extra_sources
+
+        source_cooldowns = {
+            name: round(until - now, 1)
+            for name, until in extra_sources._SOURCE_COOLDOWN.items()
+            if until > now
+        }
+        if extra_sources._s2_in_cooldown():
+            source_cooldowns.setdefault(
+                "semantic_scholar", round(extra_sources._S2_COOLDOWN_UNTIL - now, 1)
+            )
+    except Exception:  # noqa: BLE001 - diagnostics must never fail
+        pass
+
+    status = bootstrap.STATUS
+    return {
+        "version": __version__,
+        "setup_file": setup.get("path"),
+        "setup_error": setup.get("error"),
+        "setup_loaded": list(status.get("loaded") or []),
+        "setup_skipped": list(status.get("skipped") or []),
+        "setup_insecure": bool(status.get("insecure")),
+        "credentials_configured": keys,
+        "contact_email_configured": bool(MAILTO and MAILTO != DEFAULT_MAILTO),
+        "default_sources": list(pipeline.DEFAULT_SOURCES),
+        "available_sources": list(pipeline.AVAILABLE_SOURCES),
+        "priority_only_default": False,
+        "rate_limit_intervals_seconds": dict(_RATE_INTERVALS),
+        "host_cooldowns": cooldowns,
+        "source_cooldowns": source_cooldowns,
+        "projects_registry": os.environ.get(
+            "LIT_PROJECTS_REGISTRY", "~/.literature-mcp/projects.json"
+        ),
+        "journal_rank_dataset": os.environ.get("JOURNAL_RANK_CSV") or "yok",
+        "notes": [
+            "Anahtarlar yalnızca var/yok olarak raporlanır; değerleri döndürülmez.",
+            "Bir kaynak rate_limited ise diğerleri çalışmaya devam eder.",
+            "setup_insecure=true ise anahtarlar yüklenmedi; chmod 600 uygulayın.",
+        ],
+    }
+
+
 async def handle_list_tools() -> List[types.Tool]:
     return [
         types.Tool(
@@ -1430,6 +1460,25 @@ async def handle_list_tools() -> List[types.Tool]:
                 "required": ["identifier"],
             },
         ),
+        types.Tool(
+            name="search_diagnostics",
+            description=(
+                "Explain how a search will behave: which credential file and API keys are "
+                "active (values are never returned), which sources are queried by default, "
+                "which hosts are currently rate limited, and the effective priority_only "
+                "default. Use this when a search returns fewer results than expected. "
+                "Pass project_directory to inspect one project's setup.txt."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_directory": {
+                        "type": "string",
+                        "description": "Project root whose setup.txt should be inspected.",
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -1581,6 +1630,13 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
             )
             return _text(payload)
 
+        if name == "search_diagnostics":
+            return _text(
+                search_diagnostics(
+                    str(args.get("project_directory") or "").strip() or None
+                )
+            )
+
         if name == "get_article":
             identifier = str(args.get("identifier", "")).strip()
             if not identifier:
@@ -1623,6 +1679,7 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
             {
                 "tool": name,
                 "rate_limited": True,
+                "error_code": "rate_limited",
                 "note": redact_secrets(exc),
                 "results": [],
             }

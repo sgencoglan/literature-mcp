@@ -41,11 +41,18 @@ import time
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import quote
 
 import httpx
 from mcp.server.fastmcp import FastMCP
+
+if TYPE_CHECKING:  # pragma: no cover - yalnızca tip denetimi için
+    # Bu adlar ağır PaperQA2 bağımlılıklarından gelir ve yalnızca gerektiğinde
+    # çalışma zamanında import edilir; anotasyonlar için burada bildirilir.
+    from paperqa.agents.search import SearchIndex
+    from paperqa.docs import Docs
+    from paperqa.settings import Settings
 
 # PyMuPDF ve PaperQA2 ağır bağımlılıklar içe aktarır. MCP sunucusu OpenCode'un
 # başlangıç zaman aşımına takılmamak için bunlar yalnızca gerektiğinde yüklenir;

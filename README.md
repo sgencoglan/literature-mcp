@@ -4,7 +4,7 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.8.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
+> **Sürüm:** v2.9.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
@@ -121,7 +121,7 @@ yalnızca listeler; `--yes` onay sormaz.
 
 | Bileşen | Konum | Görev |
 |---|---|---|
-| `sciencedirect-meta` MCP | [`packages/sciencedirect-meta`](packages/sciencedirect-meta) | 22 araç: metadata/DOI arama (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, ClinicalTrials.gov), kapsam/kanıt sinyali, DOI doğrulama, dergi quartile, yerel PDF okuma, kanıt denetimi, rapor dışa aktarma |
+| `sciencedirect-meta` MCP | [`packages/sciencedirect-meta`](packages/sciencedirect-meta) | 23 araç: metadata/DOI arama (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, ClinicalTrials.gov), kapsam/kanıt sinyali, DOI doğrulama, dergi quartile, yerel PDF okuma, kanıt denetimi, rapor dışa aktarma |
 | `paperqa-local` MCP | [`packages/paperqa-local`](packages/paperqa-local) | 10 araç: proje klasörlerini başlatma, fulltext aktarımı, kayıt, manifest, PaperQA2 indeksi, semantik arama, sayfa okuma, LLM durumu, yerel taslak |
 | `report-kit` | [`packages/report-kit`](packages/report-kit) | Altın standart HTML raporu, kalite kapısı ve manifest tabanlı temizlik |
 | Ortak proje kaydı | `projects.json` (varsayılan: `~/.literature-mcp/projects.json`) | Her projenin PDF klasörü, manifesti ve indeksi; projeler izoledir |
@@ -221,7 +221,10 @@ python3 scripts/setup_credentials.py --from-file /path/to/setup.txt
 ```
 
 `setup.txt` düz metin sır içerir; `chmod 600 setup.txt` uygulayın ve sürüm
-kontrolüne eklemeyin. Anahtarları yalnızca bu dosyada tutmak yeterlidir;
+kontrolüne eklemeyin. Grup veya diğer kullanıcıların okuyabildiği bir
+`setup.txt` **yüklenmez**: anahtarlar sessizce yok sayılmaz, log'da `chmod 600`
+önerilir ve `search_diagnostics` çıktısında `setup_insecure=true` görünür.
+Bilinçli istisna için `LIT_ALLOW_INSECURE_SETUP=1` verin. Anahtarları yalnızca bu dosyada tutmak yeterlidir;
 MCP sunucusu süreç başında dosyayı kendisi okur. İsterseniz aramayı
 sabitlemek için `LIT_SETUP_FILE=/yol/setup.txt` ortam değişkenini verin.
 Durumu görmek için:
@@ -310,6 +313,28 @@ kullanılır (`--email` ile de verilebilir). İndirme raporu her akışta doğru
 o akışın klasörüne `oa_indirme_raporu_<zaman>.json` olarak yazılır; e-posta
 raporda maskelenir. Doğrudan PDF bağlantısı olmayan açılış sayfalarında
 `citation_pdf_url` / PDF bağlantısı bir kez çözülmeye çalışılır.
+
+### Arama teşhisi
+
+Bir arama beklenenden az sonuç döndürdüğünde kodu okumak yerine
+`search_diagnostics` çağırın (isteğe bağlı `project_directory`):
+
+```json
+{
+  "setup_file": "/proje/kökü/setup.txt",
+  "setup_insecure": false,
+  "credentials_configured": {"openalex": true, "pubmed_ncbi": true, "semantic_scholar": true},
+  "default_sources": ["openalex", "semantic_scholar", "pubmed", "europepmc",
+                      "crossref", "arxiv", "clinicaltrials"],
+  "priority_only_default": false,
+  "host_cooldowns": {},
+  "source_cooldowns": {}
+}
+```
+
+Anahtar değerleri hiçbir zaman döndürülmez; yalnızca var/yok bilgisi verilir.
+Hata yanıtları ayrıca kararlı bir `error_code` alanı taşır (`unknown_project`,
+`rate_limited`, `error`).
 
 ### Arama kapsamı ve kanıt sınırlılığı
 
@@ -482,15 +507,18 @@ değiştirin; bu dosyayı public depoya commit etmeyin.
 ## Hızlı başlangıç
 
 ```bash
-# 1) Testler
+# 1) Statik kontroller (sürüm tutarlılığı + ruff)
+bash scripts/lint.sh
+
+# 2) Testler
 bash scripts/validate_all.sh
 
-# 2) Örnek fulltext listesini üret
+# 3) Örnek fulltext listesini üret
 python3 scripts/build_fulltext_list.py \
   examples/fulltext-list.example.json \
   -o examples/fulltext-list.example.html
 
-# 3) Altın standart rapor örneğini doğrula
+# 4) Altın standart rapor örneğini doğrula
 .venv/bin/chapter-report build examples/chapter-report.example.json --check
 ```
 

@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-09T14:59:38+00:00",
+  "generated_at": "2026-11-11T10:44:40+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
-      "tool_count": 22,
+      "tool_count": 23,
       "tools": [
         {
           "name": "search_sciencedirect",
@@ -385,6 +385,19 @@
             "required": [
               "identifier"
             ]
+          }
+        },
+        {
+          "name": "search_diagnostics",
+          "description": "Explain how a search will behave: which credential file and API keys are active (values are never returned), which sources are queried by default, which hosts are currently rate limited, and the effective priority_only default. Use this when a search returns fewer results than expected. Pass project_directory to inspect one project's setup.txt.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "project_directory": {
+                "type": "string",
+                "description": "Project root whose setup.txt should be inspected."
+              }
+            }
           }
         },
         {
@@ -1322,5 +1335,5 @@
       ]
     }
   },
-  "total_tools": 32
+  "total_tools": 33
 }

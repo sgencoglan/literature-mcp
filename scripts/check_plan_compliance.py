@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Plan uyumu denetimi — akış 5.
 
 Taslak metni ile yazım planını karşılaştırır:

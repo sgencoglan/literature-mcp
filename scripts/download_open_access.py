@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Açık erişimli PDF'leri Unpaywall/OpenAlex üzerinden indirir.
 
 Yalnızca yayıncının veya arşivin açıkça sunduğu PDF bağlantılarını dener;
@@ -46,19 +45,19 @@ except ImportError:  # python -m scripts.download_open_access
     from scripts.setup_credentials import _parse_setup_file, _resolve_setup_file
 
 try:  # scripts/ içinden çalışırken
+    from output_naming import add_timestamp, timestamp_suffix
     from project_layout import (
         WORKFLOW_DIRECTORIES,
         fulltext_dir,
         workflow_dir,
     )
-    from output_naming import add_timestamp, timestamp_suffix
 except ImportError:  # python -m scripts.download_open_access
+    from scripts.output_naming import add_timestamp, timestamp_suffix
     from scripts.project_layout import (
         WORKFLOW_DIRECTORIES,
         fulltext_dir,
         workflow_dir,
     )
-    from scripts.output_naming import add_timestamp, timestamp_suffix
 
 USER_AGENT = "literature-mcp/2.6 (open-access downloader)"
 UNPAYWALL_API = "https://api.unpaywall.org/v2/{doi}"

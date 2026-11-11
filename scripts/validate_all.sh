@@ -14,6 +14,11 @@ fail=0
 note() { printf '\n== %s ==\n' "$1"; }
 bad() { printf 'HATA: %s\n' "$1" >&2; fail=1; }
 
+note "Statik kontroller (sürüm + ruff)"
+if ! bash "$ROOT/scripts/lint.sh"; then
+  bad "statik kontroller başarısız"
+fi
+
 note "JSON sözdizimi"
 while IFS= read -r -d '' f; do
   if ! "$PY" -m json.tool "$f" >/dev/null 2>&1; then

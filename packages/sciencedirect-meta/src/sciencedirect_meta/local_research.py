@@ -35,8 +35,9 @@ from urllib.parse import quote, urljoin
 import mcp.types as types
 import pymupdf
 
-from sciencedirect_meta import bootstrap
+from sciencedirect_meta import bootstrap, pipeline
 from sciencedirect_meta import server as meta_server
+from sciencedirect_meta import sources as extra_sources
 from sciencedirect_meta.server import (
     DEFAULT_ALLOWED_PUBLISHERS,
     MAX_ENRICH,
@@ -45,7 +46,6 @@ from sciencedirect_meta.server import (
     _build_links,
     _dedupe_key,
     _extract_pii,
-    _filter_by_publisher,
     _finalize_links,
     _merge,
     _normalized_allowed_publishers,
@@ -54,16 +54,14 @@ from sciencedirect_meta.server import (
     _rank,
     _sciencedirect_link,
     _truncate,
-    polite_get,
-    redact_secrets,
     enrich_sciencedirect_links,
     get_article,
     normalize_doi,
+    polite_get,
+    redact_secrets,
     search_europepmc,
-    search_openalex,
     search_pubmed,
 )
-from sciencedirect_meta import sources as extra_sources
 
 # --------------------------------------------------------------------------- #
 # Configuration
@@ -102,18 +100,8 @@ LIT_PROJECTS_REGISTRY = Path(
 
 _PROJECTS_CACHE: Dict[str, Any] = {"mtime": None, "data": {}}
 
-AVAILABLE_SOURCES = [
-    "openalex",
-    "semantic_scholar",
-    "pubmed",
-    "europepmc",
-    "crossref",
-    "arxiv",
-    "clinicaltrials",
-]
-# Every available source is searched by default; the agent narrows the set only
-# when a workflow needs it (for example skipping preprints/registries).
-DEFAULT_SOURCES = list(AVAILABLE_SOURCES)
+AVAILABLE_SOURCES = pipeline.AVAILABLE_SOURCES
+DEFAULT_SOURCES = pipeline.DEFAULT_SOURCES
 
 _JOURNAL_RANK_CACHE: Optional[Dict[str, Any]] = None
 
@@ -133,8 +121,16 @@ def _json_text(payload: Any) -> List[types.TextContent]:
     ]
 
 
-def _error(message: str, **extra: Any) -> Dict[str, Any]:
-    payload: Dict[str, Any] = {"error": redact_secrets(message)}
+def _error(message: str, code: str = "error", **extra: Any) -> Dict[str, Any]:
+    """Error payload with a stable machine-readable ``error_code``.
+
+    Agents should branch on ``error_code`` rather than parsing the human
+    message, which is Turkish prose and may change.
+    """
+    payload: Dict[str, Any] = {
+        "error": redact_secrets(message),
+        "error_code": code,
+    }
     payload.update(extra)
     return payload
 
@@ -317,133 +313,38 @@ async def search_literature(
 ) -> Dict[str, Any]:
     """Search every metadata source by default; ``project`` scopes local PDFs.
 
+    The search pipeline itself lives in ``sciencedirect_meta.pipeline`` and is
+    shared with ``search_all``. This wrapper adds the two things only this tool
+    has: project-scoped local PDF annotations and the ``project``/``setup_file``
+    response fields.
+
     When ``project`` or ``project_directory`` is given, that project's
     ``setup.txt`` supplies the API keys (OpenAlex, PubMed/NCBI, Semantic
     Scholar) and the contact e-mail used for the polite pools.
-
-    The "already have the PDF?" flag is computed against that project's folder
-    only, so hits from other projects are not mixed in.
     """
     try:
         scope_dir, scope_recurse = _project_scope(project)
     except KeyError as exc:
         return _error(str(exc))
-    setup = _apply_project_setup(project, project_directory)
-    requested = [s for s in (sources or DEFAULT_SOURCES) if s in AVAILABLE_SOURCES]
-    if not requested:
-        requested = list(DEFAULT_SOURCES)
 
-    tasks: Dict[str, Any] = {}
-    if "openalex" in requested:
-        tasks["openalex"] = search_openalex(
-            query, limit, year_from, year_to,
-            elsevier_only=False,
-            priority_publishers_only=priority_only,
-        )
-    if "semantic_scholar" in requested:
-        tasks["semantic_scholar"] = extra_sources.search_semantic_scholar(
-            query, limit, year_from, year_to
-        )
-    if "pubmed" in requested:
-        tasks["pubmed"] = search_pubmed(query, limit, year_from, year_to)
-    if "europepmc" in requested:
-        tasks["europepmc"] = search_europepmc(query, limit, year_from, year_to)
-    if "crossref" in requested:
-        tasks["crossref"] = search_crossref(query, limit, year_from, year_to)
-    if "arxiv" in requested:
-        tasks["arxiv"] = extra_sources.search_arxiv(query, limit, year_from, year_to)
-    if "clinicaltrials" in requested:
-        tasks["clinicaltrials"] = extra_sources.search_clinicaltrials(
-            query, limit, year_from, year_to
-        )
-
-    gathered = await asyncio.gather(
-        *(
-            extra_sources.run_source(
-                name,
-                coro,
-                requested_limit=limit,
-                rate_limited_when_empty=(name == "semantic_scholar"),
-            )
-            for name, coro in tasks.items()
-        )
+    payload = await pipeline.run_multi_source_search(
+        query,
+        sources=sources,
+        limit=limit,
+        year_from=year_from,
+        year_to=year_to,
+        priority_only=priority_only,
+        allowed_publishers=allowed_publishers,
+        query_expansion=query_expansion,
+        project_directory=project_directory,
+        project_root=_project_setup_root(project),
     )
-
-    merged: Dict[str, Dict[str, Any]] = {}
-    notes: List[str] = []
-    status: Dict[str, str] = {}
-    per_source: Dict[str, List[Dict[str, Any]]] = {}
-    source_meta: Dict[str, Dict[str, Any]] = {}
-    for name, result in zip(tasks.keys(), gathered):
-        meta = {key: value for key, value in result.items() if key != "items"}
-        source_meta[name] = meta
-        status[name] = meta.get("status", "ok")
-        per_source[name] = result["items"]
-        if meta.get("status") == "error":
-            notes.append(f"{name}: {meta.get('error')}")
-        elif meta.get("status") == "rate_limited":
-            notes.append(f"{name}: {meta.get('note')}")
-        for item in result["items"]:
-            key = _dedupe_key(item)
-            if not key or key == "title:":
-                continue
-            if key in merged:
-                _merge(merged[key], item)
-            else:
-                merged[key] = item
-
-    skipped: List[Dict[str, str]] = [
-        {"source": name, "reason": "kullanıcı seçmedi (sources listesinde yok)"}
-        for name in AVAILABLE_SOURCES
-        if name not in requested
-    ]
-    items = list(merged.values())
-    for item in items:
-        _finalize_links(item)
-
-    # Resolve ScienceDirect PII links before applying the allowlist.  A
-    # 10.1016 DOI can otherwise look like a DOI-only record until Crossref
-    # enrichment supplies its publisher link.
-    await enrich_sciencedirect_links(items, limit=min(10, MAX_ENRICH))
-    if priority_only:
-        items = _filter_by_publisher(items, allowed_publishers)
-
-    _attach_quartiles(items)
-    extra_sources.score_results(items, query)
-    items.sort(key=lambda item: (-(item.get("score") or 0.0), _rank(item)))
-    returned = items[: max(1, min(limit, 50))]
 
     if include_local_pdf:
-        _annotate_local_pdfs(returned, scope_dir, scope_recurse)
+        _annotate_local_pdfs(payload["results"], scope_dir, scope_recurse)
 
-    coverage = extra_sources.build_coverage(
-        per_source,
-        items,
-        query_variants=[query],
-        original_query=query,
-        query_expansion=query_expansion,
-        source_meta=source_meta,
-        skipped_sources=skipped,
-        requested_limit=limit,
-    )
-
-    return {
-        "query": query,
-        "project": project or None,
-        "count": len(returned),
-        "total_found": len(items),
-        "sources_requested": requested,
-        "sources_status": status,
-        "priority_only": priority_only,
-        "priority_order": PRIORITY_ORDER,
-        "allowed_publishers": _normalized_allowed_publishers(allowed_publishers),
-        "setup_file": setup.get("path"),
-        "coverage": coverage,
-        "evidence_scarcity": coverage["evidence_scarcity"],
-        "evidence_scarcity_message": coverage["evidence_scarcity_message"],
-        "notes": notes,
-        "results": returned,
-    }
+    payload["project"] = project or None
+    return payload
 
 
 # --------------------------------------------------------------------------- #
@@ -1148,41 +1049,31 @@ def _project_scope(project: Optional[str]) -> Tuple[Optional[Path], bool]:
     return directory, bool(config.get("include_subdirectories", False))
 
 
+def _project_setup_root(project: Optional[str]) -> Optional[str]:
+    """``output_directory`` (or PDF folder) of a registered project."""
+    if not project:
+        return None
+    try:
+        config = _project_config(project)
+    except KeyError:
+        return None
+    return (
+        str(config.get("output_directory") or config.get("paper_directory") or "").strip()
+        or None
+    )
+
+
 def _apply_project_setup(
     project: Optional[str] = None,
     project_directory: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Load the API keys of the project being worked on.
 
-    ``project_directory`` is the authoritative root. When only a registered
-    ``project`` name is given, its ``output_directory`` is used. Values from
-    an explicit process environment still win; another project's setup.txt
-    never overrides the current project's keys.
+    Delegates to :func:`sciencedirect_meta.pipeline.apply_project_setup`, which
+    prefers ``project_directory``, then ``LIT_PROJECT_ROOT``, then the
+    registered project's ``output_directory``.
     """
-    root = (
-        (project_directory or "").strip()
-        or os.environ.get("LIT_PROJECT_ROOT", "").strip()
-        or None
-    )
-    if root is None and project:
-        try:
-            config = _project_config(project)
-        except KeyError:
-            return {"path": None, "loaded": [], "skipped": []}
-        root = (
-            str(
-                config.get("output_directory")
-                or config.get("paper_directory")
-                or ""
-            ).strip()
-            or None
-        )
-    if not root:
-        return {"path": None, "loaded": [], "skipped": []}
-    status = bootstrap.load_for_project(root)
-    if status.get("path"):
-        meta_server.refresh_credentials()
-    return status
+    return pipeline.apply_project_setup(project_directory, _project_setup_root(project))
 
 
 def _project_analysis_path(config: Dict[str, Any]) -> Optional[Path]:
@@ -1869,11 +1760,17 @@ def _research_plan(
     max_subtopics: int,
 ) -> List[Dict[str, str]]:
     if subtopics:
-        return [
-            {"facet": "custom", "query": str(topic).strip()}
-            for topic in subtopics
-            if str(topic).strip()
-        ][: max(1, min(max_subtopics, 8))]
+        plan: List[Dict[str, str]] = []
+        seen: set[str] = set()
+        for topic in subtopics:
+            query = str(topic).strip()
+            key = query.lower()
+            # Duplicate facets would issue the identical search twice.
+            if not query or key in seen:
+                continue
+            seen.add(key)
+            plan.append({"facet": "custom", "query": query})
+        return plan[: max(1, min(max_subtopics, 8))]
 
     base = question.strip()
     facets = [
@@ -1938,7 +1835,7 @@ async def deep_research(
         notes.extend(batch.get("notes") or [])
         for item in batch.get("results") or []:
             key = _dedupe_key(item)
-            if not key or key == "title:":
+            if not key:
                 continue
             if key in merged:
                 existing = merged[key]
@@ -3170,6 +3067,7 @@ async def handle_call_tool(
             {
                 "tool": name,
                 "rate_limited": True,
+                "error_code": "rate_limited",
                 "note": redact_secrets(exc),
                 "results": [],
             }

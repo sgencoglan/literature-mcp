@@ -18,7 +18,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
-import os
 import re
 import time
 import unicodedata
@@ -31,9 +30,9 @@ from sciencedirect_meta.server import (
     PRIORITY_LABELS,
     PRIORITY_ORDER,
     RateLimitedError,
-    _client,
     _paper,
     _truncate,
+    client_for_loop,
     normalize_doi,
     polite_get,
     redact_secrets,
@@ -48,6 +47,10 @@ SEMANTIC_SCHOLAR_FIELDS = (
     "isOpenAccess,openAccessPdf,url,paperId"
 )
 ARXIV_API = "https://export.arxiv.org/api/query"
+# arXiv asks API clients to identify themselves with a contact address and to
+# send no more than one request every few seconds. A generic UA gets 429s.
+ARXIV_MIN_INTERVAL = 5.0
+_ARXIV_LAST_CALL = 0.0
 CLINICALTRIALS_API = "https://clinicaltrials.gov/api/v2/studies"
 
 # Semantic Scholar: 1 request/second is cumulative across all endpoints, with
@@ -55,6 +58,7 @@ CLINICALTRIALS_API = "https://clinicaltrials.gov/api/v2/studies"
 # searches cannot trip the limit.
 _S2_MIN_INTERVAL = 2.0
 _S2_LOCK: Optional[asyncio.Lock] = None
+_S2_LOCK_LOOP: Optional[asyncio.AbstractEventLoop] = None
 _S2_LAST_CALL = 0.0
 
 # Anonymous callers share a small pool; a key gets its own quota. After a 429,
@@ -95,9 +99,15 @@ def _s2_cooldown_seconds() -> float:
 
 async def _s2_wait_turn() -> None:
     """Serialise Semantic Scholar calls to at most one per interval."""
-    global _S2_LOCK, _S2_LAST_CALL
-    if _S2_LOCK is None:
+    global _S2_LOCK, _S2_LOCK_LOOP, _S2_LAST_CALL
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if _S2_LOCK is None or (loop is not None and _S2_LOCK_LOOP is not loop):
+        # A lock is usable from exactly one event loop.
         _S2_LOCK = asyncio.Lock()
+        _S2_LOCK_LOOP = loop
     async with _S2_LOCK:
         elapsed = time.monotonic() - _S2_LAST_CALL
         if elapsed < _S2_MIN_INTERVAL:
@@ -300,7 +310,7 @@ async def search_semantic_scholar(
     for attempt in range(attempts):
         try:
             await _s2_wait_turn()
-            response = await _client.get(
+            response = await client_for_loop().get(
                 SEMANTIC_SCHOLAR_API,
                 params=params,
                 headers=headers or None,
@@ -407,6 +417,24 @@ def _arxiv_paper(entry: ET.Element) -> Optional[Dict[str, Any]]:
     return paper
 
 
+async def _arxiv_wait_turn() -> None:
+    """Serialise arXiv requests; the service rejects bursts with 429."""
+    global _ARXIV_LAST_CALL
+    elapsed = time.monotonic() - _ARXIV_LAST_CALL
+    if elapsed < ARXIV_MIN_INTERVAL:
+        await asyncio.sleep(ARXIV_MIN_INTERVAL - elapsed)
+    _ARXIV_LAST_CALL = time.monotonic()
+
+
+def _arxiv_headers() -> Dict[str, str]:
+    """Identify the client with a contact address, as arXiv requests."""
+    return {
+        "User-Agent": (
+            f"literature-mcp/{meta_server.__version__} (mailto:{meta_server.MAILTO})"
+        )
+    }
+
+
 async def search_arxiv(
     query: str,
     limit: int = 10,
@@ -430,7 +458,10 @@ async def search_arxiv(
         "sortOrder": "descending",
     }
     try:
-        response = await polite_get(ARXIV_API, params=params, attempts=2)
+        await _arxiv_wait_turn()
+        response = await polite_get(
+            ARXIV_API, params=params, headers=_arxiv_headers(), attempts=2
+        )
         if response.status_code != 200:
             logger.info("arXiv HTTP %s for %r", response.status_code, query)
             return []

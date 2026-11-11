@@ -37,6 +37,13 @@ def _semantic_raw() -> dict:
     }
 
 
+def _write_setup(path: Path, text: str) -> Path:
+    """Write a setup.txt that passes the permission hardening."""
+    path.write_text(text, encoding="utf-8")
+    path.chmod(0o600)
+    return path
+
+
 ARXIV_XML = """<feed xmlns="http://www.w3.org/2005/Atom"
   xmlns:arxiv="http://arxiv.org/schemas/atom">
   <entry>
@@ -542,7 +549,7 @@ class ServerCoverageTests(unittest.TestCase):
     def test_search_all_reports_status_skipped_and_warnings(self) -> None:
         from unittest import mock
 
-        from sciencedirect_meta import local_research, server
+        from sciencedirect_meta import local_research, pipeline, server
 
         async def ok_openalex(*args, **kwargs):
             return [self._paper("openalex", "10.1/a", "A")]
@@ -554,15 +561,15 @@ class ServerCoverageTests(unittest.TestCase):
             return []
 
         async def main():
-            with mock.patch.object(server, "search_openalex", ok_openalex), \
-                 mock.patch.object(server, "search_pubmed", failing_pubmed), \
-                 mock.patch.object(server, "search_europepmc", empty), \
+            with mock.patch.object(pipeline, "search_openalex", ok_openalex), \
+                 mock.patch.object(pipeline, "search_pubmed", failing_pubmed), \
+                 mock.patch.object(pipeline, "search_europepmc", empty), \
                  mock.patch.object(sources, "search_semantic_scholar", empty), \
                  mock.patch.object(sources, "search_arxiv", empty), \
                  mock.patch.object(sources, "search_clinicaltrials", empty), \
                  mock.patch.object(local_research, "search_crossref", empty), \
-                 mock.patch.object(server, "enrich_sciencedirect_links", mock.AsyncMock()), \
-                 mock.patch.object(server, "_attach_quartiles_best_effort", lambda items: None):
+                 mock.patch.object(pipeline, "enrich_sciencedirect_links", mock.AsyncMock()), \
+                 mock.patch.object(pipeline, "_attach_quartiles_best_effort", lambda items: None):
                 full = await server.search_all("q", limit=5)
                 narrow = await server.search_all("q", limit=5, sources=["openalex"])
                 return full, narrow
@@ -592,7 +599,7 @@ class ServerCoverageTests(unittest.TestCase):
     def test_search_all_marks_rate_limited_semantic_scholar(self) -> None:
         from unittest import mock
 
-        from sciencedirect_meta import local_research, server
+        from sciencedirect_meta import local_research, pipeline, server
 
         async def ok(*args, **kwargs):
             return [self._paper("openalex", "10.1/a", "A")]
@@ -604,15 +611,15 @@ class ServerCoverageTests(unittest.TestCase):
         sources._S2_COOLDOWN_UNTIL = float("inf")
         try:
             async def main():
-                with mock.patch.object(server, "search_openalex", ok), \
-                     mock.patch.object(server, "search_pubmed", empty), \
-                     mock.patch.object(server, "search_europepmc", empty), \
+                with mock.patch.object(pipeline, "search_openalex", ok), \
+                     mock.patch.object(pipeline, "search_pubmed", empty), \
+                     mock.patch.object(pipeline, "search_europepmc", empty), \
                      mock.patch.object(sources, "search_semantic_scholar", empty), \
                      mock.patch.object(sources, "search_arxiv", empty), \
                      mock.patch.object(sources, "search_clinicaltrials", empty), \
                      mock.patch.object(local_research, "search_crossref", empty), \
-                     mock.patch.object(server, "enrich_sciencedirect_links", mock.AsyncMock()), \
-                 mock.patch.object(server, "_attach_quartiles_best_effort", lambda items: None):
+                     mock.patch.object(pipeline, "enrich_sciencedirect_links", mock.AsyncMock()), \
+                 mock.patch.object(pipeline, "_attach_quartiles_best_effort", lambda items: None):
                     return await server.search_all("q", limit=5)
             payload = asyncio.run(main())
         finally:
@@ -645,14 +652,14 @@ class BootstrapTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "setup.txt"
-            path.write_text(
+            _write_setup(
+                path,
                 "# yorum\n"
                 "email=a@example.org\n"
                 "openalex_key=oa\n"
                 "pubmed_key=pm\n"
                 "semantic_scholar_key=s2k-test\n"
                 "random_key=ignored\n",
-                encoding="utf-8",
             )
             values = bootstrap.parse_setup_file(path)
         self.assertEqual(values["email"], "a@example.org")
@@ -666,9 +673,8 @@ class BootstrapTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "setup.txt"
-            path.write_text(
-                "semantic_scholar_key=from-file\nopenalex_key=oa-file\n",
-                encoding="utf-8",
+            _write_setup(
+                path, "semantic_scholar_key=from-file\nopenalex_key=oa-file\n"
             )
             with mock.patch.dict(
                 os.environ,
@@ -687,13 +693,14 @@ class BootstrapTests(unittest.TestCase):
             root = Path(tmp)
             first = root / "a"
             first.mkdir()
-            (first / "setup.txt").write_text(
-                "openalex_key=first\nemail=first@example.org\n", encoding="utf-8"
+            _write_setup(
+                first / "setup.txt",
+                "openalex_key=first\nemail=first@example.org\n",
             )
             second = root / "b"
             second.mkdir()
-            (second / "setup.txt").write_text(
-                "openalex_key=second\npubmed_key=pm-second\n", encoding="utf-8"
+            _write_setup(
+                second / "setup.txt", "openalex_key=second\npubmed_key=pm-second\n"
             )
             with mock.patch.dict(
                 os.environ,
@@ -712,9 +719,7 @@ class BootstrapTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "setup.txt").write_text(
-                "openalex_key=from-file\n", encoding="utf-8"
-            )
+            _write_setup(root / "setup.txt", "openalex_key=from-file\n")
             with mock.patch.dict(
                 os.environ, {"OPENALEX_API_KEY": "explicit-env"}, clear=False
             ):
@@ -729,14 +734,12 @@ class BootstrapTests(unittest.TestCase):
             root = Path(tmp)
             first = root / "a"
             first.mkdir()
-            (first / "setup.txt").write_text(
-                "openalex_key=oa-first\npubmed_key=pm-first\n", encoding="utf-8"
+            _write_setup(
+                first / "setup.txt", "openalex_key=oa-first\npubmed_key=pm-first\n"
             )
             second = root / "b"
             second.mkdir()
-            (second / "setup.txt").write_text(
-                "openalex_key=oa-second\n", encoding="utf-8"
-            )
+            _write_setup(second / "setup.txt", "openalex_key=oa-second\n")
             with mock.patch.dict(
                 os.environ, {"OPENALEX_API_KEY": "", "PUBMED_API_KEY": ""}, clear=False
             ):
@@ -746,12 +749,44 @@ class BootstrapTests(unittest.TestCase):
                 self.assertEqual(os.environ["OPENALEX_API_KEY"], "oa-second")
                 self.assertNotIn("PUBMED_API_KEY", os.environ)
 
+    def test_insecure_setup_is_not_loaded(self) -> None:
+        from sciencedirect_meta import bootstrap
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "setup.txt"
+            path.write_text("openalex_key=leaky\n", encoding="utf-8")
+            path.chmod(0o644)
+            with mock.patch.dict(
+                os.environ, {"OPENALEX_API_KEY": ""}, clear=False
+            ), mock.patch.dict(os.environ, {}, clear=False):
+                os.environ.pop(bootstrap.ALLOW_INSECURE_ENV, None)
+                status = bootstrap.load(path)
+                self.assertTrue(status["insecure"])
+                self.assertEqual(os.environ["OPENALEX_API_KEY"], "")
+                self.assertEqual(status["loaded"], [])
+
+    def test_insecure_setup_can_be_allowed_explicitly(self) -> None:
+        from sciencedirect_meta import bootstrap
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "setup.txt"
+            path.write_text("openalex_key=leaky\n", encoding="utf-8")
+            path.chmod(0o644)
+            with mock.patch.dict(
+                os.environ,
+                {"OPENALEX_API_KEY": "", bootstrap.ALLOW_INSECURE_ENV: "1"},
+                clear=False,
+            ):
+                status = bootstrap.load(path)
+                self.assertTrue(status["insecure"])
+                self.assertEqual(os.environ["OPENALEX_API_KEY"], "leaky")
+
     def test_candidate_paths_prefers_explicit_file(self) -> None:
         from sciencedirect_meta import bootstrap
 
         with tempfile.TemporaryDirectory() as tmp:
             explicit = Path(tmp) / "custom.txt"
-            explicit.write_text("email=a@example.org\n", encoding="utf-8")
+            _write_setup(explicit, "email=a@example.org\n")
             with mock.patch.dict(
                 os.environ, {"LIT_SETUP_FILE": str(explicit)}, clear=False
             ):
@@ -772,6 +807,84 @@ class BootstrapTests(unittest.TestCase):
         self.assertGreaterEqual(elapsed, sources._S2_MIN_INTERVAL * 2)
 
 
+class PipelineTests(unittest.TestCase):
+    """search_all and search_literature must stay behaviourally identical."""
+
+    def _paper(self, source: str, doi: str | None, title: str, year: int = 2024) -> dict:
+        from sciencedirect_meta import server
+
+        return server._paper(
+            title=title,
+            authors=["Ada Lovelace"],
+            year=year,
+            journal="J",
+            doi=doi,
+            abstract="randomized controlled trial",
+            cited_by=10,
+            source=source,
+            type="article",
+        )
+
+    def test_both_search_tools_query_the_same_sources(self) -> None:
+        from sciencedirect_meta import local_research, pipeline, server
+
+        async def fake(*args, **kwargs):
+            return [self._paper("openalex", "10.1/x", "Same title")]
+
+        async def main():
+            with mock.patch.object(pipeline, "search_openalex", fake), \
+                 mock.patch.object(pipeline, "search_pubmed", fake), \
+                 mock.patch.object(pipeline, "search_europepmc", fake), \
+                 mock.patch.object(pipeline.extra_sources, "search_semantic_scholar", fake), \
+                 mock.patch.object(pipeline.extra_sources, "search_arxiv", fake), \
+                 mock.patch.object(pipeline.extra_sources, "search_clinicaltrials", fake), \
+                 mock.patch.object(local_research, "search_crossref", fake), \
+                 mock.patch.object(pipeline, "enrich_sciencedirect_links", mock.AsyncMock()), \
+                 mock.patch.object(pipeline, "_attach_quartiles_best_effort", lambda items: None):
+                return (
+                    await server.search_all("q", limit=5),
+                    await local_research.search_literature("q", limit=5),
+                )
+
+        all_payload, lit_payload = asyncio.run(main())
+        self.assertEqual(all_payload["sources_requested"], lit_payload["sources_requested"])
+        self.assertEqual(all_payload["sources_status"], lit_payload["sources_status"])
+        self.assertEqual(all_payload["count"], lit_payload["count"])
+        self.assertEqual(
+            [(item["doi"], item["title"]) for item in all_payload["results"]],
+            [(item["doi"], item["title"]) for item in lit_payload["results"]],
+        )
+        self.assertEqual(set(all_payload["sources_status"]), set(pipeline.AVAILABLE_SOURCES))
+
+    def test_dedupe_key_separates_same_title_different_year(self) -> None:
+        from sciencedirect_meta import server
+
+        first = self._paper("openalex", None, "Editorial note", year=2019)
+        second = self._paper("pubmed", None, "Editorial note", year=2024)
+        self.assertNotEqual(server._dedupe_key(first), server._dedupe_key(second))
+
+    def test_dedupe_key_skips_untitled_records(self) -> None:
+        from sciencedirect_meta import server
+
+        self.assertEqual(server._dedupe_key(server._paper(title=None)), "")
+
+    def test_first_author_token_handles_both_name_orders(self) -> None:
+        from sciencedirect_meta import server
+
+        comma = server._paper(title="T", authors=["Lovelace, Ada"])
+        plain = server._paper(title="T", authors=["Ada Lovelace"])
+        self.assertEqual(server._first_author_token(comma), "lovelace")
+        self.assertEqual(server._first_author_token(plain), "lovelace")
+
+    def test_merge_keeps_richer_year_and_journal(self) -> None:
+        from sciencedirect_meta import server
+
+        target = server._paper(title="T", doi="10.1/a", year=None, journal=None)
+        server._merge(target, server._paper(title="T", doi="10.1/a", year=2021, journal="J2"))
+        self.assertEqual(target["year"], 2021)
+        self.assertEqual(target["journal"], "J2")
+
+
 class RateLimitTests(unittest.TestCase):
     def tearDown(self) -> None:
         from sciencedirect_meta import server
@@ -784,7 +897,9 @@ class RateLimitTests(unittest.TestCase):
 
         response = mock.Mock(status_code=429, headers={"Retry-After": "0"})
         fake_get = mock.AsyncMock(return_value=response)
-        with mock.patch.object(server._client, "get", fake_get):
+        fake_client = mock.Mock()
+        fake_client.get = fake_get
+        with mock.patch.object(server, "client_for_loop", lambda: fake_client):
             with self.assertRaises(server.RateLimitedError):
                 asyncio.run(
                     server.polite_get("https://api.openalex.org/works", attempts=2)
@@ -796,9 +911,11 @@ class RateLimitTests(unittest.TestCase):
 
         response = mock.Mock(status_code=200, headers={})
         fake_get = mock.AsyncMock(return_value=response)
+        fake_client = mock.Mock()
+        fake_client.get = fake_get
         with mock.patch.dict(
             server._RATE_INTERVALS, {"api.crossref.org": (0.2, 0.2)}, clear=False
-        ), mock.patch.object(server._client, "get", fake_get):
+        ), mock.patch.object(server, "client_for_loop", lambda: fake_client):
             server._HOST_LAST_CALL.pop("api.crossref.org", None)
 
             async def main() -> float:

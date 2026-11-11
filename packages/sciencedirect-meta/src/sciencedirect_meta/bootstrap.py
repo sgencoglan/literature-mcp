@@ -69,7 +69,16 @@ EMAIL_KEYS = {
 }
 
 # Filled by load(); tests and callers can inspect what happened.
-STATUS: Dict[str, object] = {"path": None, "loaded": [], "skipped": []}
+STATUS: Dict[str, object] = {
+    "path": None,
+    "loaded": [],
+    "skipped": [],
+    "insecure": False,
+}
+
+# A setup.txt readable by other local users is a credential leak. Refuse to
+# load its secrets unless the operator explicitly accepts the risk.
+ALLOW_INSECURE_ENV = "LIT_ALLOW_INSECURE_SETUP"
 
 # Environment variables that this module wrote itself. A later load() may
 # replace them (for example when a different project's setup.txt is used),
@@ -247,36 +256,62 @@ def _apply(values: Dict[str, str], setup_path: Path, override_loaded: bool) -> D
     return status
 
 
+def is_insecure(path: Path) -> bool:
+    """True when the file is readable or writable by group/other."""
+    try:
+        return bool(path.stat().st_mode & 0o077)
+    except OSError:
+        return False
+
+
 def load(path: Optional[Path] = None, *, override_loaded: bool = False) -> Dict[str, object]:
     """Populate ``os.environ`` from setup.txt; existing values win.
 
     ``override_loaded=True`` lets a project-specific file replace values that
     an earlier ``setup.txt`` load wrote; explicit process environment values
     are still never overwritten.
+
+    A file that other local users can read is treated as compromised: its
+    secrets are not loaded and ``STATUS["insecure"]`` is set so the
+    diagnostics tool can explain why no key is active. Set
+    ``LIT_ALLOW_INSECURE_SETUP=1`` to override.
     """
     setup_path = path or find_setup_file()
     if setup_path is None:
         STATUS["path"] = None
         STATUS["loaded"] = []
         STATUS["skipped"] = []
+        STATUS["insecure"] = False
         logger.info("setup.txt bulunamadı; yalnızca ortam değişkenleri kullanılacak")
         return STATUS
 
+    STATUS["path"] = str(setup_path)
+    STATUS["loaded"] = []
+    STATUS["skipped"] = []
+    insecure = is_insecure(setup_path)
+    STATUS["insecure"] = insecure
+
+    if insecure and os.environ.get(ALLOW_INSECURE_ENV, "").strip() != "1":
+        logger.error(
+            "%s grup/diğer kullanıcılar tarafından okunabilir; anahtarlar "
+            "yüklenmedi. `chmod 600 %s` uygulayın veya bilinçli olarak "
+            "%s=1 verin.",
+            setup_path,
+            setup_path,
+            ALLOW_INSECURE_ENV,
+        )
+        return STATUS
+    if insecure:
+        logger.warning(
+            "%s güvenli olmayan izinlerle yüklendi (%s=1)",
+            setup_path,
+            ALLOW_INSECURE_ENV,
+        )
+
     values = parse_setup_file(setup_path)
     applied = _apply(values, setup_path, override_loaded)
-    STATUS["path"] = applied["path"]
     STATUS["loaded"] = applied["loaded"]
     STATUS["skipped"] = applied["skipped"]
-
-    try:
-        mode = setup_path.stat().st_mode
-        if mode & 0o077:
-            logger.warning(
-                "%s diğer kullanıcılar tarafından okunabilir; `chmod 600` önerilir",
-                setup_path,
-            )
-    except OSError:
-        pass
 
     logger.info(
         "setup.txt: %s (%d değişken yüklendi, %d zaten tanımlıydı)",
@@ -294,12 +329,16 @@ def load_for_project(project_root: Optional[str | Path]) -> Dict[str, object]:
     is returned, so tools keep working with process-environment credentials.
     """
     if not project_root:
-        return {"path": None, "loaded": [], "skipped": []}
+        return {"path": None, "loaded": [], "skipped": [], "insecure": False}
     setup_path = find_project_setup_file(project_root)
     if setup_path is None:
-        return {"path": None, "loaded": [], "skipped": []}
+        return {"path": None, "loaded": [], "skipped": [], "insecure": False}
     # Re-reading the same file for every facet is pointless; its values are
-    # already in os.environ.
-    if str(setup_path) == str(STATUS.get("path") or ""):
+    # already in os.environ. An insecure file is re-read so that a `chmod 600`
+    # applied while the server is running starts working without a restart.
+    if (
+        str(setup_path) == str(STATUS.get("path") or "")
+        and not STATUS.get("insecure")
+    ):
         return STATUS
     return load(setup_path, override_loaded=True)

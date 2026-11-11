@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Fulltext PDF'lerini sonraki iş akışına taşır ve DOI adına göre yeniden adlandırır.
 
 İş akışı 3'te ``03_kaynak_kesfi/fulltext/`` altına indirilen açık erişimli

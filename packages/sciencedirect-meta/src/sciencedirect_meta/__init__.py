@@ -1,3 +1,5 @@
 """API-key-free ScienceDirect/Elsevier metadata search MCP."""
 
-__version__ = "0.1.0"
+from sciencedirect_meta._version import resolve as _resolve_version
+
+__version__ = _resolve_version("sciencedirect-meta-mcp", "2.8.0")

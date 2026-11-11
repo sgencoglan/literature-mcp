@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Ortak çıktı adlandırma yardımcıları.
 
 Üretilen raporların üzerine yazılmasını önlemek için dosya adına

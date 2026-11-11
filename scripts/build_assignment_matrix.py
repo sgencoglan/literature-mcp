@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Yazım planı ↔ kaynak atama matrisi üreticisi — akış 3.
 
 Her alt başlığa, havuzdaki adaylardan en uygun kaynakları atar ve
