@@ -34,6 +34,17 @@ from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
 from sciencedirect_meta import __version__, bootstrap
+from sciencedirect_meta.rate_limit import (
+    COOLDOWN_SECONDS,
+    MAX_RETRY_AFTER_BY_HOST,
+    RATE_INTERVALS,
+    cooldown_for,
+    interval_for,
+    retry_after_seconds,
+)
+from sciencedirect_meta.rate_limit import (
+    MAX_RETRY_AFTER as MAX_RETRY_AFTER_SECONDS,
+)
 
 # Proje setup.txt dosyasını süreç başında oku; var olan ortam değişkenleri
 # her zaman önceliklidir.
@@ -226,20 +237,9 @@ class RateLimitedError(RuntimeError):
         self.retry_after = retry_after
 
 
-# Requests per second per service, kept deliberately below the published
-# limits so a multi-facet search never trips a 429. Keys raise the quota, so
-# the interval shrinks when one is configured.
-_RATE_INTERVALS: Dict[str, Tuple[float, float]] = {
-    # host: (interval without a key, interval with a key)
-    "api.openalex.org": (0.5, 0.1),
-    "eutils.ncbi.nlm.nih.gov": (0.35, 0.11),
-    "www.ebi.ac.uk": (0.2, 0.2),
-    "api.crossref.org": (0.2, 0.12),
-    "export.arxiv.org": (5.0, 5.0),
-    "clinicaltrials.gov": (0.5, 0.5),
-    "api.unpaywall.org": (0.2, 0.2),
-    "doi.org": (0.5, 0.5),
-}
+# The interval table lives in ``rate_limit`` so the MCP and
+# scripts/download_open_access.py cannot drift apart.
+_RATE_INTERVALS = RATE_INTERVALS
 _HOST_LOCKS: Dict[str, asyncio.Lock] = {}
 _HOST_LAST_CALL: Dict[str, float] = {}
 _HOST_COOLDOWN_UNTIL: Dict[str, float] = {}
@@ -247,11 +247,9 @@ _HOST_LOCKS_LOOP: Optional[asyncio.AbstractEventLoop] = None
 
 # How long a source stays disabled after a 429, so the remaining facets in the
 # same run do not hammer it again.
-RATE_LIMIT_COOLDOWN_SECONDS = 20.0
-MAX_RETRY_AFTER = 20.0
-# Per-host ceilings for Retry-After; arXiv answers 429 aggressively and a long
-# wait would stall the whole combined search.
-_MAX_RETRY_AFTER_BY_HOST = {"export.arxiv.org": 5.0}
+RATE_LIMIT_COOLDOWN_SECONDS = COOLDOWN_SECONDS
+MAX_RETRY_AFTER = MAX_RETRY_AFTER_SECONDS
+_MAX_RETRY_AFTER_BY_HOST = MAX_RETRY_AFTER_BY_HOST
 
 
 def _host(url: str) -> str:
@@ -270,8 +268,7 @@ def _has_key_for(host: str) -> bool:
 
 
 def _rate_interval(host: str) -> float:
-    anonymous, keyed = _RATE_INTERVALS.get(host, (0.0, 0.0))
-    return keyed if _has_key_for(host) else anonymous
+    return interval_for(host, _has_key_for(host))
 
 
 def host_in_cooldown(url: str) -> bool:
@@ -279,11 +276,7 @@ def host_in_cooldown(url: str) -> bool:
 
 
 def _retry_after_seconds(response: httpx.Response, attempt: int, host: str) -> float:
-    ceiling = min(MAX_RETRY_AFTER, _MAX_RETRY_AFTER_BY_HOST.get(host, MAX_RETRY_AFTER))
-    raw = (response.headers.get("Retry-After") or "").strip()
-    if raw.isdigit():
-        return min(float(raw), ceiling)
-    return min(2.0 * (attempt + 1), ceiling)
+    return retry_after_seconds(response.headers.get("Retry-After"), attempt, host)
 
 
 def _host_lock(host: str) -> asyncio.Lock:
@@ -354,12 +347,13 @@ async def polite_get(
             if attempt < attempts - 1:
                 await asyncio.sleep(_retry_after_seconds(response, attempt, host))
                 continue
-            _HOST_COOLDOWN_UNTIL[host] = time.monotonic() + RATE_LIMIT_COOLDOWN_SECONDS
+            _HOST_COOLDOWN_UNTIL[host] = time.monotonic() + cooldown_for(host)
+            cooldown = cooldown_for(host)
             raise RateLimitedError(
                 f"{host}: HTTP 429 (deneme {attempts}); kaynak "
-                f"{int(RATE_LIMIT_COOLDOWN_SECONDS)} sn devre dışı",
+                f"{int(cooldown)} sn devre dışı",
                 source=host,
-                retry_after=RATE_LIMIT_COOLDOWN_SECONDS,
+                retry_after=cooldown,
             )
         if response.status_code >= 500 and attempt < attempts - 1:
             await asyncio.sleep(_retry_after_seconds(response, attempt, host))

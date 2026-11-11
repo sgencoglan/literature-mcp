@@ -885,6 +885,48 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(target["journal"], "J2")
 
 
+class RatePolicyTests(unittest.TestCase):
+    def test_interval_for_prefers_the_keyed_quota(self) -> None:
+        from sciencedirect_meta import rate_limit
+
+        self.assertGreater(
+            rate_limit.interval_for("api.openalex.org"),
+            rate_limit.interval_for("api.openalex.org", has_key=True),
+        )
+        self.assertEqual(
+            rate_limit.interval_for("export.arxiv.org"),
+            rate_limit.interval_for("export.arxiv.org", has_key=True),
+        )
+
+    def test_unknown_host_falls_back_to_default(self) -> None:
+        from sciencedirect_meta import rate_limit
+
+        self.assertEqual(rate_limit.interval_for("example.org"), rate_limit.DEFAULT_INTERVAL)
+
+    def test_retry_after_header_is_honoured_but_capped(self) -> None:
+        from sciencedirect_meta import rate_limit
+
+        self.assertEqual(rate_limit.retry_after_seconds("3", 0), 3.0)
+        self.assertEqual(rate_limit.retry_after_seconds("999", 0), rate_limit.MAX_RETRY_AFTER)
+        self.assertLessEqual(
+            rate_limit.retry_after_seconds("999", 0, "export.arxiv.org"), 5.0
+        )
+
+    def test_backoff_grows_and_stays_capped(self) -> None:
+        from sciencedirect_meta import rate_limit
+
+        first = rate_limit.retry_after_seconds(None, 0)
+        second = rate_limit.retry_after_seconds(None, 1)
+        self.assertLess(first, second)
+        self.assertLessEqual(rate_limit.retry_after_seconds(None, 99), rate_limit.MAX_RETRY_AFTER)
+
+    def test_server_uses_the_shared_table(self) -> None:
+        from sciencedirect_meta import rate_limit, server
+
+        self.assertIs(server._RATE_INTERVALS, rate_limit.RATE_INTERVALS)
+        self.assertEqual(server.RATE_LIMIT_COOLDOWN_SECONDS, rate_limit.COOLDOWN_SECONDS)
+
+
 class RateLimitTests(unittest.TestCase):
     def tearDown(self) -> None:
         from sciencedirect_meta import server

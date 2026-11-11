@@ -1,5 +1,35 @@
 # Değişiklik Günlüğü
 
+## v2.10.0 — 2026-11-11
+
+### Değişti
+
+- **`local_research.py` bölündü.** 3.100 satırlık tek dosya sorumluluk bazlı
+  modüllere ayrıldı: `_common` (ayarlar/yardımcılar), `_projects` (kayıt ve
+  izolasyon), `_crossref`, `_journals`, `_library` (PDF), `_search`,
+  `_evidence`, `_mcp_tools`. En büyük modül 788 satır. `local_research.py`
+  artık yalnızca **cephe**: 28 genel ve 59 özel adı yeniden dışa aktarıyor,
+  bu yüzden `local_research.read_paper` gibi mevcut çağrılar değişmedi.
+- **Ayar adları tek kaynakta.** `PAPER_LIBRARY_DIR`, `JOURNAL_RANK_PATH`,
+  `LIT_PROJECTS_REGISTRY` ve benzeri ayarlar `_common` içinde tutuluyor; cephe
+  üzerinden okuma/yazma oraya yönlendiriliyor. Önceden `local_research` bir
+  kopyayı tutardı; testlerin veya kullanıcıların atadığı yol araçlara
+  ulaşmazdı. `mock.patch.object` ile geri alma da güvenli (silme işlemi
+  varsayılana döner).
+- **Tek hız-limit tablosu.** Yeni `rate_limit` modülü host başına aralıkları,
+  `Retry-After` tavanını ve cooldown süresini tanımlıyor. `server.py` ve
+  `scripts/download_open_access.py` aynı tabloyu kullanıyor; betiğin
+  `--sleep` varsayılanı artık Unpaywall/OpenAlex aralığından (0,5 sn) geliyor.
+  Betik 429/5xx yeniden denemelerinde `Retry-After` başlığını onurlandırıyor.
+- **SCImago önbelleği yol bazlı.** `JOURNAL_RANK_PATH` başka bir dosyaya
+  çevrildiğinde eski veri kümesi dönmüyor.
+- **Betik sürümü tek kaynaktan.** `download_open_access.py` User-Agent'ı
+  paket sürümünü kullanıyor (`literature-mcp/2.10.0 (open-access downloader)`);
+  paket kurulu değilse `dev` yazıyor.
+- 10 yeni test: modül düzeni/cephe uyumu, ayar yönlendirmesi, önbellek
+  anahtarı ve paylaşılan hız politikası. Test süresi 38 sn → 4,7 sn
+  (ağa çıkan `read_paper` çağrısı artık mock'lanıyor).
+
 ## v2.9.0 — 2026-11-11
 
 ### Değişti

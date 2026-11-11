@@ -92,8 +92,10 @@ class LocalResearchTests(unittest.TestCase):
         self.assertEqual(status["files"][0]["detected_doi"], self.doi)
 
         # DOI-in-filename matching must not depend on a network metadata lookup.
+        from sciencedirect_meta import _library
+
         with mock.patch.object(
-            local_research, "_metadata_for", mock.AsyncMock(return_value={})
+            _library, "_metadata_for", mock.AsyncMock(return_value={})
         ):
             result = asyncio.run(local_research.read_paper(identifier=self.doi))
         self.assertEqual(result["match"], "doi_in_filename")
@@ -614,6 +616,78 @@ class ToolCatalogTests(unittest.TestCase):
         self.assertEqual(catalog["total_tools"],
                          len(catalog["servers"]["sciencedirect-meta"]["tools"])
                          + len(catalog["servers"]["paperqa-local"]["tools"]))
+
+
+class ModuleLayoutTests(unittest.TestCase):
+    """The split into focused modules must not break the public facade."""
+
+    PUBLIC_NAMES = {
+        "search_literature", "deep_research", "verify_doi_and_publisher",
+        "doi_provenance", "journal_rank", "read_paper", "compare_studies",
+        "evidence_check", "export_review", "list_projects", "project_audit",
+        "analysis_updates", "library_status", "handle_list_tools",
+        "handle_call_tool", "search_crossref", "crossref_work",
+    }
+
+    def test_facade_exposes_every_public_name(self) -> None:
+        missing = {name for name in self.PUBLIC_NAMES if not hasattr(local_research, name)}
+        self.assertEqual(missing, set())
+        self.assertTrue(self.PUBLIC_NAMES.issubset(set(local_research.__all__)))
+
+    def test_tuning_attributes_read_and_write_through(self) -> None:
+        from sciencedirect_meta import _common
+
+        original = local_research.PAPER_LIBRARY_DIR
+        try:
+            local_research.PAPER_LIBRARY_DIR = Path("/tmp/facade-check")
+            self.assertEqual(_common.PAPER_LIBRARY_DIR, Path("/tmp/facade-check"))
+            self.assertEqual(local_research.PAPER_LIBRARY_DIR, Path("/tmp/facade-check"))
+        finally:
+            local_research.PAPER_LIBRARY_DIR = original
+        self.assertEqual(_common.PAPER_LIBRARY_DIR, original)
+
+    def test_deleting_a_patched_setting_restores_the_default(self) -> None:
+        original = local_research.JOURNAL_RANK_PATH
+        try:
+            local_research.JOURNAL_RANK_PATH = Path("/tmp/nope.csv")
+            del local_research.JOURNAL_RANK_PATH
+            self.assertNotEqual(local_research.JOURNAL_RANK_PATH, Path("/tmp/nope.csv"))
+        finally:
+            local_research.JOURNAL_RANK_PATH = original
+
+    def test_modules_are_individually_importable(self) -> None:
+        import importlib
+
+        for name in (
+            "_common", "_crossref", "_evidence", "_journals", "_library",
+            "_mcp_tools", "_projects", "_search",
+        ):
+            module = importlib.import_module(f"sciencedirect_meta.{name}")
+            self.assertIsNotNone(module)
+
+    def test_journal_cache_is_keyed_by_path(self) -> None:
+        from sciencedirect_meta import _journals
+
+        original_path = local_research.JOURNAL_RANK_PATH
+        original_cache = _journals._JOURNAL_RANK_CACHE
+        root = Path(tempfile.mkdtemp())
+        first = root / "first.csv"
+        first.write_text(
+            "Title;SJR Best Quartile\nAlpha Journal;Q1\n", encoding="utf-8"
+        )
+        second = root / "second.csv"
+        second.write_text(
+            "Title;SJR Best Quartile\nBeta Journal;Q3\n", encoding="utf-8"
+        )
+        try:
+            local_research.JOURNAL_RANK_PATH = first
+            self.assertIn("alpha journal", _journals._load_journal_rank_data()["index"])
+            # A different path must not reuse the previous dataset.
+            local_research.JOURNAL_RANK_PATH = second
+            self.assertIn("beta journal", _journals._load_journal_rank_data()["index"])
+        finally:
+            local_research.JOURNAL_RANK_PATH = original_path
+            _journals._JOURNAL_RANK_CACHE = original_cache
 
 
 class ProjectSetupTests(unittest.TestCase):

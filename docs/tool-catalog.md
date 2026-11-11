@@ -9,7 +9,7 @@ cd <repo>
 bash scripts/dump_tool_catalog.sh
 ```
 
-## sciencedirect-meta (22 araç)
+## sciencedirect-meta (23 araç)
 
 Açık metadata kaynaklarını kullanır; LLM çağırmaz. `project` parametresi verilen araçlar yalnızca o projenin klasöründe çalışır.
 

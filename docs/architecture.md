@@ -2,6 +2,37 @@
 
 Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırlarını tanımlar. İnsanlar için özet: dört iş akışı iki MCP sunucusunu, ortak proje kaydını, rapor üreteçlerini ve dosya tabanlı çıktıları kullanır.
 
+## Python modülleri
+
+`sciencedirect-meta` paketi tek dosyalık bir yığın değil, sorumluluk bazlı
+modüllerden oluşur. `local_research.py` yalnızca **cephe (facade)**tir: her
+eski adı yeniden dışa aktarır, böylece `local_research.read_paper` gibi
+çağrılar değişmez.
+
+```text
+packages/sciencedirect-meta/src/sciencedirect_meta/
+├── server.py          # HTTP katmanı: polite_get, kimlik, DOI/PII, tek kaynak aramaları
+├── pipeline.py        # tüm kaynakları birleştiren tek arama motoru
+├── rate_limit.py      # host başına hız limiti tablosu (MCP + betikler ortak)
+├── sources.py         # Semantic Scholar, arXiv, ClinicalTrials + kapsam/skor
+├── bootstrap.py       # setup.txt keşfi, öncelik ve güvenlik kontrolü
+├── unified.py         # iki modülü tek MCP sunucusunda birleştirir
+├── local_research.py  # cephe: geriye dönük uyumlu yeniden dışa aktarım
+├── _common.py         # ayarlar, sabitler, küçük metin yardımcıları
+├── _projects.py       # proje kaydı + kapsam (izolasyon)
+├── _crossref.py       # Crossref arama + DOI provenance
+├── _journals.py       # SCImago quartile (yerel CSV)
+├── _library.py        # PDF tarama/eşleştirme, okuma, denetim
+├── _search.py         # search_literature, DOI doğrulama, deep_research
+├── _evidence.py       # çalışma karşılaştırma, lexical kanıt, rapor dışa aktarma
+└── _mcp_tools.py      # MCP araç şemaları ve yönlendirme
+```
+
+Ayarlar (`PAPER_LIBRARY_DIR`, `JOURNAL_RANK_PATH`, `LIT_PROJECTS_REGISTRY` …)
+tek yerde, `_common` içinde tutulur. Cephe üzerinden okuma/yazma doğrudan
+oraya yönlendirilir; böylece `local_research.PAPER_LIBRARY_DIR = ...` ataması
+araçların gerçekten kullandığı değeri değiştirir.
+
 ## Bileşenler
 
 ```text
@@ -11,7 +42,7 @@ Bu belge, literatür hattının bileşenlerini, veri akışını ve sınırları
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ MCP                           │ MCP
 ┌───────────────▼───────────────┐   ┌───────────▼─────────────────────┐
-│ sciencedirect-meta (22 araç)  │   │ paperqa-local (10 araç)         │
+│ sciencedirect-meta (23 araç)  │   │ paperqa-local (10 araç)         │
 │ • DOI/metadata arama          │   │ • proje kaydı + manifest        │
 │ • DOI doğrulama, provenance   │   │ • PaperQA2 indeksi              │
 │ • journal quartile (SCImago)  │   │ • semantik arama (LLM'siz)      │

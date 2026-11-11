@@ -39,6 +39,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin, urlparse
 from urllib.request import Request, urlopen
 
+try:  # paket sürümü varsa onu kullan
+    from sciencedirect_meta import __version__ as _version
+except ImportError:  # tek başına çalıştırma
+    _version = "dev"
+
 try:  # scripts/ içinden çalışırken
     from setup_credentials import _parse_setup_file, _resolve_setup_file
 except ImportError:  # python -m scripts.download_open_access
@@ -59,13 +64,41 @@ except ImportError:  # python -m scripts.download_open_access
         workflow_dir,
     )
 
-USER_AGENT = "literature-mcp/2.6 (open-access downloader)"
+try:  # paket kuruluysa tek hız-limit tablosunu kullan
+    from sciencedirect_meta.rate_limit import (
+        interval_for as _interval_for,
+    )
+    from sciencedirect_meta.rate_limit import (
+        retry_after_seconds as _retry_after_seconds,
+    )
+except ImportError:  # MCP paketi kurulu değil: aynı varsayılanlarla devam et
+    def _interval_for(host: str, has_key: bool = False) -> float:
+        return 0.2
+
+    def _retry_after_seconds(header, attempt: int, host: str = "") -> float:
+        value = (header or "").strip()
+        if value.isdigit():
+            return min(float(value), 20.0)
+        return min(2.0 * (attempt + 1), 20.0)
+
+
+def _host_of(url: str) -> str:
+    try:
+        return (urlparse(str(url)).hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+USER_AGENT = f"literature-mcp/{_version} (open-access downloader)"
 UNPAYWALL_API = "https://api.unpaywall.org/v2/{doi}"
 OPENALEX_API = "https://api.openalex.org/works/https://doi.org/{doi}"
 MAX_JSON_BYTES = 2 * 1024 * 1024
 DEFAULT_TIMEOUT = 30.0
 DEFAULT_MAX_MB = 80.0
-DEFAULT_SLEEP = 0.2
+# Unpaywall/OpenAlex paylaşılan tabloda ~5 istek/sn; varsayılan aralık oradan.
+DEFAULT_SLEEP = max(
+    _interval_for("api.unpaywall.org"), _interval_for("api.openalex.org")
+)
 
 
 class FetchError(Exception):
@@ -158,14 +191,17 @@ def _fetch_json(url: str, timeout: float, retries: int = 3) -> Optional[Dict[str
             if exc.code == 404:
                 return None
             if exc.code in {429, 500, 502, 503, 504} and attempt < retries - 1:
-                time.sleep(1.0 * (attempt + 1))
+                # 429 iste Retry-After'ı onurlandır; tabloda olmayan bir
+                # bekleme süresi uydurma.
+                header = exc.headers.get("Retry-After") if exc.headers else None
+                time.sleep(_retry_after_seconds(header, attempt, _host_of(url)))
                 last_error = exc
                 continue
             raise FetchError(f"HTTP {exc.code}") from exc
         except (URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
             last_error = exc
             if attempt < retries - 1:
-                time.sleep(1.0 * (attempt + 1))
+                time.sleep(_retry_after_seconds(None, attempt, _host_of(url)))
                 continue
     raise FetchError(str(last_error) if last_error else "bilinmeyen ağ hatası")
 

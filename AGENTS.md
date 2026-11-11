@@ -279,9 +279,9 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.9.0; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.10.0; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
-- Depodaki MCP: `sciencedirect-meta` 22 araç, `paperqa-local` 10 araç.
+- Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
   (varsayılan: `~/.literature-mcp/projects.json`). Depoda yalnızca
   `examples/projects.example.json` örneği bulunur.

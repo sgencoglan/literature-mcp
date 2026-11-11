@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-11T10:44:40+00:00",
+  "generated_at": "2026-11-11T13:36:03+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
