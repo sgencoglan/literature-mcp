@@ -1,6 +1,6 @@
 [project]
 name = "sciencedirect-meta-mcp"
-version = "2.12.0"
+version = "2.13.0"
 description = "API-key-free literature metadata and local full-text tools via OpenAlex, PubMed, Europe PMC and Crossref."
 readme = "README.md"
 license = {text = "MIT"}

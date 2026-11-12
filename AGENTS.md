@@ -41,7 +41,17 @@ python3 scripts/build_writing_plan.py <json> -o <proje-kökü>/02_yazim_plani/01
 
 6. **Kapı:** kullanıcı iskeleti onaylar (`plan_status: approved`). Onay yoksa akış 3 başlamaz.
 
-7. **Kavram kapsamı kapısı.** Plan onaylanmadan önce anchor terim zincirini
+7. **Kavram haritasını plana bağla.** Kavramları alt başlıklara bağla ve
+   anchor terimsiz bölümleri gör:
+
+```bash
+python3 scripts/build_concept_map.py <proje-kökü> --phase 2
+```
+
+   `section_coverage` çıktısında `anchor_missing` olan bölüm varsa iskelet
+   eksiktir: o bölüm kavramsal çekirdeğe bağlanmamış demektir.
+
+8. **Kavram kapsamı kapısı.** Plan onaylanmadan önce anchor terim zincirini
    doğrula:
 
 ```bash
@@ -79,7 +89,18 @@ içeren kayıt atandı mı veya gerekçesiyle reddedildi mi. Külliyat anchor te
 taşımıyorsa veya anchor terimli kayıt sessizce atlanmışsa **akış 4 başlamaz**;
 akış 3'e dönüp anchor terimle yeni arama yapılır.
 
-10. **Kapı:** her alt başlıkta `evidence_needs.min_count` karşılanmadan akış 4 başlamaz.
+10. **Kavram haritasını sorguya çevir ve kapsamı ölç.**
+
+```bash
+python3 scripts/build_concept_map.py <proje-kökü> --phase 3
+```
+
+    Her kavram için hedefli sorgu üretilir ve havuz/atama/PDF kapsamı ölçülür.
+    `missing` kavram hiçbir havuz kaydında geçmiyor demektir: kavram-önce arama
+    yapılmalı. `partial` kavram havuzda var ama atanmamış demektir: atama
+    matrisine alınmalı.
+
+11. **Kapı:** her alt başlıkta `evidence_needs.min_count` karşılanmadan akış 4 başlamaz.
 
 ### İş akışı 4 — Taslak yazma
 
@@ -96,7 +117,14 @@ kaynakla sınırlar ve "kanıt yetmiyor" yanılgısını üretir. Betikteki cüm
 **alıntı adayıdır**; taslağa giren her cümle `paperqa_read_pages` ile aynı
 sayfadan doğrulanır.
 
-1b. **Yazmadan önce kapasiteyi ölç:**
+1b. **Kavram haritasını fulltext ile güncelle.** Tam metin okuması yeni
+kavramlar ortaya çıkarır; bunlar haritaya `literature` kaynaklı olarak eklenir:
+
+```bash
+python3 scripts/build_concept_map.py <proje-kökü> --phase 4
+```
+
+1c. **Yazmadan önce kapasiteyi ölç:**
 
 ```bash
 python3 scripts/build_evidence_gap_request.py <plan.json> --preflight \
@@ -150,7 +178,7 @@ python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
 2. **Kanıt hiyerarşisi.** Tam metin cümlesi > abstract. `paperqa_ask` çıktısı taslaktır; kanıt olarak kullanılamaz. `evidence_check` lexical benzerliktir; entailment kanıtı değildir.
 3. **Sayfa numarası.** Her alıntı için 1 tabanlı PDF sayfası ver. Sayfa yoksa iddia `not_found` sayılır.
 4. **DOI biçimi.** Teslimlerde yalnızca `https://doi.org/<doi>` kullan. Yerel PDF yolu, `file://` linki veya kullanıcı klasör yolu teslim dosyasına yazılmaz.
-5. **Anchor terim.** Bölümün kavramsal çekirdeğinin alanyazındaki adı `anchor_terms` alanında yazılı olmalı ve `search_terms` içinde geçmelidir. Kullanıcının Türkçe ifadesini genel eğitim terimlerine çevirmek yeterli değildir; çeviri, alan terimini kaybettirir. Anchor terim doğrulanmadan (`check_concept_coverage.py`) konu keşfi veya kaynak ataması tamamlanmış sayılmaz.
+5. **Kavram haritası ve anchor terim.** Akış 1'de `02_kavram_haritasi` üretilmeden arama yapılmaz. Bölümün kavramsal çekirdeğinin alanyazındaki adı `anchor_terms` alanında yazılı olmalı ve `search_terms` içinde geçmelidir. MeSH terimleri yalnızca tıp/psikoloji alanındaki kavramlara uygulanır; eğitim alanyazını PubMed'de indekslenmediği için oradaki karşılıklar başka anlama gelir. Kullanıcının Türkçe ifadesini genel eğitim terimlerine çevirmek yeterli değildir; çeviri, alan terimini kaybettirir. Anchor terim doğrulanmadan (`check_concept_coverage.py`) konu keşfi veya kaynak ataması tamamlanmış sayılmaz.
 
 6. **Uydurma yasağı.** DOI, yazar, yıl, dergi, sayfa, alıntı veya sonuç uydurma. Emin değilsen `not_found`, kısmi kanıt varsa `partially_supported` yaz ve kullanıcıya bildir.
 6. **Dil.** Teslim Türkçedir. Kaynak cümlesi İngilizceyse özgün hâliyle ver; Türkçe çevirisini ayrı yaz. Çeviri, alıntının yerine geçmez.
@@ -340,7 +368,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.12.0; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.13.0; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
@@ -405,6 +433,12 @@ python3 scripts/download_open_access.py adaylar.json --dry-run
 
 # Akış 1 → 4 PDF aktarımı (DOI adına çevirir)
 python3 scripts/promote_fulltext.py <proje-kökü> --to 4 --dry-run
+
+# Kavram haritası (akış 1 -> 2 -> 3 -> 4)
+python3 scripts/build_concept_map.py <proje-kökü> --phase 1 --mesh
+python3 scripts/build_concept_map.py <proje-kökü> --phase 2
+python3 scripts/build_concept_map.py <proje-kökü> --phase 3
+python3 scripts/build_concept_map.py <proje-kökü> --phase 4
 
 # Kavram kapsamı (anchor terim zinciri)
 python3 scripts/check_concept_coverage.py <plan.json> --check

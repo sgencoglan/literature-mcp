@@ -1,5 +1,42 @@
 # Değişiklik Günlüğü
 
+## v2.13.0 — 2026-11-12
+
+### Eklendi
+
+- **Kavram haritası (akış 1–4).** `scripts/build_concept_map.py` başlığı arama
+  stratejisine çevirir. Tek bir sayfa değil, aşamalı bir yapı:
+  - **Aşama 1 (akış 1):** başlıktan ve kullanıcı çerçevesinden kavramları çıkarır;
+    her kavram için Türkçe etiket, İngilizce alanyazın karşılığı, yazım
+    varyantları, MeSH terimleri ve ilişkiler üretir.
+  - **Aşama 2 (akış 2):** kavramları alt başlıklara bağlar; `anchor_missing`
+    olan bölümü işaretler.
+  - **Aşama 3 (akış 3):** her kavram için hedefli sorgu üretir; havuz, atama ve
+    PDF kapsamını ölçer (`covered` / `partial` / `missing`).
+  - **Aşama 4 (akış 4):** tam metin okumasında beliren yeni kavramları haritaya
+    `literature` kaynaklı olarak ekler.
+- **`sciencedirect_meta.mesh` modülü.** PubMed MeSH projeksiyonu: serbest metin
+  terimini PubMed'de arar, dönen makalelerin MeSH başlıklarını toplar ve
+  kontrollü sözlüğe çevirir. MeSH'te "de-escalation" descriptor'ı yoktur; ama o
+  konudaki makalelerin MeSH başlıkları vardır (Aggression, Workplace Violence,
+  Restraint Physical ...). Demografik check-tag'ler ve `min_share` altındaki
+  gürültü elenir.
+- **Alan duyarlılığı.** Her kavram `domain` ve `authoritative_databases` alanı
+  taşır. MeSH yalnızca tıp/psikoloji kavramlarına uygulanır. Ölçülen tespit:
+  eğitim bağlamında "de-escalation" PubMed'de **onkoloji** demektir (kemoterapi
+  dozu azaltma); 20 makalenin yalnızca %20'sinde Aggression geçiyordu. Eğitim
+  kavramlarında MeSH terimleri reddedilir ve gerekçesi kaydedilir
+  (`mesh_rejected`). Yetkili veritabanları: eğitim → OpenAlex, Semantic Scholar,
+  Crossref; tıp → PubMed, Europe PMC.
+- 12 yeni test: kavram türetme, alan eşlemesi, MeSH kabul/ret, bölüm bağlama,
+  kapsam ölçümü, aşama 4 güncellemesi ve yazım varyantları.
+
+### Doğrulama
+
+`deneme7` üzerinde dört aşama da çalıştırıldı. Araç, bu turda elle bulduğumuz
+hatayı otomatik yakaladı: anchor kavram (`de-escalation`) havuzda 2 kayıtta
+vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
+
 ## v2.12.0 — 2026-11-12
 
 ### Düzeltildi

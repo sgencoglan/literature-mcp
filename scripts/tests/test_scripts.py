@@ -1706,5 +1706,127 @@ class ConceptCoverageTests(unittest.TestCase):
         self.assertIn("KALDI", proc.stdout)
 
 
+class ConceptMapTests(unittest.TestCase):
+    """Başlıktan kavram haritası: türetme, bağlama, alan, kapsam."""
+
+    def test_derive_marks_crisis_framing_as_anchor(self) -> None:
+        from build_concept_map import derive_concepts
+
+        concepts = derive_concepts("kriz öncesi, kriz anı, kriz sonrası", "Başlık")
+        roles = {c["role"] for c in concepts}
+        self.assertIn("anchor", roles)
+        anchor = next(c for c in concepts if c["role"] == "anchor")
+        self.assertEqual(anchor["english_terms"][0], "de-escalation")
+        self.assertTrue(anchor["variants"])
+
+    def test_derive_falls_back_to_title(self) -> None:
+        from build_concept_map import derive_concepts
+
+        concepts = derive_concepts("alakasız metin", "Sınıf yönetimi")
+        self.assertEqual(len(concepts), 1)
+        self.assertEqual(concepts[0]["role"], "anchor")
+
+    def test_concept_ids_are_sequential(self) -> None:
+        from build_concept_map import derive_concepts
+
+        concepts = derive_concepts(
+            "kriz öncesi riskli davranış tanıma tarama yönlendirme", "B"
+        )
+        self.assertEqual([c["id"] for c in concepts], [f"C{i}" for i in range(1, len(concepts) + 1)])
+
+    def test_education_domain_disables_mesh(self) -> None:
+        from build_concept_map import apply_domains, derive_concepts
+
+        concepts = derive_concepts("kriz öncesi", "B")
+        concepts[0]["mesh"] = ["Chemoradiotherapy"]
+        apply_domains(concepts)
+        self.assertEqual(concepts[0]["domain"], "education")
+        self.assertFalse(concepts[0]["mesh_applicable"])
+        self.assertEqual(concepts[0]["mesh"], [])
+        self.assertEqual(concepts[0]["mesh_rejected"], ["Chemoradiotherapy"])
+
+    def test_medical_domain_keeps_mesh(self) -> None:
+        from build_concept_map import apply_domains
+
+        concept = {
+            "id": "C1", "term": "Ajitasyon", "english_terms": ["aggression"],
+            "role": "anchor", "mesh": ["Aggression"],
+        }
+        apply_domains([concept])
+        self.assertEqual(concept["domain"], "psychology")
+        self.assertTrue(concept["mesh_applicable"])
+        self.assertEqual(concept["mesh"], ["Aggression"])
+
+    def test_link_sections_flags_missing_anchor(self) -> None:
+        from build_concept_map import derive_concepts, link_sections
+
+        concepts = derive_concepts("kriz öncesi riskli davranış", "B")
+        plan = {
+            "sections": [
+                {"id": "S1", "heading": "Kriz Öncesi", "search_terms": ["de-escalation", "disruptive behavior"]},
+                {"id": "S2", "heading": "Kriz Sonrası", "search_terms": ["reintegration"]},
+            ]
+        }
+        coverage = link_sections(concepts, plan)
+        by_id = {row["section_id"]: row for row in coverage}
+        self.assertEqual(by_id["S1"]["status"], "ok")
+        self.assertIn(by_id["S2"]["status"], {"concept_missing", "anchor_missing"})
+
+    def test_coverage_marks_missing_when_pool_empty(self) -> None:
+        from build_concept_map import derive_concepts, measure_coverage
+
+        concepts = derive_concepts("kriz öncesi", "B")
+        measure_coverage(concepts, {"records": []}, set(), None)
+        self.assertEqual(concepts[0]["coverage"]["status"], "missing")
+
+    def test_coverage_marks_partial_when_pool_hit_not_assigned(self) -> None:
+        from build_concept_map import derive_concepts, measure_coverage
+
+        concepts = derive_concepts("kriz öncesi", "B")
+        pool = {"records": [{"doi": "10.1/x", "title": "de-escalation in schools"}]}
+        measure_coverage(concepts, pool, set(), None)
+        cov = concepts[0]["coverage"]
+        self.assertEqual(cov["pool_records"], 1)
+        self.assertEqual(cov["assigned_records"], 0)
+        self.assertEqual(cov["status"], "partial")
+
+    def test_phase4_adds_concepts_found_in_fulltext(self) -> None:
+        from build_concept_map import derive_concepts, update_from_literature
+
+        concepts = derive_concepts("kriz öncesi", "B")
+        bank = {
+            "sources": [
+                {"quotes": [{"text": "restorative practice reduces exclusion"}]},
+                {"quotes": [{"text": "restorative practice in schools"}]},
+                {"quotes": [{"text": "restorative practice works"}]},
+            ]
+        }
+        added = update_from_literature(concepts, bank, min_count=3)
+        self.assertTrue(any("restorative" in item for item in added))
+        new = [c for c in concepts if c.get("source") == "literature"]
+        self.assertTrue(new)
+        self.assertEqual(new[0]["role"], "component")
+
+    def test_variant_pattern_matches_spelling(self) -> None:
+        from build_concept_map import _compile_variant
+
+        pattern = _compile_variant("de-escalation")
+        for text in ("de-escalation", "deescalation", "de escalation"):
+            self.assertTrue(pattern.search(text), text)
+
+
+class MeshTests(unittest.TestCase):
+    def test_fallback_terms_known(self) -> None:
+        from sciencedirect_meta import mesh
+
+        self.assertIn("Crisis Intervention", mesh.fallback_terms("de-escalation"))
+
+    def test_check_tags_are_excluded(self) -> None:
+        from sciencedirect_meta import mesh
+
+        self.assertIn("humans", mesh.CHECK_TAGS)
+        self.assertIn("middle aged", mesh.CHECK_TAGS)
+
+
 if __name__ == "__main__":
     unittest.main()
