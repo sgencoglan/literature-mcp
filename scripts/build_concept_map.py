@@ -1164,6 +1164,13 @@ def main(argv: Optional[List[str]] = None) -> int:
 
                 applicable = [c for c in concepts if c.get("mesh_applicable")]
                 skipped = [c for c in concepts if not c.get("mesh_applicable")]
+                # Alan bağlamı: bir terim tek başına başka alana kayabilir.
+                # Proje bağlamı verilmişse MeSH projeksiyonu ona daraltılır.
+                context_terms = [
+                    str(t).strip()
+                    for t in ((seed or {}).get("context_terms") or [])
+                    if str(t).strip()
+                ]
 
                 async def _run() -> Dict[str, Any]:
                     out = {}
@@ -1171,7 +1178,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                         primary = (concept.get("english_terms") or [""])[0]
                         if primary:
                             out[primary] = await mesh_mod.concepts_from_pubmed(
-                                primary, limit=20, min_share=0.25
+                                primary,
+                                limit=20,
+                                min_share=0.25,
+                                context_terms=context_terms or None,
                             )
                     return out
 

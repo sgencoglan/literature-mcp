@@ -1,5 +1,17 @@
 # Değişiklik Günlüğü
 
+## v2.13.2 — 2026-11-12
+
+### Eklendi
+
+- **MeSH projeksiyonuna alan bağlamı (`context_terms`).** Tek başına
+  "de-escalation" PubMed'de onkoloji literatürüne düşüyor; projeksiyon boş
+  dönüyordu. Tohum dosyasına `context_terms` (örn. `inpatient`, `psychiatric`,
+  `mental health`) yazılınca sorgu o bağlama daraltılıyor. Ölçüm: bağlamsız
+  projeksiyon 0 MeSH terimi; bağlamla `Aggression`, `Violence` (ve ajitasyon
+  için `Mental Disorders`). Terimler `english_terms` alanına eklenir ve diğer
+  motorlara sorgu olarak taşınır.
+
 ## v2.13.1 — 2026-11-12
 
 ### Düzeltildi

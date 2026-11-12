@@ -37,7 +37,9 @@ python3 scripts/build_concept_map.py <proje-kökü> --phase 1 \
 
    MeSH yalnızca `--domain medical` veya `psychology` projelerde `--mesh` ile
    uygulanır. Eğitim alanyazını PubMed'de indekslenmez; aynı terim orada başka
-   bir alanın terimi olabilir.
+   bir alanın terimi olabilir. Tıp/psikoloji projesinde tohum dosyasına
+   `context_terms` yaz (örn. `["inpatient", "psychiatric"]`); MeSH projeksiyonu
+   bu bağlama daraltılır. Bağlam verilmezse terim başka alanın MeSH'ini getirir.
 
 3. Varsayılan olarak **yedi kaynağın tümünde** tara: OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv ve ClinicalTrials.gov. `search_literature` / `search_all` / `deep_research` çağrılarında `sources` vermezsen hepsi sorgulanır; `priority_only=false` varsayılandır, böylece tüm yayıncılar döner. Yalnızca belirli bir alt küme gerekiyorsa `sources=[...]` ile daralt ve `coverage.per_source.status` alanında her kaynağın `ok`/`error`/`rate_limited` olduğunu kontrol et.
 4. Her sorgu ve her veritabanı için `sources_status`, `coverage`, kayıt sayısı ve hata/not bilgisini kaydet. Aranmayan veya başarısız kaynağı başarılı gibi işaretleme. `evidence_scarcity=true` ise kullanıcıya söyle.
@@ -387,7 +389,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.13.1; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.13.2; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
