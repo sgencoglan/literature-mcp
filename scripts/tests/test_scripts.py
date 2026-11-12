@@ -1709,37 +1709,46 @@ class ConceptCoverageTests(unittest.TestCase):
 class ConceptMapTests(unittest.TestCase):
     """Başlıktan kavram haritası: türetme, bağlama, alan, kapsam."""
 
-    def test_derive_marks_crisis_framing_as_anchor(self) -> None:
-        from build_concept_map import derive_concepts
+    def test_repo_has_no_baked_in_concept_dictionary(self) -> None:
+        """Kavramlar proje verisidir; kodda sabit sözlük olmamalı."""
+        from pathlib import Path
 
-        concepts = derive_concepts("kriz öncesi, kriz anı, kriz sonrası", "Başlık")
-        roles = {c["role"] for c in concepts}
-        self.assertIn("anchor", roles)
-        anchor = next(c for c in concepts if c["role"] == "anchor")
-        self.assertEqual(anchor["english_terms"][0], "de-escalation")
-        self.assertTrue(anchor["variants"])
+        source = Path("scripts/build_concept_map.py").read_text(encoding="utf-8")
+        self.assertNotIn("FRAMING_HINTS", source)
+        # Projeye özgü kavram adları kodda geçmemeli.
+        for forbidden in ("de-escalation", "riskli davranış", "escalation cycle"):
+            self.assertNotIn(forbidden, source, f"{forbidden!r} kodda sabitlenmiş")
 
-    def test_derive_falls_back_to_title(self) -> None:
-        from build_concept_map import derive_concepts
+    def test_seed_concepts_are_normalised(self) -> None:
+        from build_concept_map import concepts_from_seed
 
-        concepts = derive_concepts("alakasız metin", "Sınıf yönetimi")
-        self.assertEqual(len(concepts), 1)
-        self.assertEqual(concepts[0]["role"], "anchor")
-
-    def test_concept_ids_are_sequential(self) -> None:
-        from build_concept_map import derive_concepts
-
-        concepts = derive_concepts(
-            "kriz öncesi riskli davranış tanıma tarama yönlendirme", "B"
+        concepts = concepts_from_seed(
+            {
+                "concepts": [
+                    {"term": "Kriz", "english_terms": ["de-escalation"], "role": "anchor"},
+                    "Tek metin kavram",
+                ]
+            }
         )
-        self.assertEqual([c["id"] for c in concepts], [f"C{i}" for i in range(1, len(concepts) + 1)])
+        self.assertEqual(len(concepts), 2)
+        self.assertEqual(concepts[0]["english_terms"], ["de-escalation"])
+        self.assertEqual(concepts[0]["source"], "user_stated")
+        self.assertEqual(concepts[1]["english_terms"], ["Tek metin kavram"])
+
+    def test_seed_ids_are_sequential_when_missing(self) -> None:
+        from build_concept_map import concepts_from_seed
+
+        concepts = concepts_from_seed({"concepts": ["a", "b", "c"]})
+        self.assertEqual([c["id"] for c in concepts], ["C1", "C2", "C3"])
 
     def test_education_domain_disables_mesh(self) -> None:
-        from build_concept_map import apply_domains, derive_concepts
+        from build_concept_map import apply_domains, concepts_from_seed
 
-        concepts = derive_concepts("kriz öncesi", "B")
+        concepts = concepts_from_seed(
+            {"concepts": [{"term": "Okul", "english_terms": ["schools"]}]}
+        )
         concepts[0]["mesh"] = ["Chemoradiotherapy"]
-        apply_domains(concepts)
+        apply_domains(concepts, default="education")
         self.assertEqual(concepts[0]["domain"], "education")
         self.assertFalse(concepts[0]["mesh_applicable"])
         self.assertEqual(concepts[0]["mesh"], [])
@@ -1752,19 +1761,24 @@ class ConceptMapTests(unittest.TestCase):
             "id": "C1", "term": "Ajitasyon", "english_terms": ["aggression"],
             "role": "anchor", "mesh": ["Aggression"],
         }
-        apply_domains([concept])
+        apply_domains([concept], default="psychology")
         self.assertEqual(concept["domain"], "psychology")
         self.assertTrue(concept["mesh_applicable"])
         self.assertEqual(concept["mesh"], ["Aggression"])
 
     def test_link_sections_flags_missing_anchor(self) -> None:
-        from build_concept_map import derive_concepts, link_sections
+        from build_concept_map import concepts_from_seed, link_sections
 
-        concepts = derive_concepts("kriz öncesi riskli davranış", "B")
+        concepts = concepts_from_seed(
+            {"concepts": [
+                {"term": "Kriz", "english_terms": ["de-escalation"], "role": "anchor"},
+                {"term": "Riskli davranış", "english_terms": ["disruptive behavior"]},
+            ]}
+        )
         plan = {
             "sections": [
                 {"id": "S1", "heading": "Kriz Öncesi", "search_terms": ["de-escalation", "disruptive behavior"]},
-                {"id": "S2", "heading": "Kriz Sonrası", "search_terms": ["reintegration"]},
+                {"id": "S2", "heading": "Okula Dönüş", "search_terms": ["reintegration"]},
             ]
         }
         coverage = link_sections(concepts, plan)
@@ -1773,16 +1787,20 @@ class ConceptMapTests(unittest.TestCase):
         self.assertIn(by_id["S2"]["status"], {"concept_missing", "anchor_missing"})
 
     def test_coverage_marks_missing_when_pool_empty(self) -> None:
-        from build_concept_map import derive_concepts, measure_coverage
+        from build_concept_map import concepts_from_seed, measure_coverage
 
-        concepts = derive_concepts("kriz öncesi", "B")
+        concepts = concepts_from_seed(
+            {"concepts": [{"term": "Kriz", "english_terms": ["de-escalation"]}]}
+        )
         measure_coverage(concepts, {"records": []}, set(), None)
         self.assertEqual(concepts[0]["coverage"]["status"], "missing")
 
     def test_coverage_marks_partial_when_pool_hit_not_assigned(self) -> None:
-        from build_concept_map import derive_concepts, measure_coverage
+        from build_concept_map import concepts_from_seed, measure_coverage
 
-        concepts = derive_concepts("kriz öncesi", "B")
+        concepts = concepts_from_seed(
+            {"concepts": [{"term": "Kriz", "english_terms": ["de-escalation"]}]}
+        )
         pool = {"records": [{"doi": "10.1/x", "title": "de-escalation in schools"}]}
         measure_coverage(concepts, pool, set(), None)
         cov = concepts[0]["coverage"]
@@ -1791,9 +1809,11 @@ class ConceptMapTests(unittest.TestCase):
         self.assertEqual(cov["status"], "partial")
 
     def test_phase4_adds_concepts_found_in_fulltext(self) -> None:
-        from build_concept_map import derive_concepts, update_from_literature
+        from build_concept_map import concepts_from_seed, update_from_literature
 
-        concepts = derive_concepts("kriz öncesi", "B")
+        concepts = concepts_from_seed(
+            {"concepts": [{"term": "Kriz", "english_terms": ["de-escalation"]}]}
+        )
         bank = {
             "sources": [
                 {"quotes": [{"text": "restorative practice reduces exclusion"}]},
@@ -1806,6 +1826,18 @@ class ConceptMapTests(unittest.TestCase):
         new = [c for c in concepts if c.get("source") == "literature"]
         self.assertTrue(new)
         self.assertEqual(new[0]["role"], "component")
+
+    def test_literature_derivation_warns_on_tiny_sample(self) -> None:
+        from unittest import mock
+
+        import build_concept_map as cm
+
+        tiny = {"query": "x", "candidates": [], "sample_size": 1}
+        with mock.patch.object(cm, "mine_candidates", return_value=tiny):
+            concepts, note, mined = cm.derive_concepts_from_literature("türkçe", "türkçe başlık")
+        self.assertIn("UYARI", note)
+        self.assertEqual(concepts[0]["role"], "anchor")
+        self.assertEqual(mined["sample_size"], 1)
 
     def test_variant_pattern_matches_spelling(self) -> None:
         from build_concept_map import _compile_variant

@@ -4,14 +4,15 @@
 Neden var
 ---------
 Bir bölümün başlığı bir cümledir; arama motoruna verilebilecek bir yapı değildir.
-Kullanıcının Türkçe ifadesi alanyazındaki terimi kaybettirebilir: "kriz öncesi /
-kriz anı / kriz sonrası" çerçevesinin çekirdeği *de-escalation*'dır ve bu terim
-yazılmazsa arama kör kalır.
+Kullanıcının gündelik ifadesi alanyazındaki teknik terimi kaybettirebilir:
+çerçevenin çekirdeği, yazıldığından farklı bir adla indeksleniyor olabilir. Bu
+terim bulunmazsa arama kör kalır.
 
 Bu betik başlığı/çerçeveyi kavram haritasına çevirir ve dört aşamada olgunlaştırır:
 
-1. **Keşif** — kavramları çıkarır, PubMed MeSH projeksiyonuyla kontrollü
-   sözlüğe bağlar, İngilizce karşılık ve yazım varyantlarını üretir.
+1. **Keşif** — kavramları alanyazından (OpenAlex anahtar sözcükleri) veya
+   doğrulanmış tohum dosyasından alır; PubMed MeSH projeksiyonuyla kontrollü
+   sözlüğe bağlar.
 2. **Bağlama** — her kavramı plan alt başlıklarına bağlar; hangi bölümün anchor
    terimi eksik, hangi kavram hiçbir bölüme düşmemiş görünür.
 3. **Sorgu ve kapsam** — her kavram için hedefli sorgular üretir ve havuz/atama/
@@ -93,16 +94,16 @@ def _slug_terms(text: str) -> List[str]:
 # --------------------------------------------------------------------------- #
 
 # Hangi kavram hangi veritabanında gerçekten indekslenir. Bu bilgi olmadan
-# MeSH projeksiyonu yanlış alana kayar: "de-escalation" PubMed'de onkoloji
-# (kemoterapi dozu azaltma) demektir; eğitim bağlamındaki karşılığı orada yoktur.
+# MeSH projeksiyonu yanlış alana kayar: bir terim PubMed'de başka bir alanın
+# terimi olabilir; eğitim bağlamındaki karşılığı orada hiç indekslenmeyebilir.
 DOMAIN_DATABASES: Dict[str, Dict[str, Any]] = {
     "education": {
         "databases": ["openalex", "semantic_scholar", "crossref", "eric"],
         "mesh_applicable": False,
         "note": (
-            "Eğitim alanyazını PubMed'de indekslenmez; MeSH projeksiyonu bu "
-            "kavramlar için yanıltıcıdır (PubMed'de 'de-escalation' onkolojik "
-            "doz azaltma anlamına gelir)."
+            "Eğitim alanyazını PubMed'de indekslenmez; aynı terim orada başka "
+            "bir alanın terimi olabilir. MeSH projeksiyonu bu kavramlar için "
+            "yanıltıcıdır."
         ),
     },
     "medical": {
@@ -117,136 +118,337 @@ DOMAIN_DATABASES: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# Kavram -> alan eşlemesi.
-DOMAIN_BY_TERM: Dict[str, str] = {
-    "de-escalation": "education",
-    "escalation cycle": "education",
-    "crisis intervention": "psychology",
-    "disruptive behavior": "education",
-    "challenging behavior": "education",
-    "behavior problems": "education",
-    "identification": "education",
-    "teacher judgment": "education",
-    "recognition": "education",
-    "screening": "education",
-    "universal screening": "education",
-    "referral": "education",
-    "school teachers": "education",
-    "schools": "education",
-    "reintegration": "psychology",
-    "school reentry": "psychology",
-    "aggression": "psychology",
-    "restraint, physical": "medical",
-}
+def domain_for(concept: Dict[str, Any], default: str = "education") -> str:
+    """Alanı kavramın **alanyazın kanıtından** çıkar; sabit terim tablosu yok.
+
+    * Kavram kaydında açık ``domain`` varsa o kullanılır (proje verisi).
+    * OpenAlex ``primary_topic.subfield`` alanı varsa oradan eşlenir.
+    * Hiçbiri yoksa proje varsayılanı (``default``) kullanılır.
+
+    MeSH varlığı **kanıt olarak kullanılmaz**: MeSH uygulanıp uygulanmayacağına
+    karar veren alan bilgisi MeSH'ten önce gelmelidir, yoksa döngüsel olur.
+    """
+    explicit = str(concept.get("domain") or "").strip()
+    if explicit in DOMAIN_DATABASES:
+        return explicit
+    subfield = str(concept.get("openalex_subfield") or "").lower()
+    if subfield:
+        if any(word in subfield for word in ("medic", "nurs", "psychiatr", "health")):
+            return "medical"
+        if "psycholog" in subfield:
+            return "psychology"
+        if any(word in subfield for word in ("educat", "teach")):
+            return "education"
+    return default
 
 
-def domain_for(concept: Dict[str, Any]) -> str:
-    for term in [concept.get("term") or "", *(concept.get("english_terms") or [])]:
-        found = DOMAIN_BY_TERM.get(str(term).strip().lower())
-        if found:
-            return found
-    return "education"
+def apply_domains(concepts: List[Dict[str, Any]], default: str = "education") -> None:
+    """Her kavrama alan ve yetkili veritabanlarını ata.
 
-
-def apply_domains(concepts: List[Dict[str, Any]]) -> None:
+    ``default`` proje düzeyindedir (tıp projesi ``medical`` verir); kavram
+    düzeyinde kanıt varsa o önceliklidir.
+    """
     for concept in concepts:
-        domain = domain_for(concept)
+        domain = domain_for(concept, default=default)
         spec = DOMAIN_DATABASES[domain]
         concept["domain"] = domain
         concept["authoritative_databases"] = list(spec["databases"])
         concept["mesh_applicable"] = bool(spec["mesh_applicable"])
         concept["domain_note"] = spec["note"]
         if not spec["mesh_applicable"] and concept.get("mesh"):
-            # Bu alan PubMed'de başka anlama geliyor; yanlış terimi taşıma.
             concept["mesh_rejected"] = list(concept["mesh"])
             concept["mesh"] = []
 
 
-# Türkçe ifade -> alanyazın çekirdeği. Kavram haritasının ilk taslağını kurar;
-# ajan bunu genişletir, MeSH projeksiyonu doğrular.
-FRAMING_HINTS: Dict[str, Dict[str, Any]] = {
-    "kriz": {
-        "term": "Kriz süreçleri",
-        "english_terms": ["de-escalation", "escalation cycle", "crisis intervention"],
-        "variants": ["de-escalation", "deescalation", "de escalation", "de-escalating"],
-        "role": "anchor",
-    },
-    "riskli davranış": {
-        "term": "Riskli davranış",
-        "english_terms": [
-            "disruptive behavior",
-            "challenging behavior",
-            "behavior problems",
-        ],
-        "variants": ["disruptive behaviour", "challenging behaviour"],
-        "role": "component",
-    },
-    "tanıma": {
-        "term": "Tanıma",
-        "english_terms": ["identification", "teacher judgment", "recognition"],
-        "role": "component",
-    },
-    "tarama": {
-        "term": "Tarama",
-        "english_terms": ["screening", "universal screening", "early identification"],
-        "role": "component",
-    },
-    "yönlendirme": {
-        "term": "Yönlendirme",
-        "english_terms": ["referral", "school counselor referral", "signposting"],
-        "role": "component",
-    },
-    "öğretmen": {
-        "term": "Öğretmen",
-        "english_terms": ["school teachers", "teacher self-efficacy", "teacher training"],
-        "role": "context",
-    },
-    "okul": {
-        "term": "Okul",
-        "english_terms": ["schools", "school climate", "school health services"],
-        "role": "context",
-    },
-    "yeniden bütünleşme": {
-        "term": "Yeniden bütünleşme",
-        "english_terms": ["reintegration", "school reentry", "return to school"],
-        "role": "outcome",
-    },
-}
+def concepts_from_seed(seed: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Ajanın/kullanıcının verdiği kavram tohumlarını normalize et.
 
-
-def derive_concepts(framing: str, title: str) -> List[Dict[str, Any]]:
-    """Kullanıcının ifadesinden ve başlıktan kavram taslakları üret."""
-    haystack = _norm(f"{framing} {title}")
+    Kavram listesi **proje verisidir**, repo kodu değil. Harita kavramları ya
+    dışarıdan tohum olarak alır ya da alanyazından çıkarır; kodda projeye özgü
+    sabit sözlük tutulmaz.
+    """
+    raw = seed.get("concepts") if isinstance(seed, dict) else seed
+    if not isinstance(raw, list):
+        return []
     concepts: List[Dict[str, Any]] = []
-    seen: set[str] = set()
-
-    for needle, spec in FRAMING_HINTS.items():
-        if _norm(needle) not in haystack:
+    for index, entry in enumerate(raw, start=1):
+        if isinstance(entry, str):
+            entry = {"term": entry, "english_terms": [entry]}
+        if not isinstance(entry, dict):
             continue
-        anchor = spec["english_terms"][0]
-        if anchor in seen:
+        term = str(entry.get("term") or "").strip()
+        english = [
+            str(t).strip() for t in (entry.get("english_terms") or []) if str(t).strip()
+        ]
+        if not term and not english:
             continue
-        seen.add(anchor)
         concepts.append(
             {
-                "id": "",
-                "term": spec["term"],
-                "role": spec["role"],
-                "english_terms": list(spec["english_terms"]),
-                "variants": list(spec.get("variants") or []),
-                "synonyms": [],
+                "id": str(entry.get("id") or f"C{index}"),
+                "term": term or english[0],
+                "role": str(entry.get("role") or "component"),
+                "english_terms": english or [term],
+                "variants": [str(v) for v in (entry.get("variants") or [])],
+                "synonyms": [str(v) for v in (entry.get("synonyms") or [])],
                 "mesh": [],
-                "relations": [],
-                "source": "derived",
-                "definition_scope": "",
+                "relations": entry.get("relations") or [],
+                "source": str(entry.get("source") or "user_stated"),
+                "definition_scope": str(entry.get("definition_scope") or ""),
+                **({"domain": str(entry["domain"])} if entry.get("domain") else {}),
             }
         )
+    return concepts
 
-    # Hiç eşleşme yoksa başlığın kendisini anchor yap; boş harita üretme.
-    if not concepts:
-        concepts.append(
+
+# Kavram çıkarımı: yazar etiketleri değil, başlık + özet metni. Yazar
+# anahtar sözcükleri seyrek ve düzensiz; asıl teknik terim özetlerde geçer.
+# Genel araştırma kalıpları kavram değildir; bunlar alan bağımsız oldukları
+# için depo düzeyinde tutulabilir.
+GENERIC_PHRASES = {
+    "semi-structured", "semi structured", "collected through", "different types",
+    "literature review", "systematic review", "scoping review", "focus groups",
+    "in-depth interviews", "semi-structured interviews", "professional development",
+    "training needs", "management strategies", "management practices",
+    "pre-service", "in-service", "quantitative", "qualitative", "participants",
+    "current study", "present study", "this study", "research questions",
+}
+
+GENERIC_WORDS = set(
+    """the and for with that this from are was were been being have has had not
+    but its their they them there these those such can may might will would could
+    should about into over under between during before after above below more most
+    less least other others than then when where which who whom whose also study
+    studies research results findings however therefore moreover furthermore
+    although while because both each some many much very well used using use based
+    approach approaches method methods analysis data paper article journal
+    university school schools student students teacher teachers education
+    educational classroom teaching learning children child year years group groups
+    time high low new two three first second""".split()
+)
+
+
+def _abstract_text(inverted: Optional[Dict[str, List[int]]]) -> str:
+    if not inverted:
+        return ""
+    positions = [(index, word) for word, indexes in inverted.items() for index in indexes]
+    return " ".join(word for _, word in sorted(positions))
+
+
+def _candidate_grams(text: str) -> set[str]:
+    """Metinden kavram adayı n-gramları çıkar.
+
+    Tek sözcükler yalnızca tire içeriyorsa aday olur (``teacher-student`` gibi
+    bileşik terimler tekniktir); düz tek sözcükler ("intervention") çok genel
+    kalır. İki-üç sözcüklü öbekler adaydır.
+    """
+    words = re.findall(r"[a-z][a-z\-]{2,}", _norm(text))
+    found: set[str] = set()
+    for size in (1, 2, 3):
+        for index in range(len(words) - size + 1):
+            seq = words[index : index + size]
+            if any(word in GENERIC_WORDS for word in seq):
+                continue
+            if size == 1 and "-" not in seq[0]:
+                continue
+            phrase = " ".join(seq)
+            if phrase in GENERIC_PHRASES:
+                continue
+            if seq[-1].endswith(("based", "related", "focused", "oriented")):
+                continue  # niteleyici, kavram değil ("school-based")
+            found.add(phrase)
+    return found
+
+
+def _fetch_corpus(query: str, limit: int) -> List[Dict[str, Any]]:
+    """OpenAlex'ten başlık + özeti olan kayıtları çek."""
+    import asyncio
+
+    try:
+        sys.path.insert(
+            0,
+            str(Path(__file__).resolve().parents[1] / "packages" / "sciencedirect-meta" / "src"),
+        )
+        from sciencedirect_meta.server import _openalex_params, polite_get
+    except Exception:  # noqa: BLE001 - paket yoksa harita literatürsüz kurulur
+        return []
+
+    async def _run() -> List[Dict[str, Any]]:
+        response = await polite_get(
+            "https://api.openalex.org/works",
+            params=_openalex_params(
+                {
+                    "search": query,
+                    "per-page": max(1, min(limit, 100)),
+                    "select": "id,title,doi,publication_year,abstract_inverted_index,primary_topic",
+                }
+            ),
+            attempts=3,
+        )
+        if response.status_code != 200:
+            return []
+        return response.json().get("results") or []
+
+    try:
+        return asyncio.run(_run())
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _corpus_stats(works: List[Dict[str, Any]]) -> tuple[Dict[str, int], Dict[str, int], int]:
+    """Aday terim başına belge sıklığı ve başlık sıklığı."""
+    doc_freq: Dict[str, int] = {}
+    title_freq: Dict[str, int] = {}
+    usable = [w for w in works if w.get("abstract_inverted_index")]
+    for work in usable:
+        grams = _candidate_grams(
+            f"{work.get('title') or ''} {_abstract_text(work.get('abstract_inverted_index'))}"
+        )
+        for gram in grams:
+            doc_freq[gram] = doc_freq.get(gram, 0) + 1
+        for gram in _candidate_grams(work.get("title") or ""):
+            title_freq[gram] = title_freq.get(gram, 0) + 1
+    return doc_freq, title_freq, len(usable)
+
+
+def mine_candidates(
+    query: str,
+    background_query: str = "classroom",
+    min_count: int = 3,
+    limit: int = 14,
+) -> Dict[str, Any]:
+    """Alanyazından kavram adaylarını çıkar ve ayırt ediciliğe göre sırala.
+
+    Yöntem:
+
+    * Hedef külliyat: sorgunun ilk 50 sonucu (başlık + özet).
+    * Arka plan külliyatı: aynı alanın genel sorgusu (varsayılan ``classroom``).
+    * Aday, hedef külliyatta en az ``min_count`` makalede geçmeli.
+    * Ayırt edicilik = hedef oran / arka plan oranı. Genel terimler her iki
+      külliyatta da geçtiği için düşer; alana özgü teknik terimler öne çıkar.
+    * Başlıkta geçen aday ek puan alır: başlık, makalenin asıl konusunu söyler.
+
+    Dönen ``candidates`` listesi ajanın doğrulaması içindir; hiçbiri kendiliğinden
+    "doğru kavram" ilan edilmez.
+    """
+    target = _fetch_corpus(query, 50)
+    background = _fetch_corpus(background_query, 100)
+    doc_freq, title_freq, target_n = _corpus_stats(target)
+    bg_freq, _, bg_n = _corpus_stats(background)
+
+    if target_n == 0:
+        return {"query": query, "candidates": [], "sample_size": 0, "note": "hedef külliyat boş"}
+
+    examples: Dict[str, List[str]] = {}
+    for work in target:
+        if not work.get("abstract_inverted_index"):
+            continue
+        grams = _candidate_grams(
+            f"{work.get('title') or ''} {_abstract_text(work.get('abstract_inverted_index'))}"
+        )
+        for gram in grams:
+            bucket = examples.setdefault(gram, [])
+            title = str(work.get("title") or "").strip()
+            if title and len(bucket) < 2:
+                bucket.append(title)
+
+    candidates = []
+    for gram, count in doc_freq.items():
+        if count < min_count:
+            continue
+        target_share = count / target_n
+        background_share = bg_freq.get(gram, 0) / max(1, bg_n)
+        ratio = target_share / (background_share + 0.004)
+        score = ratio * (1 + 2 * title_freq.get(gram, 0))
+        candidates.append(
             {
-                "id": "",
+                "term": gram,
+                "documents": count,
+                "sample_size": target_n,
+                "share": round(target_share, 3),
+                "background_share": round(background_share, 3),
+                "title_hits": title_freq.get(gram, 0),
+                "specificity": round(ratio, 1),
+                "score": round(score, 1),
+                "examples": examples.get(gram, []),
+            }
+        )
+    candidates.sort(key=lambda row: (-row["score"], -row["documents"], row["term"]))
+    return {
+        "query": query,
+        "background_query": background_query,
+        "candidates": candidates[:limit],
+        "sample_size": target_n,
+        "background_size": bg_n,
+        "note": None,
+    }
+
+
+def derive_concepts_from_literature(
+    framing: str,
+    title: str,
+    min_share: float = 0.05,
+    max_concepts: int = 10,
+    query_en: Optional[str] = None,
+) -> tuple[List[Dict[str, Any]], str, Dict[str, Any]]:
+    """Başlık/çerçeveden alanyazın taramasıyla kavram çıkar.
+
+    Projeye özgü sabit sözlük kullanılmaz. Adaylar başlık + özet metninden
+    çıkarılır ve genel alan külliyatına karşı ayırt edicilikle sıralanır.
+    İlk sıradaki aday anchor olur; geri kalanı bileşen.
+
+    Türkçe sorgu İngilizce veritabanıyla eşleşmez. Bu durumda örneklem boş
+    kalır ve fonksiyon bunu açıkça bildirir; kavramlar ``--concept-seed`` ile
+    verilmelidir.
+    """
+    query = (query_en or " ".join(part for part in (title, framing) if part)).strip()
+    if not query:
+        return [], "Boş başlık/çerçeve; kavram çıkarılamadı.", {"candidates": []}
+
+    mined = mine_candidates(query)
+    candidates = mined.get("candidates") or []
+    sample = int(mined.get("sample_size") or 0)
+
+    concepts: List[Dict[str, Any]] = []
+    note_parts: List[str] = []
+
+    if sample >= 5:
+        kept = [row for row in candidates if row["share"] >= min_share]
+        for index, row in enumerate(kept[:max_concepts], start=1):
+            concepts.append(
+                {
+                    "id": f"C{index}",
+                    "term": row["term"],
+                    "role": "anchor" if index == 1 else "component",
+                    "english_terms": [row["term"]],
+                    "variants": [],
+                    "synonyms": [],
+                    "mesh": [],
+                    "relations": [],
+                    "source": "literature",
+                    "definition_scope": (
+                        f"Hedef külliyatta {row['documents']}/{row['sample_size']} "
+                        f"makalede geçti; genel alana göre ayırt edicilik "
+                        f"{row['specificity']}×."
+                    ),
+                }
+            )
+        note_parts.append(
+            f"Kavramlar başlık+özet metninden çıkarıldı (OpenAlex, {sample} "
+            f"makale, ayırt edicilik eşiği %{min_share * 100:.0f}). Projeye "
+            "özgü sabit sözlük kullanılmadı."
+        )
+    elif sample:
+        note_parts.append(
+            f"UYARI: OpenAlex yalnızca {sample} özetli makale döndürdü. Sorgu "
+            "büyük olasılıkla İngilizce değil; kavram çıkarımı güvenilir değil. "
+            "`--concept-seed` ile kavramları verin veya `--query-en` ile "
+            "İngilizce sorgu girin."
+        )
+
+    if not concepts:
+        concepts = [
+            {
+                "id": "C1",
                 "term": title or framing,
                 "role": "anchor",
                 "english_terms": _slug_terms(title or framing)[:3] or [title or framing],
@@ -255,13 +457,15 @@ def derive_concepts(framing: str, title: str) -> List[Dict[str, Any]]:
                 "mesh": [],
                 "relations": [],
                 "source": "derived",
-                "definition_scope": "",
+                "definition_scope": "Alanyazın taraması yapılamadı; başlık anchor alındı.",
             }
-        )
+        ]
+        if sample < 5:
+            note_parts.append(
+                "OpenAlex taraması güvenilir sonuç vermedi; başlık anchor alındı."
+            )
 
-    for index, concept in enumerate(concepts, start=1):
-        concept["id"] = f"C{index}"
-    return concepts
+    return concepts, " ".join(note_parts), mined
 
 
 def attach_mesh(concepts: List[Dict[str, Any]], mesh_results: Dict[str, Any]) -> None:
@@ -565,13 +769,28 @@ def build_report(
     section_coverage: Optional[List[Dict[str, Any]]] = None,
     title: Optional[str] = None,
     derivation_note: str = "",
+    mined: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     warnings: List[str] = []
     anchors = [c for c in concepts if c["role"] == "anchor"]
+    seedless = [c for c in concepts if c.get("source") in {"literature", "derived"}]
+    if seedless and not any(c.get("source") == "user_stated" for c in concepts):
+        warnings.append(
+            "Kavramların hiçbiri kullanıcı/ajan tarafından doğrulanmadı; hepsi "
+            "otomatik türetildi. Alanyazın terimi (anchor) için `--concept-seed` "
+            "ile doğrulanmış liste verin."
+        )
     if not anchors:
         warnings.append(
             "Anchor terim tanımlı değil. Bölümün kavramsal çekirdeği "
             "alanyazındaki adıyla yazılmalı."
+        )
+    elif all(c.get("source") == "literature" for c in concepts):
+        warnings.append(
+            f"Anchor otomatik önerildi: '{anchors[0].get('term')}'. Bu bir "
+            "sıralama sonucudur, doğrulanmış çekirdek değildir. Adayları "
+            "sorguyla sına: anchor, bölümün asıl konusunu getiren terim "
+            "olmalı. Doğrulanmış listeyi `--concept-seed` ile ver."
         )
     for concept in concepts:
         if concept.get("mesh") and concept.get("mesh_applicable") is False:
@@ -605,7 +824,8 @@ def build_report(
     next_actions = []
     if phase == 1:
         next_actions.append(
-            "Kavram listesini kullanıcıyla doğrula; eksik alan terimini sor."
+            "Aday listesini ve kavramları kullanıcıyla doğrula; eksik alan "
+            "terimini sor."
         )
         next_actions.append(
             "MeSH projeksiyonu için `--mesh` ver; kontrollü sözlük terimleri eklensin."
@@ -639,6 +859,9 @@ def build_report(
         "user_framing": framing,
         "derivation_note": derivation_note,
         "concepts": concepts,
+        "candidates": (mined or {}).get("candidates") or [],
+        "candidate_query": (mined or {}).get("query"),
+        "candidate_background": (mined or {}).get("background_query"),
         "section_coverage": section_coverage or [],
         "warnings": warnings,
         "next_actions": next_actions,
@@ -729,6 +952,32 @@ def render_html(report: Dict[str, Any]) -> str:
         else ""
     )
 
+    candidate_rows = ""
+    for row in report.get("candidates") or []:
+        example = row.get("examples") or []
+        example_html = (
+            f'<div class="muted">{esc(example[0])}</div>' if example else ""
+        )
+        candidate_rows += (
+            f"<tr><td><code>{esc(row['term'])}</code>{example_html}</td>"
+            f"<td>{row['documents']}/{row['sample_size']}</td>"
+            f"<td>{row['title_hits']}</td>"
+            f"<td>{row['specificity']}×</td>"
+            f"<td>{row['score']}</td></tr>"
+        )
+    candidate_block = (
+        "<h2>Alanyazından kavram adayları</h2>"
+        f"<p class=\"muted\">Sorgu: <code>{esc(report.get('candidate_query') or '')}</code> · "
+        f"arka plan: <code>{esc(report.get('candidate_background') or '')}</code>. "
+        "Adaylar başlık+özet metninden çıkarıldı; genel alana göre ayırt "
+        "edicilikle sıralandı. Hiçbiri kendiliğinden doğru kavram değildir — "
+        "doğrulama ajanın/kullanıcının işidir.</p>"
+        "<table><thead><tr><th>Aday</th><th>Belge</th><th>Başlık</th>"
+        f"<th>Ayırt edicilik</th><th>Puan</th></tr></thead><tbody>{candidate_rows}</tbody></table>"
+        if candidate_rows
+        else ""
+    )
+
     warnings = "".join(f"<li>{esc(w)}</li>" for w in report.get("warnings") or [])
     actions = "".join(f"<li>{esc(a)}</li>" for a in report.get("next_actions") or [])
     anchor_line = ", ".join(
@@ -798,6 +1047,8 @@ ul.act{{padding-left:1.2rem}}
 
 {section_block}
 
+{candidate_block}
+
 {f'<h2>Uyarılar</h2><ul class="warn">{warnings}</ul>' if warnings else ''}
 <h2>Sonraki adımlar</h2>
 <ul class="act">{actions}</ul>
@@ -825,6 +1076,39 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument("--title", help="Başlık (verilmezse plandan okunur)")
     parser.add_argument("--framing", help="Kullanıcının kendi ifadesi")
+    parser.add_argument(
+        "--concept-seed",
+        type=Path,
+        help=(
+            "Kavram tohumları (proje verisi). Verilmezse kavramlar alanyazından "
+            "çıkarılır; kodda projeye özgü sabit sözlük tutulmaz."
+        ),
+    )
+    parser.add_argument(
+        "--query-en",
+        help=(
+            "Kavram çıkarımı için İngilizce sorgu. Türkçe başlık İngilizce "
+            "veritabanlarıyla eşleşmez; bu nedenle önerilir."
+        ),
+    )
+    parser.add_argument(
+        "--min-share",
+        type=float,
+        default=0.05,
+        help=(
+            "Kavramın alanyazın örnekleminde geçme oranı eşiği (varsayılan 0.05). "
+            "Ayırt edicilik ayrıca ölçülür; eşik tek başına yeterli değildir."
+        ),
+    )
+    parser.add_argument(
+        "--domain",
+        choices=sorted(DOMAIN_DATABASES),
+        default=None,
+        help=(
+            "Projenin alanı. Kavram düzeyinde kanıt yoksa bu kullanılır; MeSH "
+            "yalnızca medical/psychology alanlarında uygulanır."
+        ),
+    )
     parser.add_argument("--mesh", action="store_true", help="PubMed MeSH projeksiyonu yap")
     parser.add_argument("--plan", type=Path, help="Yazım planı JSON")
     parser.add_argument("--input", type=Path, help="Önceki kavram haritası (aşama zinciri)")
@@ -839,7 +1123,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     plan = load_json(args.plan or (workflow_dir(root, "2") / "01_yazim_plani.json"))
 
     # Önceki harita varsa kavramları ondan devral.
+    seed = load_json(args.concept_seed)
     previous = load_json(args.input)
+    mined: Dict[str, Any] = {"candidates": []}
     if previous is None:
         for candidate in sorted(work1.glob(f"{OUTPUT_STEM}_*.json")):
             previous = load_json(candidate)
@@ -856,12 +1142,19 @@ def main(argv: Optional[List[str]] = None) -> int:
         concepts = previous["concepts"]
         for index, concept in enumerate(concepts, start=1):
             concept.setdefault("id", f"C{index}")
+    elif seed:
+        concepts = concepts_from_seed(seed)
+        derivation_note = (
+            f"Kavramlar tohum dosyasından alındı: {args.concept_seed}"
+        )
     else:
-        concepts = derive_concepts(framing, title)
+        concepts, derivation_note, mined = derive_concepts_from_literature(
+            framing, title, min_share=args.min_share, query_en=args.query_en
+        )
 
-    derivation_note = ""
+    project_domain = args.domain or (seed or {}).get("domain") or "education"
     if args.phase == 1:
-        apply_domains(concepts)
+        apply_domains(concepts, default=project_domain)
         if args.mesh:
             try:
                 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "sciencedirect-meta" / "src"))
@@ -934,6 +1227,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         section_coverage,
         title=title,
         derivation_note=derivation_note,
+        mined=mined,
     )
 
     if args.check:

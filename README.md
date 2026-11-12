@@ -4,7 +4,7 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.13.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
+> **Sürüm:** v2.13.1. Son public sürüm v2.7.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?

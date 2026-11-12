@@ -20,6 +20,25 @@ Her yeni proje kullanıcı proje kökünü verince başlar; önce `<proje-kökü
 
 1. Kullanıcının konu çerçevesini, hedef grubu/bağlamı, ilgili sonuçları ve uygulanabilirlik kısıtlarını netleştir.
 2. **Ürün türünü sor** (varsayılan yok): `kitap_bolumu`, `uygulama_rehberi`, `derleme_makale`, `ampirik_makale`. Aynı adımda `target_total_words` al. Tür ve uzunluk sabitlenmeden akış 2'ye geçme.
+2b. **Kavram haritasını kur (zorunlu).** Başlığı doğrudan aramaya verme; önce
+   kavram haritasına çevir. Türkçe başlık İngilizce veritabanlarıyla eşleşmez;
+   `--query-en` ile İngilizce karşılığını ver:
+
+```bash
+python3 scripts/build_concept_map.py <proje-kökü> --phase 1 \
+  --query-en "..." --domain education
+```
+
+   `candidates` tablosu başlık+özet metninden çıkarılan adaylardır ve genel
+   alana göre ayırt edicilikle sıralanır. **Aday doğru kavram değildir,
+   hipotezdir.** Her adayı sorgu olarak çalıştır; bölümün asıl konusunu getiren
+   terimi anchor seç. Doğrulanmış listeyi `00_kavram_tohumu.json` olarak yaz ve
+   `--concept-seed` ile yeniden üret.
+
+   MeSH yalnızca `--domain medical` veya `psychology` projelerde `--mesh` ile
+   uygulanır. Eğitim alanyazını PubMed'de indekslenmez; aynı terim orada başka
+   bir alanın terimi olabilir.
+
 3. Varsayılan olarak **yedi kaynağın tümünde** tara: OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv ve ClinicalTrials.gov. `search_literature` / `search_all` / `deep_research` çağrılarında `sources` vermezsen hepsi sorgulanır; `priority_only=false` varsayılandır, böylece tüm yayıncılar döner. Yalnızca belirli bir alt küme gerekiyorsa `sources=[...]` ile daralt ve `coverage.per_source.status` alanında her kaynağın `ok`/`error`/`rate_limited` olduğunu kontrol et.
 4. Her sorgu ve her veritabanı için `sources_status`, `coverage`, kayıt sayısı ve hata/not bilgisini kaydet. Aranmayan veya başarısız kaynağı başarılı gibi işaretleme. `evidence_scarcity=true` ise kullanıcıya söyle.
 5. En yakın bulunan yayınlara ve kapsanmayan bağlam/örneklem/yöntem/sonuçlara dayalı sıralı başlık, araştırma sorusu, genel/özel amaç, kapsam içi/dışı ve gerekçe ver. Mutlak özgünlük iddiasında bulunma.
@@ -368,7 +387,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.13.0; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.13.1; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
@@ -435,7 +454,7 @@ python3 scripts/download_open_access.py adaylar.json --dry-run
 python3 scripts/promote_fulltext.py <proje-kökü> --to 4 --dry-run
 
 # Kavram haritası (akış 1 -> 2 -> 3 -> 4)
-python3 scripts/build_concept_map.py <proje-kökü> --phase 1 --mesh
+python3 scripts/build_concept_map.py <proje-kökü> --phase 1 --query-en "..." [--mesh]
 python3 scripts/build_concept_map.py <proje-kökü> --phase 2
 python3 scripts/build_concept_map.py <proje-kökü> --phase 3
 python3 scripts/build_concept_map.py <proje-kökü> --phase 4

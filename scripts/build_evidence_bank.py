@@ -308,7 +308,7 @@ def resolve_paperqa_project(pdf_dir: Path, hints: List[str]) -> Optional[str]:
     """PDF klasörüne karşılık gelen kayıtlı PaperQA proje adını bul.
 
     Plan `project` alanı ile kayıtlı proje adı farklı olabilir (örn. plan
-    ``deneme7``, indeks ``deneme7-draft``). Yol eşleşmesi en güvenilir sinyaldir.
+    ``proje``, indeks ``proje-draft``). Yol eşleşmesi en güvenilir sinyaldir.
     """
     paperqa = _paperqa_module()
     if paperqa is None:

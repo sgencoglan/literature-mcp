@@ -1,5 +1,44 @@
 # Değişiklik Günlüğü
 
+## v2.13.1 — 2026-11-12
+
+### Düzeltildi
+
+- **Projeye özgü kavram sözlüğü koddan çıkarıldı.** v2.13.0, `FRAMING_HINTS` ve
+  `DOMAIN_BY_TERM` tablolarıyla tek bir projenin terimlerini depoya gömüyordu.
+  Bu iki sorun doğuruyordu: araç genelleşmiyordu ve "harita şu terimi buldu"
+  testi kendi kendini doğrulayan bir teste dönüşüyordu. Kavramlar artık proje
+  verisidir: doğrulanmış liste `--concept-seed` ile, doğrulanmamış öneri ise
+  alanyazından türetilir.
+- **Kavram keşfi yazar etiketlerinden özet metnine taşındı.** OpenAlex yazar
+  anahtar sözcükleri seyrek ve düzensiz; teknik terim çoğu zaman yalnızca
+  özette geçiyor. Yeni `mine_candidates`: hedef külliyat (sorgunun ilk 50
+  sonucu) ile genel alan arka planı karşılaştırılır; aday belge sıklığı, başlık
+  sıklığı ve ayırt edicilik (hedef oran / arka plan oranı) ile sıralanır. Genel
+  araştırma kalıpları ("semi-structured", "professional development") ve
+  `-based` niteleyicileri elenir.
+- **`--query-en` eklendi.** Türkçe başlık İngilizce veritabanıyla eşleşmiyor
+  (ölçüm: 25 sonuç yerine 1 alakasız makale). İngilizce sorgu verilmezse araç
+  bunu uyarı olarak bildirir ve kavram türetimini güvenilmez sayar.
+- **Alan ve MeSH ayrımı netleşti.** `--domain` proje düzeyinde alanı belirler;
+  MeSH yalnızca `medical`/`psychology` alanlarında `--mesh` ile uygulanır. Alan
+  kanıtı kavram kaydından veya OpenAlex alt alanından gelir; MeSH'in kendisi
+  kanıt sayılmaz (döngüsellik).
+- **Anchor otomatik öneri olarak işaretlenir.** Sıralama sonucu seçilen ilk
+  aday "doğrulanmış çekirdek" değildir; rapor, adayların sorguyla sınanmasını
+  ve doğrulanmış listenin `--concept-seed` ile verilmesini ister.
+
+### Doğrulama
+
+Kör test (projede hiçbir kavram tanımlı değil):
+
+- `classroom crisis prevention intervention teacher` → 9 kavram.
+  `de-escalation` 7. sırada: 3/42 özette, arka plan külliyatında 0.
+- `crisis intervention teacher classroom` araması çekirdek makaleyi
+  getirmedi; `de-escalation classroom teacher` araması getirdi (2. sıra).
+  Yani en yüksek puanlı aday her zaman anchor değildir — doğrulama kapısı bu
+  yüzden zorunlu.
+
 ## v2.13.0 — 2026-11-12
 
 ### Eklendi
@@ -33,8 +72,8 @@
 
 ### Doğrulama
 
-`deneme7` üzerinde dört aşama da çalıştırıldı. Araç, bu turda elle bulduğumuz
-hatayı otomatik yakaladı: anchor kavram (`de-escalation`) havuzda 2 kayıtta
+Bir proje üzerinde dört aşama da çalıştırıldı. Araç, elle bulunan hatayı
+otomatik yakaladı: anchor kavram (`de-escalation`) havuzda 2 kayıtta
 vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
 
 ## v2.12.0 — 2026-11-12
@@ -84,7 +123,7 @@ vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
   `paperqa_read_pages` ile doğrulanır.
 - **İki motor:** `semantic` (varsayılan, PaperQA2 embedding) ve `keyword`
   (PyMuPDF + terim eşleşmesi, indeks yoksa yedek). Proje adı PDF klasöründen
-  çözülür (`deneme7` ↔ `deneme7-draft` uyuşmazlığı otomatik giderilir).
+  çözülür (plan `proje` ↔ indeks `proje-draft` uyuşmazlığı otomatik giderilir).
 - **Uçuş öncesi kapasite denetimi.** `build_evidence_gap_request.py --preflight`
   taslak yazılmadan önce her alt başlığın kanıt kapasitesini ölçer ve iki durumu
   ayırır: `evidence_shortfall` (alt başlık geçerli, kaynak ekle → akış 3'e dön)
