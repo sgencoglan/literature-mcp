@@ -9,12 +9,19 @@ Klasörler:
 1. ``01_konu_belirleme``   — konu, başlık, tür, kapsam, (opsiyonel) yöntem
 2. ``02_yazim_plani``      — iskelet: alt başlıklar + kanıt ihtiyacı
 3. ``03_kaynak_kesfi``     — plana göre arama, atama matrisi, PDF indirme
-4. ``04_taslak``           — sayfa doğrulamalı taslak metin
-5. ``05_analiz``           — iddia–kanıt + plan uyumu denetimi
+4. ``04_taslak``           — sayfa doğrulamalı taslak metin (``taslak/``) ve PDF'ler (``fulltext/``)
+5. ``05_analiz``           — iddia–kanıt + plan uyumu denetimi (``taslak/`` ve ``fulltext/``)
 
-Kural: her akış klasörü kendi çıktısını doğrudan içinde tutar; yalnızca PDF'ler
-``fulltext/`` alt klasöründedir. Önceki sürümdeki ``taslak/`` alt klasörü
-kaldırıldı.
+Kural: her akış klasörü iki alt klasör taşır.
+
+* ``fulltext/`` — kaynak PDF'leri (akış 3, 4, 5)
+* ``taslak/``   — metin dosyaları; akış 4 ürettiği taslağı buraya yazar,
+                  akış 5 denetlenecek taslağı buradan okur
+
+Böylece kullanıcı, taslağın nereye üretildiğini ve 5. akışta kendi taslağını
+nereye koyacağını klasör adından görür. ``01_konu_belirleme`` ve
+``02_yazim_plani`` metin çıktılarını doğrudan kendi klasörlerinde tutar;
+``taslak/`` alt klasörü yalnızca 4 ve 5 için açılır.
 """
 
 from __future__ import annotations
@@ -39,6 +46,10 @@ WORKFLOW_LABELS: Dict[str, str] = {
 }
 
 FULLTEXT_SUBDIR = "fulltext"
+DRAFT_SUBDIR = "taslak"
+
+# Bu akışlarda metin çıktıları ``taslak/`` alt klasörüne yazılır.
+DRAFT_WORKFLOWS = ("4", "5")
 INTERNAL_DIRECTORY = ".literature-mcp"
 
 # Ürün türleri. Varsayılan YOKTUR; akış 1'de kullanıcıya sorulur.
@@ -73,6 +84,17 @@ def fulltext_dir(root: Path, workflow: str) -> Path:
     return workflow_dir(root, workflow) / FULLTEXT_SUBDIR
 
 
+def draft_dir(root: Path, workflow: str) -> Path:
+    """Bir akışın metin/taslak klasörü (yalnızca 4 ve 5)."""
+    key = str(workflow).strip()
+    if key not in DRAFT_WORKFLOWS:
+        raise ValueError(
+            f"taslak/ yalnızca {DRAFT_WORKFLOWS} akışlarında vardır, "
+            f"verilen: {workflow!r}"
+        )
+    return workflow_dir(root, key) / DRAFT_SUBDIR
+
+
 def all_paths(root: Path) -> Dict[str, Path]:
     """Tüm akış ve iç klasörlerin yolları."""
     root = Path(root)
@@ -81,6 +103,8 @@ def all_paths(root: Path) -> Dict[str, Path]:
         paths[f"w{key}"] = root / name
     for key, name in WORKFLOW_DIRECTORIES.items():
         paths[f"w{key}_fulltext"] = root / name / FULLTEXT_SUBDIR
+    for key in DRAFT_WORKFLOWS:
+        paths[f"w{key}_taslak"] = root / WORKFLOW_DIRECTORIES[key] / DRAFT_SUBDIR
     paths["internal"] = root / INTERNAL_DIRECTORY
     paths["indexes"] = root / INTERNAL_DIRECTORY / "indexes"
     paths["manifests"] = root / INTERNAL_DIRECTORY / "projects"

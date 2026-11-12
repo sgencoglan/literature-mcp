@@ -6,8 +6,8 @@ Bu belge, insan ve ajan çıktılarının dosya adlarını, biçimlerini ve zoru
 
 - **Proje klasörü zorunludur:** Her yeni proje başında kullanıcıdan proje kökünün tam yolunu alın ve `paperqa_create_workspace` ile 01–05 akış klasörlerini açın.
 - **Akış seçimi:** Klasörler açıldıktan sonra kullanıcıdan 1, 2, 3, 4 veya 5 seçmesini isteyin; seçimden önce arama veya PDF işleme yapmayın.
-- **Akış klasörleri:** `01_konu_belirleme/`, `02_yazim_plani/`, `03_kaynak_kesfi/`, `04_taslak/`, `05_analiz/`. Her çıktıyı ilgili klasöre yazın; PDF'ler yalnızca ilgili akışın `fulltext/` altındadır.
-- **Ana dosyalar:** Akış 1 `01_konu_belirleme/01_konu_<zaman>.html` (tür, hedef kelime, kapsam, başlık önerileri). Akış 2 `02_yazim_plani/01_yazim_plani_<zaman>.html` (alt başlık iskeleti). Akış 3 `03_kaynak_kesfi/00_atama_matrisi_<zaman>.html`, fulltext listesi ve kapsam raporu. Akış 4 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren `04_taslak/04_taslak_<zaman>.html`. Akış 5 `05_analiz/05_plan_uyumu_<zaman>.html` ve bağlam + Ek 1–4 içeren `05_analiz/05_analiz_<zaman>.html`.
+- **Akış klasörleri:** `01_konu_belirleme/`, `02_yazim_plani/`, `03_kaynak_kesfi/`, `04_taslak/`, `05_analiz/`. Her çıktıyı ilgili klasöre yazın. Akış 4 ve 5 iki alt klasör taşır: `fulltext/` (PDF'ler) ve `taslak/` (metin). Akış 4 taslağı `04_taslak/taslak/` altına üretir; akış 5 denetlenecek taslağı ve raporunu `05_analiz/taslak/` altında tutar.
+- **Ana dosyalar:** Akış 1 `01_konu_belirleme/01_konu_<zaman>.html` (tür, hedef kelime, kapsam, başlık önerileri). Akış 2 `02_yazim_plani/01_yazim_plani_<zaman>.html` (alt başlık iskeleti). Akış 3 `03_kaynak_kesfi/00_atama_matrisi_<zaman>.html`, fulltext listesi ve kapsam raporu. Akış 4 bölüm metni + Ek 1 + Ek 2 + Ek 4 içeren `04_taslak/taslak/04_taslak_<zaman>.html`. Akış 5 `05_analiz/taslak/05_plan_uyumu_<zaman>.html` ve bağlam + Ek 1–4 içeren `05_analiz/taslak/05_analiz_<zaman>.html`.
 - **Zaman soneki:** Üreticiler varsayılan olarak `_YYYYMMDD-HHMMSS` soneki ekler; aynı saniye içinde ikinci çıktı `-01`, `-02` alır. Sabit ad için `--no-timestamp` kullanılır. Ajanın elle yazdığı JSON veri dosyaları da zaman soneki alır.
 - **Tek sürüm kuralı:** Üreticiler içerik değişmediyse yeni sürüm yazmaz; `Değişiklik yok; mevcut sürüm korundu` der. İçerik değiştiyse yeni sürümü yazar ve önceki sürümleri `<akış>/arsiv/` altına taşır. Böylece klasörde her zaman tek güncel çıktı kalır, geçmiş kaybolmaz. JSON karşılaştırmasında `generated_at`, `timestamp` gibi değişken alanlar yok sayılır.
 - **Silme yasağı:** Üreticiler önceki çıktıları **silmez**; eskiler `arsiv/` altına taşınır. Sabit adlı çıktı `--no-timestamp` ile farklı içerikle yazılacaksa `--force` gerekir. Tek silme yolu, kullanıcının açıkça çağırdığı `chapter-report cleanup` komutudur (manifest tabanlı). “Eski sürümü sil / yerine yaz” istenmedikçe hiçbir dosya kaldırılmaz.
@@ -54,15 +54,15 @@ verir. Ajanın elle yazdığı JSON da zaman soneki almalıdır.
 | `03_kaynak_kesfi/01_arama_kapsam_raporu_<zaman>.json/html/md` | JSON+HTML+MD | Ajan + insan | Kaynak kapsamı, `coverage`, `evidence_scarcity`, seçilenler |
 | `03_kaynak_kesfi/01_arama_kapsam_raporu_<zaman>_karsilastirma.json/html` | JSON+HTML | Ajan + insan | İki query setinin kapsam farkı |
 | `03_kaynak_kesfi/oa_indirme_raporu_<zaman>.json` | JSON | Ajan | Açık erişim indirme özeti; e-posta maskelenir |
-| `04_taslak/04_taslak_<zaman>.json` | JSON | Ajan | Taslak metin + Ek 1/2/4 için chapter-report girdisi |
-| `04_taslak/04_taslak_<zaman>.md` | Markdown | İnsan + ajan | Taslağın düzenlenebilir sürümü |
-| `04_taslak/04_taslak_<zaman>.html` | HTML | İnsan | Taslak metni + Ek 1 + iddia–kanıt matrisi + Ek 4 |
-| `04_taslak/04_taslak_<zaman>.manifest.json` | JSON | Ajan | Üretilen dosyaların temizlik manifesti |
+| `04_taslak/taslak/04_taslak_<zaman>.json` | JSON | Ajan | Taslak metin + Ek 1/2/4 için chapter-report girdisi |
+| `04_taslak/taslak/04_taslak_<zaman>.md` | Markdown | İnsan + ajan | Taslağın düzenlenebilir sürümü |
+| `04_taslak/taslak/04_taslak_<zaman>.html` | HTML | İnsan | Taslak metni + Ek 1 + iddia–kanıt matrisi + Ek 4 |
+| `04_taslak/taslak/04_taslak_<zaman>.manifest.json` | JSON | Ajan | Üretilen dosyaların temizlik manifesti |
 | `04_taslak/fulltext_aktarim_<zaman>.json` | JSON | Ajan | Akış 3 → 4 PDF aktarım raporu |
-| `05_analiz/05_plan_uyumu_<zaman>.json/html` | JSON+HTML | Ajan + insan | Plan uyumu: yazılmayan başlık, kelime sapması, plansız bölüm, kullanılmayan atama |
-| `05_analiz/05_analiz_<zaman>.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + bağlam + Ek 1–4 |
-| `05_analiz/05_analiz_<zaman>.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
-| `05_analiz/05_analiz_<zaman>.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
+| `05_analiz/taslak/05_plan_uyumu_<zaman>.json/html` | JSON+HTML | Ajan + insan | Plan uyumu: yazılmayan başlık, kelime sapması, plansız bölüm, kullanılmayan atama |
+| `05_analiz/taslak/05_analiz_<zaman>.html` | HTML | İnsan | **Altın standart:** düzeltilmiş metin + bağlam + Ek 1–4 |
+| `05_analiz/taslak/05_analiz_<zaman>.md` | Markdown | İnsan + ajan | Aynı raporun düzenlenebilir eşlik dosyası |
+| `05_analiz/taslak/05_analiz_<zaman>.manifest.json` | JSON | Ajan | Üretilen dosyaların hash'li temizlik manifesti |
 
 Birden çok araştırmanın listeleri aynı `03_kaynak_kesfi/` klasöründe tutulur; ayrı araştırma kök klasörlerine dağıtılmaz. Her dosya adı sıra numarası ve araştırma kısa adını içerir. `scripts/build_fulltext_index.py` tüm liste çiftlerinden `00_kaynak_listeleri_<zaman>.html` üretir. Aynı ada sahip dosya varsa üzerine yazmadan önce kullanıcıya sor.
 

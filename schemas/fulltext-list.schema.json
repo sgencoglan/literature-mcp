@@ -102,14 +102,9 @@
           "type": "boolean"
         },
         "publisher": {
-          "enum": [
-            "Ovid LWW",
-            "ScienceDirect",
-            "SpringerLink",
-            "Wiley",
-            "Taylor & Francis",
-            "Diğer"
-          ]
+          "type": "string",
+          "minLength": 1,
+          "description": "Gerçek yayıncı/veritabanı adı (örn. SAGE, Elsevier (ScienceDirect), Taylor & Francis, Springer Nature, Wiley, APA, Frontiers). Öncelikli beş platform dışındaki yayıncılar da gerçek adlarıyla yazılır; 'Diğer' kullanılmaz."
         },
         "publisher_url": {
           "type": [
@@ -218,6 +213,21 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Arama kapsam motorunun 0–1 kalite/ilgi skoru (ön eleme göstergesi)."
+        },
+        "priority_platform": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Beş öncelikli platformdan biri (Ovid LWW, ScienceDirect, SpringerLink, Wiley, Taylor & Francis) ise o platform; değilse null.",
+          "enum": [
+            "Ovid LWW",
+            "ScienceDirect",
+            "SpringerLink",
+            "Wiley",
+            "Taylor & Francis",
+            null
+          ]
         }
       },
       "allOf": [

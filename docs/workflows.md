@@ -212,6 +212,30 @@ Varsayılan hedef `03_kaynak_kesfi/fulltext/`. Rapor aynı klasörde
 
 ### Adım 1: PDF'leri hedefe al
 
+Üretilen taslak metni `04_taslak/taslak/`, PDF'ler `04_taslak/fulltext/`
+altındadır; iki klasör `paperqa_create_workspace` ile birlikte açılır.
+
+### Adım 0: Fulltext'leri oku (zorunlu ilk adım)
+
+```bash
+python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 4
+```
+
+PaperQA2 indeksi üzerinde alt başlık başına anlamsal arama; sayfa numaralı
+alıntı adayları `04_taslak/taslak/_kanit_bankasi.json` içine yazılır. Cümleler
+alıntı adayıdır, kanıt değildir.
+
+Yazmadan önce kapasite denetimi:
+
+```bash
+python3 scripts/build_evidence_gap_request.py <plan.json> --preflight \
+  --fulltext-list <03_kaynak_kesfi>/01_fulltext_listesi.json \
+  --fulltext-dir <04_taslak>/fulltext
+```
+
+`plan_change_required` → yazmaya başlama, kullanıcıya sor.
+`evidence_shortfall` → akış 3'te yeni kaynak ara, sonra devam et.
+
 PDF'ler `03_kaynak_kesfi/fulltext/` altındaysa:
 
 ```bash
@@ -252,10 +276,10 @@ Her alt başlık için `paperqa_search` ile aday paragraf bulun, sonra
 ### Adım 5: Çıktı
 
 ```text
-04_taslak/04_taslak_<zaman>.json
-04_taslak/04_taslak_<zaman>.md
-04_taslak/04_taslak_<zaman>.html
-04_taslak/04_taslak_<zaman>.manifest.json
+04_taslak/taslak/04_taslak_<zaman>.json
+04_taslak/taslak/04_taslak_<zaman>.md
+04_taslak/taslak/04_taslak_<zaman>.html
+04_taslak/taslak/04_taslak_<zaman>.manifest.json
 ```
 
 ```bash
@@ -277,7 +301,7 @@ Her alt başlık için `paperqa_search` ile aday paragraf bulun, sonra
 ```bash
 python3 scripts/check_plan_compliance.py \
   <proje-kökü>/02_yazim_plani/01_yazim_plani_<zaman>.json \
-  <proje-kökü>/04_taslak/04_taslak_<zaman>.json \
+  <proje-kökü>/04_taslak/taslak/04_taslak_<zaman>.json \
   --strict
 ```
 
@@ -289,7 +313,7 @@ Denetlenenler:
 - Atanan kaynakların kaçı taslakta geçiyor?
 - Hangi alt başlık kanıt boşluğu olarak kaldı?
 
-Çıktı: `05_analiz/05_plan_uyumu_<zaman>.json/html`
+Çıktı: `05_analiz/taslak/05_plan_uyumu_<zaman>.json/html`
 
 ### Adım 2: Kanıt denetimi
 
@@ -303,9 +327,9 @@ schemas/claim-evidence.schema.json + schemas/change-card.schema.json
 ### Adım 3: Nihai rapor
 
 ```text
-05_analiz/05_analiz_<zaman>.html
-05_analiz/05_analiz_<zaman>.md
-05_analiz/05_analiz_<zaman>.manifest.json
+05_analiz/taslak/05_analiz_<zaman>.html
+05_analiz/taslak/05_analiz_<zaman>.md
+05_analiz/taslak/05_analiz_<zaman>.manifest.json
 ```
 
 **Kapı:** kalite kapısı 0 hata; plan uyumu raporunda açıklanmamış sapma yok.

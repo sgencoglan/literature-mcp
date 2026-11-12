@@ -569,5 +569,64 @@ class LlamaLifecycleTests(unittest.TestCase):
         adopt.assert_called_once_with()
 
 
+class WorkspaceLayoutTests(unittest.TestCase):
+    """create_workspace, taslak ve fulltext klasörlerini birlikte açmalı.
+
+    Kullanıcı taslağın nereye üretildiğini (akış 4) ve akış 5'te kendi
+    taslağını nereye koyacağını klasör adından görmelidir.
+    """
+
+    def test_creates_taslak_and_fulltext_for_workflows_4_and_5(self) -> None:
+        import asyncio
+        import tempfile
+        from pathlib import Path
+
+        import paperqa_mcp
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "proje"
+            payload = asyncio.run(
+                paperqa_mcp.paperqa_create_workspace(str(root), "p1")
+            )
+
+            for key in (
+                "draft_text",
+                "draft_fulltext",
+                "analysis_text",
+                "analysis_fulltext",
+            ):
+                self.assertTrue(
+                    Path(payload["draft_directories"][key]).is_dir(),
+                    f"{key} klasörü açılmamış",
+                )
+
+            self.assertTrue((root / "04_taslak" / "taslak").is_dir())
+            self.assertTrue((root / "04_taslak" / "fulltext").is_dir())
+            self.assertTrue((root / "05_analiz" / "taslak").is_dir())
+            self.assertTrue((root / "05_analiz" / "fulltext").is_dir())
+
+            self.assertIn(
+                "akış_5_denetlenecek_taslak_buraya_konur",
+                payload["where_to_put_draft"],
+            )
+
+    def test_no_taslak_subdir_for_workflows_1_to_3(self) -> None:
+        import asyncio
+        import tempfile
+        from pathlib import Path
+
+        import paperqa_mcp
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "proje"
+            asyncio.run(paperqa_mcp.paperqa_create_workspace(str(root), "p1"))
+            for name in ("01_konu_belirleme", "02_yazim_plani", "03_kaynak_kesfi"):
+                self.assertFalse(
+                    (root / name / "taslak").exists(),
+                    f"{name} altında gereksiz taslak/ klasörü var",
+                )
+            self.assertTrue((root / "03_kaynak_kesfi" / "fulltext").is_dir())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,46 @@
 # Değişiklik Günlüğü
 
+## v2.11.0 — 2026-11-12
+
+### Değişti
+
+- **Akış 4 ve 5'in ilk adımı artık fulltext okumadır.** Yeni
+  `scripts/build_evidence_bank.py` atanmış PDF'leri PaperQA2 indeksi üzerinde
+  anlamsal aramayla tarar ve alt başlık başına sayfa numaralı alıntı adaylarını
+  `taslak/_kanit_bankasi.json` içine yazar. Abstrakt okuyup yazmaya başlamak,
+  elde yüzlerce sayfa varken metni birkaç kaynakla sınırlıyordu; ölçülen bir
+  vakada 31 atanmış kaynağın yalnızca 10'u kullanılmış, 550 sayfanın ~20'si
+  okunmuştu. Bankadaki cümleler **alıntı adayıdır**; taslağa giren her cümle
+  `paperqa_read_pages` ile doğrulanır.
+- **İki motor:** `semantic` (varsayılan, PaperQA2 embedding) ve `keyword`
+  (PyMuPDF + terim eşleşmesi, indeks yoksa yedek). Proje adı PDF klasöründen
+  çözülür (`deneme7` ↔ `deneme7-draft` uyuşmazlığı otomatik giderilir).
+- **Uçuş öncesi kapasite denetimi.** `build_evidence_gap_request.py --preflight`
+  taslak yazılmadan önce her alt başlığın kanıt kapasitesini ölçer ve iki durumu
+  ayırır: `evidence_shortfall` (alt başlık geçerli, kaynak ekle → akış 3'e dön)
+  ve `plan_change_required` (alt başlık bölünmeli/hedef küçültülmeli → kullanıcıya
+  sor). Taslak sonrası mod da korunur.
+- **`create_workspace` akış 4 ve 5'te `taslak/` klasörünü de açar.** Böylece
+  kullanıcı taslağın nereye üretildiğini ve 5. akışta kendi taslağını nereye
+  koyacağını klasör adından görür. Yanıtta `where_to_put_draft` alanı.
+- **Yayıncı/veritabanı ayrımı.** Fulltext HTML'inde düğme artık platformu
+  gösterir (SAGE, ScienceDirect, SpringerLink, Project MUSE …), yayıncı adı
+  (AERA, APA, Elsevier …) yalnızca veri olarak taşınır. "Diğer" değeri kaldırıldı;
+  bilinmeyen durumda "Bilinmiyor".
+- **Dosya adı düğmesi.** DOI'nin dosya adı biçimi (özel karakterler silinmiş,
+  uzantısız) artık görünmez bir düğmede; tıklanınca panoya kopyalanır. Kural
+  `scripts/doi_naming.py` içinde tek yerde; indirici ve HTML aynı işlevi kullanır.
+- **`--assignments` desteği.** `build_assignment_matrix.py` elle doğrulanmış
+  DOI listesi alabilir. Türkçe plan ↔ İngilizce literatür eşleştirmesinde
+  otomatik skor güvenilir değildi; alaka eşiği 0.25'e çıkarıldı ve eşiğin
+  altındaki kayıtlar tasarım eşleşse bile atanmıyor.
+- **Arama kapsam raporu** 24 sorgunun tamamını ve seçilen makale etiketlerini
+  (`--fulltext-list`) yeniden gösteriyor; önceki sürümde tek sorguya indirgenmişti.
+- Giriş sayfası öncelik/çeyrek dağılımı, indirilen PDF sayısı ve kardeş çıktı
+  bağlantılarını gösteriyor.
+- 20+ yeni test: yayıncı çözümleme, DOI adlandırma, klasör düzeni, kanıt bankası
+  motorları ve boşluk talebi sınıflandırması.
+
 ## v2.10.0 — 2026-11-11
 
 ### Değişti

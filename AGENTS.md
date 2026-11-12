@@ -53,25 +53,61 @@ python3 scripts/build_assignment_matrix.py <plan.json> <havuz.json> -o <proje-k�
 ```
 
 5. `gap_sections > 0` ise dur ve kullanıcıya sor: kapsam mı daraltılacak, boşluk mu kabul edilecek? Sessizce boş bırakma.
-6. `schemas/fulltext-list.schema.json` biçiminde listeyi yaz; `scripts/build_fulltext_list.py` ile HTML üret (tıklanabilir DOI/yayıncı düğmeleri, kısa düz `doi`, "Neden seçildi", "Kalite skoru"; DOI kopyalama düğmesi yok).
+6. `schemas/fulltext-list.schema.json` biçiminde listeyi yaz; `scripts/build_fulltext_list.py` ile HTML üret (tıklanabilir DOI/veritabanı düğmeleri, kısa düz `doi`, "Neden seçildi", "Kalite skoru"; DOI metni kopyalanmaz, ancak "dosya adı" düğmesi tıklanınca düzeltilmiş DOI'yi panoya kopyalar).
 7. `scripts/build_search_coverage.py ... --fulltext-list <liste.json> --auto-report` ile kapsam raporunu yaz; `scripts/build_fulltext_index.py <proje-kökü>/03_kaynak_kesfi` ile giriş sayfasını üret.
 8. Açık erişimli PDF'leri **yalnızca atanmış DOI'ler için** indir. Varsayılan hedef `03_kaynak_kesfi/fulltext/`; rapor aynı klasörde `oa_indirme_raporu_<zaman>.json`.
 9. **Kapı:** her alt başlıkta `evidence_needs.min_count` karşılanmadan akış 4 başlamaz.
 
 ### İş akışı 4 — Taslak yazma
 
-1. PDF'leri hedefe al: `paperqa_promote_fulltext(project_directory=<proje-kökü>, target_workflow="4")` veya `scripts/promote_fulltext.py <proje-kökü> --to 4`. Kullanıcının kendi indirdiği adlandırılmamış PDF'ler de DOI adına çevrilir; hiçbir dosya silinmez.
-2. `workflow_project_names.draft` adıyla PDF klasörünü kaydet (`paper_directory` = `04_taslak/fulltext`, `output_directory` = proje kökü). Manifest `.literature-mcp/projects/<ad>/`, indeks `.literature-mcp/indexes/`.
-3. `paperqa_build_index` → `paperqa_status` → `library_status` ile indeksi doğrula; beklenen dosya sayısı görünmüyorsa devam etme.
-4. Kanıt için yalnızca `paperqa_search` + `paperqa_read_pages` / `read_paper` kullan. Her alıntı için 1 tabanlı PDF sayfası ver. `paperqa_ask` kanıt değildir.
-5. Planlanan iskeleti doldur. Her paragraf en az bir doğrulanmış kaynağa bağlanır. Kaynak cümlesini kopyalama; bulguyu paragraf bağlamına uygun özgün Türkçe ile yeniden ifade et.
-6. Planda olmayan bölüm eklenirse gerekçesini `correction_summary`'ye yaz; bölüm kelime sayısı hedeften ±%25'ten fazla saparsa gerekçelendir.
-7. `source_audit` içindeki her DOI için `source_contributions` alanına rolü, desteklediği/desteklemediği önerme türlerini, sınırlılıklarını ve değerlendirme temelini yaz. Sayfa doğrulanmayanlar kanıt sayılmaz.
-8. JSON'u `04_taslak/04_taslak_<zaman>.json` olarak yaz; `chapter-report build` ile HTML, Markdown ve manifest üret. **Kapı:** kalite kapısı 0 hata.
+1. **Önce oku, sonra yaz.** Taslağa başlamadan önce atanmış fulltext'lerin tamamını oku:
+
+```bash
+python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 4
+```
+
+Bu betik PaperQA2 indeksi üzerinde alt başlık başına anlamsal arama yapar ve
+sayfa numaralı alıntı adaylarını `04_taslak/taslak/_kanit_bankasi.json` dosyasına
+yazar. Abstrakt okuyup yazmaya başlamak, elde yüzlerce sayfa varken metni birkaç
+kaynakla sınırlar ve "kanıt yetmiyor" yanılgısını üretir. Betikteki cümleler
+**alıntı adayıdır**; taslağa giren her cümle `paperqa_read_pages` ile aynı
+sayfadan doğrulanır.
+
+1b. **Yazmadan önce kapasiteyi ölç:**
+
+```bash
+python3 scripts/build_evidence_gap_request.py <plan.json> --preflight \
+  --fulltext-list <03_kaynak_kesfi>/01_fulltext_listesi.json \
+  --fulltext-dir <04_taslak>/fulltext
+```
+
+`plan_change_required` çıkarsa **yazmaya başlama**; kullanıcıya sor. Yalnızca
+`evidence_shortfall` çıkarsa akış 3'e dönüp yeni kaynak ara (mevcut fulltext
+listesini ezme), sonra devam et.
+
+2. PDF'leri hedefe al: `paperqa_promote_fulltext(project_directory=<proje-kökü>, target_workflow="4")` veya `scripts/promote_fulltext.py <proje-kökü> --to 4`. Kullanıcının kendi indirdiği adlandırılmamış PDF'ler de DOI adına çevrilir; hiçbir dosya silinmez.
+3. `workflow_project_names.draft` adıyla PDF klasörünü kaydet (`paper_directory` = `04_taslak/fulltext`, `output_directory` = proje kökü). Manifest `.literature-mcp/projects/<ad>/`, indeks `.literature-mcp/indexes/`.
+4. `paperqa_build_index` → `paperqa_status` → `library_status` ile indeksi doğrula; beklenen dosya sayısı görünmüyorsa devam etme.
+5. Kanıt için yalnızca `paperqa_search` + `paperqa_read_pages` / `read_paper` kullan. Her alıntı için 1 tabanlı PDF sayfası ver. `paperqa_ask` kanıt değildir.
+6. Planlanan iskeleti doldur. Her paragraf en az bir doğrulanmış kaynağa bağlanır. Kaynak cümlesini kopyalama; bulguyu paragraf bağlamına uygun özgün Türkçe ile yeniden ifade et.
+7. Planda olmayan bölüm eklenirse gerekçesini `correction_summary`'ye yaz; bölüm kelime sayısı hedeften ±%25'ten fazla saparsa gerekçelendir.
+8. `source_audit` içindeki her DOI için `source_contributions` alanına rolü, desteklediği/desteklemediği önerme türlerini, sınırlılıklarını ve değerlendirme temelini yaz. Sayfa doğrulanmayanlar kanıt sayılmaz.
+9. JSON'u `04_taslak/taslak/04_taslak_<zaman>.json` olarak yaz; `chapter-report build` ile HTML, Markdown ve manifest üret. **Kapı:** kalite kapısı 0 hata.
 
 ### İş akışı 5 — Taslak analizi
 
-1. Plan uyumunu denetle:
+1. **Önce oku, sonra denetle.** Denetlenecek taslağın dayandığı fulltext'lerin
+tamamını oku:
+
+```bash
+python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 5
+```
+
+Çıktı `05_analiz/taslak/_kanit_bankasi.json`. Her iddia bu bankadan gelen pasajla
+eşleştirilir, sonra `paperqa_read_pages` ile sayfa doğrulaması yapılır. Kanıt
+bankası olmadan iddia–kanıt matrisi kurmak, abstrakt düzeyinde kalmaya yol açar.
+
+2. Plan uyumunu denetle:
 
 ```bash
 python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
@@ -79,11 +115,11 @@ python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
 
 Çıktı `05_analiz/05_plan_uyumu_<zaman>.json/html`: yazılmayan alt başlık, kelime sapması, planda olmayan bölüm, kullanılmayan atama, kanıt boşluğu.
 
-2. Taslak kullanıcıdan geldiyse plan olmayabilir; bu durumda yalnızca kanıt denetimini çalıştır ve plandan söz etme.
-3. Her iddia için kaynak, sayfa, kısa alıntı, destek düzeyi ve karar üret (`schemas/claim-evidence.schema.json`). Her düzeltme için `schemas/change-card.schema.json` uyumlu kart üret.
-4. Paragraf/makale bağlamını değerlendir: paragrafın amacı, komşu cümlelerle akışı, bölüm savıyla uyumu, kaynak makalenin amacı/yöntemi/örneklemi/sınırlılıkları (`context_review`).
-5. Yeniden düzenlenen metni kırmızı, MCP'nin eklediği anlamlı ifadeyi mavi/yeşil işaretle; lejant ekle.
-6. Nihai raporu `05_analiz/05_analiz_<zaman>.html/md` olarak üret. **Kapı:** kalite kapısı 0 hata; plan uyumunda açıklanmamış sapma yok.
+3. Taslak kullanıcıdan geldiyse plan olmayabilir; bu durumda yalnızca kanıt denetimini çalıştır ve plandan söz etme.
+4. Her iddia için kaynak, sayfa, kısa alıntı, destek düzeyi ve karar üret (`schemas/claim-evidence.schema.json`). Her düzeltme için `schemas/change-card.schema.json` uyumlu kart üret.
+5. Paragraf/makale bağlamını değerlendir: paragrafın amacı, komşu cümlelerle akışı, bölüm savıyla uyumu, kaynak makalenin amacı/yöntemi/örneklemi/sınırlılıkları (`context_review`).
+6. Yeniden düzenlenen metni kırmızı, MCP'nin eklediği anlamlı ifadeyi mavi/yeşil işaretle; lejant ekle.
+7. Nihai raporu `05_analiz/taslak/05_analiz_<zaman>.html/md` olarak üret. **Kapı:** kalite kapısı 0 hata; plan uyumunda açıklanmamış sapma yok.
 
 ## 2. Zorunlu kurallar
 
@@ -97,7 +133,7 @@ python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
 8. **Beş platform.** Yalnızca Ovid LWW, ScienceDirect, SpringerLink, Wiley ve Taylor & Francis linkleri önceliklidir. Başka bir dizin sağlayıcısına bağımlılık kurma.
 9. **Mevcut projelere dokunma.** Kayıtlı bir projenin PDF klasörü, manifesti, indeksi veya `analysis_json` dosyası, kullanıcı açıkça istemedikçe değiştirilmez. Yeni çalışma için yeni klasör/manifest/indeks kullan.
 10. **Çıktı sözleşmesi.** Dosya adları, sütunlar ve biçimler [`docs/output-spec.md`](docs/output-spec.md) dosyasına uyar. JSON çıktıları `schemas/` altındaki şemalara uyumlu olur. Klasör düzeni beş akıştır (01–05); her akış çıktısını kendi klasörüne yazar, PDF'ler yalnızca `fulltext/` altındadır.
-11. **Altın standart.** İnsan teslimi `05_analiz_<zaman>.html`'dir; `chapter-report` kalite kapısından 0 hatayla geçmeden teslim edilmez. `05_analiz_<zaman>.json/md` yalnızca denetim odaklı ara çıktıdır. Bölüm raporu HTML'inde DOI kopyalama düğmesi bulunur; kopyalama betiği dışında gömülü betik kullanılmaz. Fulltext listesinde DOI kopyalama düğmesi yerine tıklanabilir DOI/yayıncı düğmeleri ve düz metin DOI açık adresi bulunur.
+11. **Altın standart.** İnsan teslimi `05_analiz_<zaman>.html`'dir; `chapter-report` kalite kapısından 0 hatayla geçmeden teslim edilmez. `05_analiz_<zaman>.json/md` yalnızca denetim odaklı ara çıktıdır. Bölüm raporu HTML'inde DOI kopyalama düğmesi bulunur; kopyalama betiği dışında gömülü betik kullanılmaz. Fulltext listesinde DOI metnini kopyalayan düğme yoktur; tıklanabilir DOI/veritabanı düğmeleri, düz metin DOI ve tıklandığında düzeltilmiş DOI'yi (dosya adı biçimi, uzantısız) panoya kopyalayan "dosya adı" düğmesi bulunur.
 12. **Güvenli temizlik.** Üretilmiş dosyalar yalnızca `chapter-report cleanup` ile ve yalnızca `05_analiz_<zaman>.manifest.json` içinde listelenen dosyalar için silinir. PDF, indeks, registry ve manifest dışı dosyalar silinmez.
 
 13. **Özgün anlatım.** Yeni taslakta kaynak bulgularını paragraf bağlamına uygun, özgün cümlelerle aktar. Kaynak cümlelerini aynen kopyalama; doğrudan alıntı gerekiyorsa kısa tut, alıntı olarak işaretle ve PDF sayfasını belirt. Yeniden yazım kanıtın kapsamını genişletmez.
@@ -220,16 +256,16 @@ Proje `output_directory` altında:
 03_kaynak_kesfi/oa_indirme_raporu_<zaman>.json
 04_taslak/fulltext/<doi-adi>.pdf
 04_taslak/fulltext_aktarim_<zaman>.json
-04_taslak/04_taslak_<zaman>.json
-04_taslak/04_taslak_<zaman>.md
-04_taslak/04_taslak_<zaman>.html
-04_taslak/04_taslak_<zaman>.manifest.json
+04_taslak/taslak/04_taslak_<zaman>.json
+04_taslak/taslak/04_taslak_<zaman>.md
+04_taslak/taslak/04_taslak_<zaman>.html
+04_taslak/taslak/04_taslak_<zaman>.manifest.json
 04_taslak/oa_indirme_raporu_<zaman>.json
-05_analiz/05_plan_uyumu_<zaman>.json
-05_analiz/05_plan_uyumu_<zaman>.html
-05_analiz/05_analiz_<zaman>.html
-05_analiz/05_analiz_<zaman>.md
-05_analiz/05_analiz_<zaman>.manifest.json
+05_analiz/taslak/05_plan_uyumu_<zaman>.json
+05_analiz/taslak/05_plan_uyumu_<zaman>.html
+05_analiz/taslak/05_analiz_<zaman>.html
+05_analiz/taslak/05_analiz_<zaman>.md
+05_analiz/taslak/05_analiz_<zaman>.manifest.json
 ```
 
 `<zaman>` biçimi `YYYYMMDD-HHMMSS`'tir. Sabit ad gerekiyorsa üreticilere
@@ -264,7 +300,7 @@ Teslimden önce:
 - [ ] JSON şemaya uyuyor.
 - [ ] `05_analiz_<zaman>.html` kalite kapısından 0 hatayla geçti.
 - [ ] Üretilen HTML/Markdown/manifest/rapor adları `_YYYYMMDD-HHMMSS` soneki içeriyor; önceki çıktı ezilmedi.
-- [ ] Kaynak listesi HTML'inde tıklanabilir DOI/yayıncı düğmeleri ve düz metin DOI açık adresi var; indirilen PDF'ler işaretli; DOI kopyalama düğmesi yok.
+- [ ] Kaynak listesi HTML'inde tıklanabilir DOI/veritabanı düğmeleri ve düz metin DOI var; indirilen PDF'ler işaretli; "dosya adı" düğmesi düzeltilmiş DOI'yi kopyalıyor, ham DOI metnini kopyalayan düğme yok.
 - [ ] Bölüm raporu HTML'lerinde DOI kopyalama düğmesi var; kopyalama betiği dışında gömülü betik yok.
 - [ ] Arama cevabındaki `coverage` ve `evidence_scarcity` alanları incelendi; kapsam raporu `03_kaynak_kesfi/01_arama_kapsam_raporu_<zaman>.json/html/md` olarak yazıldı. Raporda kaynak durumları (`ok`/`error`/`rate_limited`/sorgulanmadı), istenen limit, süre, `warnings`, publisher/OA dağılımı, katı yüksek-kalite sayısı ve trend sinyali görünüyor.
 - [ ] Ürün türü ve hedef kelime sayısı kullanıcıya soruldu; yazım planı onaylandı (`plan_status: approved`).
@@ -279,7 +315,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.10.0; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.11.0; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
@@ -344,6 +380,22 @@ python3 scripts/download_open_access.py adaylar.json --dry-run
 
 # Akış 1 → 4 PDF aktarımı (DOI adına çevirir)
 python3 scripts/promote_fulltext.py <proje-kökü> --to 4 --dry-run
+
+# Akış 4/5 ilk adımı: fulltext okuma + kanıt bankası
+python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 4
+python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 5 --check
+
+# Yazmadan önce kapasite denetimi (uçuş öncesi)
+python3 scripts/build_evidence_gap_request.py \
+  <proje-kökü>/02_yazim_plani/01_yazim_plani.json --preflight \
+  --fulltext-list <proje-kökü>/03_kaynak_kesfi/01_fulltext_listesi.json \
+  --fulltext-dir <proje-kökü>/04_taslak/fulltext
+
+# Taslak sonrası boşluk talebi
+python3 scripts/build_evidence_gap_request.py \
+  <proje-kökü>/02_yazim_plani/01_yazim_plani.json \
+  <proje-kökü>/04_taslak/taslak/04_taslak.json \
+  -o <proje-kökü>/03_kaynak_kesfi
 
 # Plan uyumu (akış 5)
 python3 scripts/check_plan_compliance.py \

@@ -210,11 +210,12 @@ class FulltextListTests(unittest.TestCase):
         self.assertNotIn("https://doi.org/10.1016/j.appdev.2020.101199</span>", html_text)
         self.assertNotIn("DOI kopyala", html_text)
         self.assertIn('class="btn doi"', html_text)
-        self.assertIn(
-            '<a class="btn pub" href="https://example.org/article" '
-            'target="_blank" rel="noopener">Diğer</a>',
-            html_text,
-        )
+        # "Diğer" yerine gerçek yayıncı/platform adı yazılır; düğmede ek
+        # nitelikler (title, priority-platform) bulunabilir.
+        self.assertNotIn(">Diğer</a>", html_text)
+        self.assertIn("Bilinmiyor", html_text)
+        self.assertIn('class="btn pub', html_text)
+        self.assertIn('href="https://example.org/article"', html_text)
 
     def test_database_link_derived_from_doi_prefix(self) -> None:
         payload = {
@@ -236,7 +237,9 @@ class FulltextListTests(unittest.TestCase):
             'href="https://link.springer.com/article/10.1007/s10864-022-09491-4"',
             html_text,
         )
-        self.assertIn('rel="noopener">SpringerLink</a>', html_text)
+        self.assertIn(">SpringerLink</a>", html_text)
+        # Yayıncı adı düz yazı olarak tekrarlanmaz; düğme yeterlidir.
+        self.assertNotIn("yayıncı: Springer Nature", html_text)
 
     def test_html_stat_counts_downloaded(self) -> None:
         html_text = fl.build_html(
@@ -1139,6 +1142,12 @@ class LayoutTests(unittest.TestCase):
             paperqa_mcp.WORKFLOW_DIRS, project_layout.WORKFLOW_DIRECTORIES
         )
         self.assertEqual(
+            meta_layout.DRAFT_SUBDIR, project_layout.DRAFT_SUBDIR
+        )
+        self.assertEqual(
+            meta_layout.DRAFT_WORKFLOWS, project_layout.DRAFT_WORKFLOWS
+        )
+        self.assertEqual(
             meta_layout.FULLTEXT_SUBDIR, project_layout.FULLTEXT_SUBDIR
         )
 
@@ -1318,6 +1327,284 @@ class WritingPlanTests(unittest.TestCase):
         }
         report = cp.compare(plan, draft)
         self.assertTrue(report["sections"][0]["written"])
+
+
+class PublisherLookupTests(unittest.TestCase):
+    """Yayıncı adı "Diğer" değil gerçek kaynak olarak gösterilmeli."""
+
+    def test_doi_prefix_resolves_sage(self) -> None:
+        from publisher_lookup import resolve
+
+        self.assertEqual(resolve("10.1177/0198742916688656")[0], "SAGE")
+        # AERA bir dernektir; makaleleri SAGE üzerinde yayımlanır.
+        self.assertEqual(resolve("10.3102/00346543211051428")[0], "AERA")
+
+    def test_button_shows_database_not_society(self) -> None:
+        from publisher_lookup import display_label, publisher_note
+
+        # Düğme veritabanını göstermeli: AERA değil SAGE.
+        self.assertEqual(display_label("10.3102/00346543211051428"), "SAGE")
+        self.assertEqual(publisher_note("10.3102/00346543211051428"), "AERA")
+        self.assertEqual(display_label("10.1037/edu0000641"), "APA PsycNet")
+        self.assertEqual(publisher_note("10.1037/edu0000641"), "APA")
+
+    def test_platform_covers_non_priority_publishers(self) -> None:
+        from publisher_lookup import platform_for
+
+        self.assertEqual(platform_for("10.1353/etc.2019.0021"), "Project MUSE")
+        self.assertEqual(platform_for("10.1093/x"), "Oxford Academic")
+        self.assertIsNone(platform_for("10.99999/x"))
+
+    def test_taylor_francis_is_resolved(self) -> None:
+        from publisher_lookup import resolve
+
+        self.assertEqual(resolve("10.1080/10409289.2019.1594531")[0], "Taylor & Francis")
+        self.assertEqual(
+            resolve("10.1080/10409289.2019.1594531")[2], "Taylor & Francis"
+        )
+
+    def test_priority_platform_only_for_the_five(self) -> None:
+        from publisher_lookup import resolve
+
+        self.assertEqual(resolve("10.1016/j.jsp.2022.04.002")[2], "ScienceDirect")
+        self.assertEqual(resolve("10.1007/s10639-021-10795-7")[2], "SpringerLink")
+        self.assertIsNone(resolve("10.1177/0198742916688656")[2])
+        self.assertIsNone(resolve("10.1037/edu0000641")[2])
+
+    def test_metadata_name_wins_over_prefix(self) -> None:
+        from publisher_lookup import resolve
+
+        name, _url, priority = resolve("10.9999/x", "SAGE Publications")
+        self.assertEqual(name, "SAGE")
+        self.assertIsNone(priority)
+
+    def test_unknown_does_not_say_diger(self) -> None:
+        from publisher_lookup import resolve
+
+        name, _url, _priority = resolve("10.99999/none", None)
+        self.assertEqual(name, "Bilinmiyor")
+        self.assertNotEqual(name, "Diğer")
+
+    def test_html_button_shows_real_publisher(self) -> None:
+        import build_fulltext_list as fl
+
+        rows = fl.render_rows(
+            [
+                {
+                    "doi": "10.1177/0198742916688656",
+                    "title": "T",
+                    "authors": "A",
+                    "year": 2024,
+                    "journal": "J",
+                    "publisher": "Diğer",  # eski/eksik değer
+                    "priority": "A",
+                    "rationale": "R",
+                    "project_relevance": "P",
+                    "supports": ["s"],
+                    "does_not_support": ["n"],
+                    "limits": ["l"],
+                    "assessment_basis": "abstract",
+                }
+            ]
+        )
+        self.assertIn("SAGE", rows)
+        self.assertNotIn(">Diğer<", rows)
+
+
+class DoiNamingTests(unittest.TestCase):
+    """HTML'de gösterilen PDF adı, indiricinin ürettiği adla birebir aynı olmalı."""
+
+    def test_strips_special_characters(self) -> None:
+        from doi_naming import doi_filename
+
+        self.assertEqual(doi_filename("10.4073/csr.2011.4"), "10.4073csr.2011.4")
+        self.assertEqual(doi_filename("10.1007/s10639-021-10795-7"), "10.1007s10639-021-10795-7")
+        self.assertNotIn("/", doi_filename("10.1016/j.jsp.2022.04.002"))
+
+    def test_pdf_suffix_and_fallback(self) -> None:
+        from doi_naming import doi_filename, doi_pdf_filename
+
+        self.assertTrue(doi_pdf_filename("10.1177/0198742916688656").endswith(".pdf"))
+        self.assertEqual(doi_filename(""), "doi-yok")
+
+    def test_downloader_uses_the_shared_rule(self) -> None:
+        import download_open_access as oa
+        from doi_naming import doi_pdf_filename
+
+        for doi in ("10.4073/csr.2011.4", "10.3102/00346543211051428", "10.1016/j.tate.2021.103349"):
+            self.assertEqual(oa._filename_for({"doi": doi}), doi_pdf_filename(doi))
+
+    def test_html_has_filename_copy_button(self) -> None:
+        import build_fulltext_list as fl
+
+        rows = fl.render_rows(
+            [
+                {
+                    "doi": "10.1007/s10639-021-10795-7",
+                    "title": "T",
+                    "authors": "A",
+                    "year": 2024,
+                    "journal": "J",
+                    "publisher": "SpringerLink",
+                    "priority": "A",
+                    "rationale": "R",
+                    "project_relevance": "P",
+                    "supports": ["s"],
+                    "does_not_support": ["n"],
+                    "limits": ["l"],
+                    "assessment_basis": "abstract",
+                }
+            ]
+        )
+        # Değer görünmez, düğme veri olarak taşır.
+        self.assertIn('class="btn file"', rows)
+        self.assertIn('data-filename="10.1007s10639-021-10795-7"', rows)
+        self.assertNotIn(">10.1007s10639-021-10795-7<", rows)
+        self.assertNotIn("10.1007s10639-021-10795-7.pdf", rows)
+
+    def test_detection_finds_the_downloader_filename(self) -> None:
+        import build_fulltext_list as fl
+
+        keys = fl.doi_filename_keys("10.1007/s10639-021-10795-7")
+        self.assertIn("10.1007s10639-021-10795-7", keys)
+
+
+class EvidenceGapRequestTests(unittest.TestCase):
+    """Kanıt eksikliği ile plan değişikliği ayrımı korunmalı."""
+
+    def _plan(self, **section_overrides):
+        section = {
+            "id": "S1",
+            "heading": "Kriz Öncesi",
+            "target_words": 1000,
+            "evidence_needs": [{"design": "cross_sectional", "min_count": 1}],
+            "assigned_dois": ["10.1/a", "10.1/b"],
+            "search_terms": ["screening", "referral", "teacher"],
+        }
+        section.update(section_overrides)
+        return {"project": "p", "title": "T", "plan_status": "approved",
+                "target_total_words": 1000, "sections": [section]}
+
+    def test_evidence_shortfall_does_not_require_user_decision(self) -> None:
+        from build_evidence_gap_request import preflight
+
+        report = preflight(self._plan(), fulltext_list={"candidates": []},
+                           available_pdfs={"10.1a", "10.1b"})
+        gap = report["gaps"][0]
+        self.assertEqual(gap["status"], "evidence_shortfall")
+        self.assertFalse(gap["needs_user_decision"])
+        self.assertTrue(gap["suggested_queries"])
+
+    def test_no_assignment_is_plan_change(self) -> None:
+        from build_evidence_gap_request import preflight
+
+        report = preflight(self._plan(assigned_dois=[]), fulltext_list={"candidates": []})
+        self.assertEqual(report["gaps"][0]["status"], "plan_change_required")
+        self.assertTrue(report["gaps"][0]["needs_user_decision"])
+
+    def test_single_source_for_long_section_is_plan_change(self) -> None:
+        from build_evidence_gap_request import preflight
+
+        plan = self._plan(target_words=1500, assigned_dois=["10.1/a"])
+        report = preflight(plan, fulltext_list={"candidates": []},
+                           available_pdfs={"10.1a"})
+        self.assertEqual(report["gaps"][0]["status"], "plan_change_required")
+
+    def test_missing_pdf_is_flagged(self) -> None:
+        from build_evidence_gap_request import preflight
+
+        report = preflight(self._plan(), fulltext_list={"candidates": []},
+                           available_pdfs=set())
+        gap = report["gaps"][0]
+        self.assertEqual(gap["missing_pdf_count"], 2)
+        self.assertEqual(gap["status"], "evidence_shortfall")
+
+    def test_well_supported_section_produces_no_gap(self) -> None:
+        from build_evidence_gap_request import preflight
+
+        dois = [f"10.1234/study.{i}" for i in range(4)]
+        plan = self._plan(
+            target_words=600,
+            assigned_dois=dois,
+            evidence_needs=[{"design": "any", "min_count": 1}],
+        )
+        from build_evidence_gap_request import _pdf_stem
+
+        report = preflight(
+            plan,
+            fulltext_list={"candidates": [
+                {"doi": doi, "title": "randomized trial", "abstract": ""}
+                for doi in dois
+            ]},
+            available_pdfs={_pdf_stem(doi) for doi in dois},
+        )
+        self.assertEqual(report["gaps"], [])
+
+    def test_summary_counts_both_categories(self) -> None:
+        from build_evidence_gap_request import preflight
+
+        plan = self._plan()
+        plan["sections"].append(
+            {
+                "id": "S2",
+                "heading": "Kriz Sonrası",
+                "target_words": 900,
+                "evidence_needs": [{"design": "any", "min_count": 1}],
+                "assigned_dois": [],
+                "search_terms": ["reentry"],
+            }
+        )
+        report = preflight(plan, fulltext_list={"candidates": []},
+                           available_pdfs={"10.1a", "10.1b"})
+        self.assertEqual(report["summary"]["gap_sections"], 2)
+        self.assertEqual(report["summary"]["plan_change_required"], 1)
+        self.assertEqual(report["summary"]["evidence_shortfall"], 1)
+        self.assertEqual(report["mode"], "preflight")
+
+
+class EvidenceBankTests(unittest.TestCase):
+    def test_pdf_filename_matches_downloader_rule(self) -> None:
+        from build_evidence_bank import pdf_filename
+        from doi_naming import doi_pdf_filename
+
+        for doi in ("10.1007/s10639-021-10795-7", "10.3102/00346543211051428"):
+            self.assertEqual(pdf_filename(doi), doi_pdf_filename(doi))
+
+    def test_section_terms_prefers_explicit_search_terms(self) -> None:
+        from build_evidence_bank import section_terms
+
+        self.assertEqual(
+            section_terms({"heading": "Kriz Öncesi", "search_terms": ["screening", "referral"]}),
+            ["screening", "referral"],
+        )
+
+    def test_section_terms_falls_back_to_heading_keywords(self) -> None:
+        from build_evidence_bank import section_terms
+
+        terms = section_terms({"heading": "Kriz Sonrası: İzleme"})
+        self.assertIn("reintegration", terms)
+
+    def test_design_detection(self) -> None:
+        from build_evidence_bank import detect_design
+
+        self.assertEqual(detect_design("A meta-analysis of X", ""), "meta_analysis")
+        self.assertEqual(detect_design("A randomized trial", ""), "rct")
+        self.assertEqual(detect_design("Qualitative interviews", ""), "qualitative")
+        self.assertEqual(detect_design("Something else", ""), "any")
+
+    def test_sentence_filtering_skips_short_and_long(self) -> None:
+        from build_evidence_bank import split_sentences
+
+        long_sentence = "This is far too long. " * 40 + "End."
+        text = (
+            "Short one. "
+            "This sentence is long enough to be a candidate because it carries "
+            "context about screening and referral practices in schools. "
+            + long_sentence
+        )
+        picked = split_sentences(text)
+        self.assertTrue(all(60 <= len(s) <= 420 for s in picked))
+        self.assertTrue(any("screening" in s for s in picked))
 
 
 if __name__ == "__main__":

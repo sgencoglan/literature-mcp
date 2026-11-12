@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-11T13:36:03+00:00",
+  "generated_at": "2026-11-12T08:42:26+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
@@ -1002,7 +1002,7 @@
       "tools": [
         {
           "name": "paperqa_create_workspace",
-          "description": "Proje kökünde beş iş akışı klasörünü açar; akış/proje seçimi yapmaz.\n\nVar olan dosyaları silmez veya taşımaz. Açılan klasörler:\n\n1. ``01_konu_belirleme`` — konu, başlık, tür, kapsam\n2. ``02_yazim_plani`` — alt başlık iskeleti ve kanıt ihtiyacı\n3. ``03_kaynak_kesfi`` — plana göre arama, atama matrisi, ``fulltext/``\n4. ``04_taslak`` — taslak metin ve ``fulltext/``\n5. ``05_analiz`` — iddia–kanıt ve plan uyumu denetimi, ``fulltext/``\n\nÜretilen dosya adları varsayılan olarak ``_YYYYMMDD-HHMMSS`` zaman soneki\nalır. Ürün türü (kitap bölümü / uygulama rehberi / derleme makale /\nampirik makale) bu araçta **seçilmez**; akış 1'de kullanıcıya sorulur.\n",
+          "description": "Proje kökünde beş iş akışı klasörünü açar; akış/proje seçimi yapmaz.\n\nVar olan dosyaları silmez veya taşımaz. Açılan klasörler:\n\n1. ``01_konu_belirleme`` — konu, başlık, tür, kapsam\n2. ``02_yazim_plani`` — alt başlık iskeleti ve kanıt ihtiyacı\n3. ``03_kaynak_kesfi`` — plana göre arama, atama matrisi, ``fulltext/``\n4. ``04_taslak`` — ``taslak/`` (üretilen taslak metni) ve ``fulltext/``\n5. ``05_analiz`` — ``taslak/`` (denetlenecek metin) ve ``fulltext/``\n\nÜretilen dosya adları varsayılan olarak ``_YYYYMMDD-HHMMSS`` zaman soneki\nalır. Ürün türü (kitap bölümü / uygulama rehberi / derleme makale /\nampirik makale) bu araçta **seçilmez**; akış 1'de kullanıcıya sorulur.\n",
           "input_schema": {
             "properties": {
               "project_directory": {

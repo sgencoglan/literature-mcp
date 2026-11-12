@@ -26,6 +26,10 @@ WORKFLOW_LABELS: Dict[str, str] = {
 }
 
 FULLTEXT_SUBDIR = "fulltext"
+DRAFT_SUBDIR = "taslak"
+
+# Bu akışlarda metin çıktıları ``taslak/`` alt klasörüne yazılır.
+DRAFT_WORKFLOWS = ("4", "5")
 INTERNAL_DIRECTORY = ".literature-mcp"
 
 GENRES: Dict[str, str] = {
@@ -47,6 +51,17 @@ def workflow_dir(root: Path, workflow: str) -> Path:
 
 def fulltext_dir(root: Path, workflow: str) -> Path:
     return workflow_dir(root, workflow) / FULLTEXT_SUBDIR
+
+
+def draft_dir(root: Path, workflow: str) -> Path:
+    """Bir akışın metin/taslak klasörü (yalnızca 4 ve 5)."""
+    key = str(workflow).strip()
+    if key not in DRAFT_WORKFLOWS:
+        raise ValueError(
+            f"taslak/ yalnızca {DRAFT_WORKFLOWS} akışlarında vardır, "
+            f"verilen: {workflow!r}"
+        )
+    return workflow_dir(root, key) / DRAFT_SUBDIR
 
 
 def detect_workflow(path: Path) -> str:

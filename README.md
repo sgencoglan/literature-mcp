@@ -4,7 +4,7 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.10.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
+> **Sürüm:** v2.11.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 ## Ne çözer?
@@ -594,10 +594,37 @@ Plan
 ## İş akışı 4 — Taslak yazma
 
 PDF'leri `<proje-klasörü>/04_taslak/fulltext/` içine koyun veya akış 3'ten
-`python3 scripts/promote_fulltext.py <proje-kökü> --to 4` ile aktarın. Taslak
-çıktıları doğrudan `04_taslak/` altında tutulur (ayrı `taslak/` alt klasörü yok). Aynı
-`chapter-report` şablonu taslak HTML'inde bölüm metnini, Ek 1 kaynak–taslak
-eşleştirmelerini ve Ek 2 iddia–kanıt matrisini verir.
+`python3 scripts/promote_fulltext.py <proje-kökü> --to 4` ile aktarın.
+**İlk adım okumaktır.** Taslağa başlamadan önce atanmış fulltext'lerin tamamı
+okunur:
+
+```bash
+python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 4
+```
+
+Betik PaperQA2 indeksi üzerinde alt başlık başına anlamsal arama yapar ve sayfa
+numaralı alıntı adaylarını `04_taslak/taslak/_kanit_bankasi.json` içine yazar.
+Abstraktla yetinmek, elde yüzlerce sayfa tam metin varken metni birkaç kaynakla
+sınırlar. Bankadaki cümleler **alıntı adayıdır**; taslağa giren her cümle
+`paperqa_read_pages` ile aynı sayfadan doğrulanır.
+
+Yazmadan önce kapasite de ölçülür:
+
+```bash
+python3 scripts/build_evidence_gap_request.py <plan.json> --preflight \
+  --fulltext-list <03_kaynak_kesfi>/01_fulltext_listesi.json \
+  --fulltext-dir <04_taslak>/fulltext
+```
+
+`plan_change_required` çıkarsa plan değişikliği için kullanıcıya sorulur;
+`evidence_shortfall` çıkarsa akış 3'e dönülüp **yeni** (mevcut listeyi ezmeyen)
+kaynak listesi üretilir.
+
+Üretilen taslak metni **`04_taslak/taslak/`** altına yazılır; PDF'ler
+`04_taslak/fulltext/` altında kalır. Bu iki klasör `paperqa_create_workspace`
+tarafından birlikte açılır, böylece taslağın nereye üretildiği klasör adından
+görülür. Aynı `chapter-report` şablonu taslak HTML'inde bölüm metnini, Ek 1
+kaynak–taslak eşleştirmelerini ve Ek 2 iddia–kanıt matrisini verir.
 
 ```text
 Kullanıcı PDF'leri `<proje-kökü>/04_taslak/fulltext/` klasörüne indirir
@@ -606,19 +633,27 @@ Kullanıcı PDF'leri `<proje-kökü>/04_taslak/fulltext/` klasörüne indirir
   → paperqa_build_index
   → paperqa_status + library_status
   → paperqa_search / paperqa_read_pages / read_paper
-  → <proje-kökü>/04_taslak/04_taslak_<zaman>.json
+  → <proje-kökü>/04_taslak/taslak/04_taslak_<zaman>.json
   → chapter-report build
-  → <proje-kökü>/04_taslak/04_taslak_<zaman>.html + .md
+  → <proje-kökü>/04_taslak/taslak/04_taslak_<zaman>.html + .md
 ```
 
 ## İş akışı 5 — Taslak analizi
 
-Denetlenen taslak ve rapor çıktıları doğrudan
-`<proje-kökü>/05_analiz/` içinde tutulur. Kullanıcı denetlenecek taslağı da
-bu klasöre koyar. Ana rapor `05_analiz_<zaman>.html` dosyasıdır.
+**İlk adım yine okumaktır:**
+
+```bash
+python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 5
+```
+
+Kanıt bankası olmadan iddia–kanıt matrisi kurmak abstrakt düzeyinde kalır.
+
+Denetlenecek taslak **`<proje-kökü>/05_analiz/taslak/`** içine konur; PDF'ler
+`05_analiz/fulltext/` altına. Analiz raporu da `05_analiz/taslak/` altına
+yazılır. Ana rapor `05_analiz_<zaman>.html` dosyasıdır.
 
 ```text
-Kullanıcı taslağı 05_analiz/ içine, PDF'leri
+Kullanıcı taslağı 05_analiz/taslak/ içine, PDF'leri
 05_analiz/fulltext/ içine koyar
   → ayrı PaperQA proje kaydı (workflow_project_names.analysis)
   → project_audit / paperqa_status / library_status
@@ -628,7 +663,7 @@ Kullanıcı taslağı 05_analiz/ içine, PDF'leri
   → düzeltme kartları (schemas/change-card.schema.json)
   → Ek 2 kaynak denetimi
   → iddia–kanıt matrisi (schemas/claim-evidence.schema.json)
-  → chapter-report build → <proje-kökü>/05_analiz/05_analiz_<zaman>.html
+  → chapter-report build → <proje-kökü>/05_analiz/taslak/05_analiz_<zaman>.html
   → istenirse --cleanup intermediate/all
 ```
 

@@ -1269,8 +1269,8 @@ async def paperqa_create_workspace(
     1. ``01_konu_belirleme`` — konu, başlık, tür, kapsam
     2. ``02_yazim_plani`` — alt başlık iskeleti ve kanıt ihtiyacı
     3. ``03_kaynak_kesfi`` — plana göre arama, atama matrisi, ``fulltext/``
-    4. ``04_taslak`` — taslak metin ve ``fulltext/``
-    5. ``05_analiz`` — iddia–kanıt ve plan uyumu denetimi, ``fulltext/``
+    4. ``04_taslak`` — ``taslak/`` (üretilen taslak metni) ve ``fulltext/``
+    5. ``05_analiz`` — ``taslak/`` (denetlenecek metin) ve ``fulltext/``
 
     Üretilen dosya adları varsayılan olarak ``_YYYYMMDD-HHMMSS`` zaman soneki
     alır. Ürün türü (kitap bölümü / uygulama rehberi / derleme makale /
@@ -1293,8 +1293,10 @@ async def paperqa_create_workspace(
         "source_fulltext": root / WORKFLOW_DIRS["3"] / "fulltext",
         "draft": root / WORKFLOW_DIRS["4"],
         "draft_fulltext": root / WORKFLOW_DIRS["4"] / "fulltext",
+        "draft_text": root / WORKFLOW_DIRS["4"] / "taslak",
         "analysis": root / WORKFLOW_DIRS["5"],
         "analysis_fulltext": root / WORKFLOW_DIRS["5"] / "fulltext",
+        "analysis_text": root / WORKFLOW_DIRS["5"] / "taslak",
         "internal": root / ".literature-mcp",
         "indexes": root / ".literature-mcp" / "indexes",
         "manifests": root / ".literature-mcp" / "projects",
@@ -1355,7 +1357,15 @@ async def paperqa_create_workspace(
         },
         "draft_directories": {
             "draft": str(paths["draft"]),
+            "draft_text": str(paths["draft_text"]),
+            "draft_fulltext": str(paths["draft_fulltext"]),
             "analysis": str(paths["analysis"]),
+            "analysis_text": str(paths["analysis_text"]),
+            "analysis_fulltext": str(paths["analysis_fulltext"]),
+        },
+        "where_to_put_draft": {
+            "akış_4_taslak_buraya_uretilir": str(paths["draft_text"]),
+            "akış_5_denetlenecek_taslak_buraya_konur": str(paths["analysis_text"]),
         },
         "workflow_project_names": {
             "draft": scoped_name("draft"),

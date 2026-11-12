@@ -16,6 +16,11 @@ try:  # scripts/ içinden çalışırken
 except ImportError:  # python -m scripts.build_fulltext_index
     from scripts.output_naming import add_timestamp, add_timestamp_argument
 
+try:  # scripts/ içinden çalışırken
+    from build_fulltext_list import detect_downloaded_dois
+except ImportError:  # python -m scripts.build_fulltext_index
+    from scripts.build_fulltext_list import detect_downloaded_dois
+
 LIST_RE = re.compile(
     r"^(?P<base>.+_fulltext_listesi)(?:_(?P<stamp>\d{8}-\d{6}))?$"
 )
@@ -60,6 +65,25 @@ def discover(directory: Path) -> list[dict[str, Any]]:
             1 for candidate in candidates
             if isinstance(candidate, dict) and candidate.get("open_access") is True
         )
+        # JSON alanı indirme sonrasında güncellenmeyebilir; PDF klasörünü de
+        # tara ki giriş sayfası gerçek durumu göstersin.
+        try:
+            downloaded_dois = detect_downloaded_dois(data, json_path)
+        except Exception:  # noqa: BLE001 - giriş sayfası asla üretimi düşürmesin
+            downloaded_dois = set()
+        downloaded = len(downloaded_dois) or sum(
+            1 for candidate in candidates
+            if isinstance(candidate, dict) and candidate.get("oa_downloaded") is True
+        )
+        priorities: dict[str, int] = {}
+        quartiles: dict[str, int] = {}
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            priority = str(candidate.get("priority") or "?").upper()
+            priorities[priority] = priorities.get(priority, 0) + 1
+            quartile = str(candidate.get("quartile") or "-").upper()
+            quartiles[quartile] = quartiles.get(quartile, 0) + 1
         reports.append({
             "html": html_path.name,
             "json": json_path.name,
@@ -67,6 +91,9 @@ def discover(directory: Path) -> list[dict[str, Any]]:
             "project": data.get("project") or "",
             "count": len(candidates),
             "open_access": open_access,
+            "downloaded": downloaded,
+            "priorities": priorities,
+            "quartiles": quartiles,
             "stamp": stamp or "",
             "mtime": html_path.stat().st_mtime,
         })
@@ -74,13 +101,61 @@ def discover(directory: Path) -> list[dict[str, Any]]:
     return reports
 
 
-def render(reports: list[dict[str, Any]], directory_name: str) -> str:
+def _pill(values: dict[str, int], order: list[str] | None = None) -> str:
+    """Small labelled counts, e.g. ``A 16 · B 8 · C 7``."""
+    if not values:
+        return ""
+    keys = order or sorted(values, key=lambda key: (-values[key], key))
+    parts = [
+        f"<span class='pill'><b>{esc(key)}</b> {values[key]}</span>"
+        for key in keys
+        if values.get(key)
+    ]
+    return " ".join(parts)
+
+
+def _latest(directory: Path, pattern: str) -> Path | None:
+    matches = sorted(directory.glob(pattern))
+    return matches[-1] if matches else None
+
+
+def render(
+    reports: list[dict[str, Any]],
+    directory_name: str,
+    directory: Path | None = None,
+) -> str:
+    artifacts = ""
+    if directory is not None:
+        links: list[tuple[str, Path]] = []
+        for label, pattern in (
+            ("Atama matrisi", "00_atama_matrisi_*.html"),
+            ("Arama kapsam raporu", "01_arama_kapsam_raporu_*.html"),
+            ("Açık erişim indirme raporu", "oa_indirme_raporu_*.json"),
+        ):
+            latest = _latest(directory, pattern)
+            if latest is not None:
+                links.append((label, latest))
+        if links:
+            artifacts = (
+                "<h2>Bu çalıştırmanın diğer çıktıları</h2><ul class='artifacts'>"
+                + "".join(
+                    f"<li><a href='{esc(path.name)}'>{esc(label)}</a>"
+                    f" <span class='muted'>{esc(path.name)}</span></li>"
+                    for label, path in links
+                )
+                + "</ul>"
+            )
+
     if reports:
         cards = "".join(
             "<li class='card'><h2>" + esc(report["title"]) + "</h2>"
             + ("<p class='muted'>" + esc(report["project"]) + "</p>" if report["project"] else "")
             + ("<p class='muted'>Sürüm: " + esc(report["stamp"]) + "</p>" if report.get("stamp") else "")
-            + f"<p>{report['count']} aday kaynak · {report['open_access']} açık erişim</p>"
+            + f"<p><b>{report['count']}</b> aday kaynak · "
+            + f"<b>{report['open_access']}</b> açık erişim · "
+            + f"<b>{report.get('downloaded', 0)}</b> PDF indirildi</p>"
+            + ("<p class='muted'>Öncelik: " + _pill(report.get("priorities") or {}, ["A", "B", "C"]) + "</p>" if report.get("priorities") else "")
+            + ("<p class='muted'>Çeyrek: " + _pill(report.get("quartiles") or {}, ["Q1", "Q2", "Q3", "Q4", "-"]) + "</p>" if report.get("quartiles") else "")
             + "<p><a class='button' href='" + esc(report["html"])
             + "'>HTML kaynak listesi</a> <a href='" + esc(report["json"])
             + "'>JSON</a></p></li>"
@@ -100,12 +175,14 @@ def render(reports: list[dict[str, Any]], directory_name: str) -> str:
 <style>
 :root{{--ink:#202833;--muted:#586575;--line:#d9e0e7;--blue:#174f82;--soft:#f4f7fa}}
 *{{box-sizing:border-box}}body{{max-width:900px;margin:0 auto;padding:2rem 1.3rem 4rem;color:var(--ink);font:16px/1.55 system-ui,-apple-system,'Segoe UI',sans-serif}}
-h1{{line-height:1.25}}.muted{{color:var(--muted);font-size:.9rem}}ul{{padding:0;list-style:none}}.card{{border:1px solid var(--line);border-radius:9px;padding:1rem 1.15rem;margin:1rem 0;background:#fff}}.card h2{{font-size:1.15rem;margin:.1rem 0 .4rem}}a{{color:var(--blue)}}.button{{display:inline-block;background:var(--soft);padding:.4rem .7rem;border-radius:6px;text-decoration:none;font-weight:650}}
+h1{{line-height:1.25}}.muted{{color:var(--muted);font-size:.9rem}}ul{{padding:0;list-style:none}}.card{{border:1px solid var(--line);border-radius:9px;padding:1rem 1.15rem;margin:1rem 0;background:#fff}}.card h2{{font-size:1.15rem;margin:.1rem 0 .4rem}}.pill{{display:inline-block;background:var(--soft);border-radius:5px;padding:.05rem .4rem;margin-right:.15rem;font-size:.85rem}}.artifacts li{{margin:.2rem 0}}.artifacts a{{font-weight:650}}
+a{{color:var(--blue)}}.button{{display:inline-block;background:var(--soft);padding:.4rem .7rem;border-radius:6px;text-decoration:none;font-weight:650}}
 @media print{{body{{max-width:none;padding:.4in}}.card{{break-inside:avoid}}}}
 </style></head><body>
 <h1>Akış 3 — kaynak listeleri</h1>
 <p class="muted">Klasör: {esc(directory_name)}</p><p>{esc(summary)}</p>
 <ul>{cards}</ul>
+{artifacts}
 <p class="muted">Her araştırmanın HTML raporu ve JSON kaydı aynı klasördedir.</p>
 </body></html>"""
 
@@ -143,8 +220,13 @@ def main() -> int:
         )
         return 2
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(render(reports, directory.name), encoding="utf-8")
+    output.write_text(render(reports, directory.name, directory), encoding="utf-8")
     print(f"Yazıldı: {output} ({len(reports)} kaynak listesi)")
+    for report in reports:
+        print(
+            f"  {report['json']}: {report['count']} aday, "
+            f"{report['open_access']} açık erişim, {report.get('downloaded', 0)} indirilmiş"
+        )
     print("Not: önceki listeler ve giriş sayfaları korunur; hiçbir dosya silinmedi.")
     return 0
 

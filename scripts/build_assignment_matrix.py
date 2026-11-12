@@ -48,15 +48,34 @@ STOPWORDS = {
 
 DESIGN_PATTERNS: List[Tuple[str, str]] = [
     (r"\bmeta[- ]analys[ie]s\b|\bmeta[- ]analysis\b", "meta_analysis"),
-    (r"\bsystematic review\b", "systematic_review"),
-    (r"\brandomi[sz]ed controlled\b|\brandomi[sz]ed trial\b|\bcluster[- ]randomi[sz]ed\b|\brct\b", "rct"),
+    (r"\bsystematic review\b|\bscoping review\b", "systematic_review"),
+    # Checked before rct: "a quasi-experimental ... and a randomized trial"
+    # is a quasi-experimental design that also reports a trial arm.
     (r"\bquasi[- ]experimental\b", "quasi_experimental"),
-    (r"\bcohort\b|\blongitudinal\b|\bprospective\b", "cohort"),
-    (r"\bcross[- ]sectional\b|\bsurvey\b", "cross_sectional"),
-    (r"\bqualitative\b|\bfocus group\b|\binterview", "qualitative"),
+    (r"\brandomi[sz]ed controlled\b|\brandomi[sz]ed trial\b|\bcluster[- ]randomi[sz]ed\b|\brct\b|\bgroup randomized\b", "rct"),
+    (r"\bpolicy statement\b|\bposition statement\b|\bclinical report\b", "policy_document"),
+    (
+        r"\bcohort\b|\blongitudinal\b|\bprospective\b|\bsecondary data analys",
+        "cohort",
+    ),
+    (
+        r"\bcross[- ]sectional\b|\bsurvey\b|\bquestionnaire\b|\bself[- ]report\b",
+        "cross_sectional",
+    ),
+    (
+        r"\bqualitative\b|\bfocus group\b|\binterview|\bthematic analysis\b|"
+        r"\bsemi[- ]structured\b|\bcase study\b|\bethnograph|\bnarrative inquiry\b|"
+        r"\bgrounded theory\b|\bphenomenolog",
+        "qualitative",
+    ),
 ]
 
 QUARTILE_BONUS = {"Q1": 0.06, "Q2": 0.04, "Q3": 0.02, "Q4": 0.0}
+
+# Distinct section terms that count as "fully covers this heading".
+SATURATION = 4
+# Distinct section terms in the title that count as a full title match.
+TITLE_SATURATION = 2
 
 
 def esc(value: Any) -> str:
@@ -89,19 +108,59 @@ def detect_design(item: Dict[str, Any]) -> str:
     return "any"
 
 
+def _section_tokens(section: Dict[str, Any]) -> set[str]:
+    """Matching tokens for one section.
+
+    Plans are written in Turkish while most records have English titles, so
+    heading/purpose alone produce zero overlap. A section may therefore carry
+    ``search_terms`` (English keywords used for discovery) and ``search_heading``
+    (English gloss); both are added to the matching text.
+    """
+    terms = section.get("search_terms") or []
+    if isinstance(terms, str):
+        terms = [terms]
+    terms = [str(term) for term in terms if str(term).strip()]
+    if terms:
+        # Explicit discovery vocabulary wins outright. Mixing it with the
+        # Turkish heading would add ~50 never-matching tokens and drag the
+        # overlap ratio below the relevance floor for every record.
+        return _tokens(" ".join(terms + [str(section.get("search_heading") or "")]))
+    return _tokens(
+        f"{section.get('heading') or ''} {section.get('purpose') or ''}"
+        f" {section.get('search_heading') or ''}"
+    )
+
+
 def _relevance(section_tokens: set[str], item: Dict[str, Any]) -> float:
+    """How much of the section's vocabulary the record actually covers.
+
+    The naive ratio (matched / all section tokens) punishes a plan for having a
+    rich discovery vocabulary: adding relevant synonyms lowered every score. It
+    also ignored that a record only needs to hit a handful of the section's
+    concepts to be useful.
+
+    Coverage is therefore measured against a saturation point: matching
+    ``SATURATION`` distinct section terms is treated as full coverage, so extra
+    synonyms no longer dilute the score. The title is weighted separately
+    because a title match is a much stronger signal than an abstract mention.
+    """
     if not section_tokens:
         return 0.0
-    text = _tokens(
+    text_tokens = _tokens(
         " ".join(
             str(item.get(key) or "") for key in ("title", "abstract", "journal")
         )
     )
-    if not text:
+    if not text_tokens:
         return 0.0
-    overlap = len(section_tokens & text) / len(section_tokens)
-    title_overlap = len(section_tokens & _tokens(item.get("title"))) / len(section_tokens)
-    return round(0.6 * overlap + 0.4 * title_overlap, 4)
+    matched = section_tokens & text_tokens
+    if not matched:
+        return 0.0
+
+    body_coverage = min(1.0, len(matched) / SATURATION)
+    title_matched = section_tokens & _tokens(item.get("title"))
+    title_coverage = min(1.0, len(title_matched) / TITLE_SATURATION)
+    return round(0.6 * body_coverage + 0.4 * title_coverage, 4)
 
 
 def _citation_tiebreak(item: Dict[str, Any]) -> float:
@@ -151,11 +210,30 @@ def load_pool(paths: List[Path]) -> List[Dict[str, Any]]:
     return list(pool.values())
 
 
+def load_assignments(path: Path) -> Dict[str, List[str]]:
+    """Explicit section -> DOI mapping: ``{"S1": ["10.…", …], …}``.
+
+    Automatic matching cannot be trusted across a Turkish plan and an English
+    corpus: token overlap is a weak proxy for topical fit, and tuning the
+    threshold either lets off-topic records in or rejects relevant ones. When
+    the curator has verified DOIs against the pool, those assignments are
+    authoritative; the tool still checks every DOI exists in the pool.
+    """
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("Atama dosyası {section_id: [doi, ...]} biçiminde olmalı.")
+    return {
+        str(section): [str(doi).strip().lower() for doi in dois or []]
+        for section, dois in data.items()
+    }
+
+
 def assign(
     plan: Dict[str, Any],
     pool: List[Dict[str, Any]],
     max_per_section: int = 4,
-    min_score: float = 0.12,
+    min_score: float = 0.25,
+    explicit: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     designs = {item["doi"]: detect_design(item) for item in pool}
     sections_out: List[Dict[str, Any]] = []
@@ -164,14 +242,72 @@ def assign(
     for section in plan["sections"]:
         if not isinstance(section, dict):
             continue
-        section_text = f"{section.get('heading') or ''} {section.get('purpose') or ''}"
-        section_tokens = _tokens(section_text)
+        section_tokens = _section_tokens(section)
         needs = [
             need
             for need in (section.get("evidence_needs") or [])
             if isinstance(need, dict) and need.get("design")
         ]
         wanted = {str(need["design"]) for need in needs if need["design"] != "any"}
+
+        by_doi = {item["doi"]: item for item in pool}
+        explicit_dois = (explicit or {}).get(str(section.get("id")))
+        if explicit is not None and explicit_dois is not None:
+            assigned = []
+            unknown = []
+            for doi in explicit_dois[:max_per_section]:
+                item = by_doi.get(doi)
+                if item is None:
+                    unknown.append(doi)
+                    continue
+                assigned.append(
+                    {
+                        "doi": doi,
+                        "title": item.get("title"),
+                        "journal": item.get("journal"),
+                        "year": item.get("year"),
+                        "quartile": item.get("quartile"),
+                        "citations": item.get("citations"),
+                        "open_access": item.get("open_access"),
+                        "design": designs.get(doi, "any"),
+                        "relevance": _relevance(section_tokens, item),
+                        "design_matched": designs.get(doi, "any") in wanted,
+                        "score": None,
+                    }
+                )
+            covered_designs = {entry["design"] for entry in assigned}
+            missing = [
+                str(need["design"])
+                for need in needs
+                if need["design"] != "any" and str(need["design"]) not in covered_designs
+            ]
+            status = "covered" if assigned and not missing else "gap"
+            if missing or not assigned:
+                gaps.append(
+                    {
+                        "section_id": section.get("id"),
+                        "heading": section.get("heading"),
+                        "missing": missing,
+                        "note": (
+                            "Elle atanan kaynaklarda istenen kanıt türü yok: "
+                            + ", ".join(missing) if missing else "Kaynak atanamadı."
+                        ),
+                    }
+                )
+            sections_out.append(
+                {
+                    "section_id": section.get("id"),
+                    "heading": section.get("heading"),
+                    "target_words": section.get("target_words"),
+                    "evidence_needs": needs,
+                    "assigned": assigned,
+                    "missing_designs": missing,
+                    "status": status,
+                    "assignment_method": "explicit",
+                    "unknown_dois": unknown,
+                }
+            )
+            continue
 
         scored: List[Dict[str, Any]] = []
         for item in pool:
@@ -213,7 +349,15 @@ def assign(
             if design == "any":
                 continue
             for entry in scored:
-                if entry["design"] == design and entry["doi"] not in used:
+                # A design match with low relevance is not evidence for this
+                # heading. Without this floor the need-filling loop would pull
+                # e.g. a nutrition review into a section about teacher judgment,
+                # and the matrix would report a false "covered".
+                if (
+                    entry["design"] == design
+                    and entry["doi"] not in used
+                    and entry["relevance"] >= min_score
+                ):
                     assigned.append(entry)
                     used.add(entry["doi"])
                     break
@@ -236,16 +380,28 @@ def assign(
         status = "covered" if assigned and not missing else ("gap" if not assigned else "covered")
         if missing or not assigned:
             status = "gap"
+            if not scored and pool:
+                # Nothing passed the relevance floor although the pool is not
+                # empty: this is a matching problem, not absent evidence. Say so
+                # instead of reporting a false gap.
+                note = (
+                    "Havuzda aday var ancak alt başlıkla yeterince örtüşen kayıt "
+                    "seçilemedi. `search_terms` (İngilizce anahtar kelimeler) "
+                    "ekleyin veya dil uyuşmazlığını kontrol edin."
+                )
+            elif missing:
+                note = (
+                    "Bu alt başlık için istenen kanıt türü, alaka eşiğini "
+                    f"({min_score:.2f}) geçen bir kaynakla karşılanamadı."
+                )
+            else:
+                note = "Bu alt başlıkla yeterince örtüşen kaynak bulunamadı."
             gaps.append(
                 {
                     "section_id": section.get("id"),
                     "heading": section.get("heading"),
                     "missing": missing,
-                    "note": (
-                        "Bu alt başlık için istenen kanıt türü bulunamadı."
-                        if missing
-                        else "Bu alt başlıkla yeterince örtüşen kaynak bulunamadı."
-                    ),
+                    "note": note,
                 }
             )
         sections_out.append(
@@ -280,6 +436,8 @@ def assign(
             "Atama, alt başlık metni ile aday başlık/özet örtüşmesine dayanır; kanıt değildir.",
             "Akış 4'te her iddia sayfa numarasıyla doğrulanmadan kanıt sayılmaz.",
             "Yalnızca atanmış DOI'lerin PDF'leri indirilmelidir.",
+            f"Alaka eşiği {min_score:.2f}; eşiğin altındaki kayıtlar tasarım "
+            "eşleşse bile atanmaz.",
         ],
     }
 
@@ -367,7 +525,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument("-o", "--output-dir", type=Path, help="Çıktı klasörü")
     parser.add_argument("--max-per-section", type=int, default=4)
-    parser.add_argument("--min-score", type=float, default=0.12)
+    parser.add_argument("--min-score", type=float, default=0.25)
+    parser.add_argument(
+        "--assignments",
+        type=Path,
+        help="Açık atama dosyası {section_id: [doi, ...]}; otomatik eşleştirmeyi geçersiz kılar.",
+    )
     parser.add_argument("--check", action="store_true", help="Yalnızca doğrula/özetle")
     parser.add_argument("--force", action="store_true")
     parser.add_argument(
@@ -394,7 +557,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("Hata: aday havuzu boş.", file=sys.stderr)
         return 2
 
-    matrix = assign(plan, pool, args.max_per_section, args.min_score)
+    explicit = load_assignments(args.assignments) if args.assignments else None
+    matrix = assign(plan, pool, args.max_per_section, args.min_score, explicit)
     print(
         f"Alt başlık: {matrix['sections_total']} | atanan DOI: "
         f"{matrix['assigned_doi_total']} | boşluk: {matrix['gap_sections']}"

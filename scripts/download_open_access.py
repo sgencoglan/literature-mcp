@@ -50,6 +50,7 @@ except ImportError:  # python -m scripts.download_open_access
     from scripts.setup_credentials import _parse_setup_file, _resolve_setup_file
 
 try:  # scripts/ içinden çalışırken
+    from doi_naming import doi_filename
     from output_naming import add_timestamp, timestamp_suffix
     from project_layout import (
         WORKFLOW_DIRECTORIES,
@@ -57,6 +58,7 @@ try:  # scripts/ içinden çalışırken
         workflow_dir,
     )
 except ImportError:  # python -m scripts.download_open_access
+    from scripts.doi_naming import doi_filename
     from scripts.output_naming import add_timestamp, timestamp_suffix
     from scripts.project_layout import (
         WORKFLOW_DIRECTORIES,
@@ -433,17 +435,8 @@ def _slug(value: Any, max_length: int = 80) -> str:
 
 
 def _doi_filename(doi: str) -> str:
-    """DOI'yi dosya adına çevir; özel karakterleri at.
-
-    ``10.4073/csr.2011.4`` -> ``10.4073csr.2011.4.pdf``. Eğik çizgi ve diğer
-    özel karakterler kaldırılır; yalnızca harf, rakam, nokta ve tire kalır,
-    böylece dosya adı DOI ile kolayca eşleştirilebilir.
-    """
-    text = unicodedata.normalize("NFKD", str(doi or ""))
-    text = text.encode("ascii", "ignore").decode("ascii")
-    # Özel karakterleri tamamen çıkar (tireye çevirme): 10.4073csr.2011.4
-    text = re.sub(r"[^A-Za-z0-9.\-]+", "", text).strip(".-")
-    return (text or "doi-yok")[:150]
+    """DOI'den dosya adı kökü; kural ``scripts/doi_naming.py`` içinde tek yerde."""
+    return doi_filename(doi)
 
 
 def _filename_for(candidate: Dict[str, Any]) -> str:

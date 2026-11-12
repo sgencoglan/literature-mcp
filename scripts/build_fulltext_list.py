@@ -29,11 +29,17 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote, urlparse
 
 try:  # scripts/ içinden çalışırken
+    from doi_naming import doi_filename as doi_stem
     from output_naming import add_timestamp_argument
     from project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
+    from publisher_lookup import display_label as publisher_label_for
+    from publisher_lookup import resolve as resolve_publisher
 except ImportError:  # python -m scripts.build_fulltext_list
+    from scripts.doi_naming import doi_filename as doi_stem
     from scripts.output_naming import add_timestamp_argument
     from scripts.project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
+    from scripts.publisher_lookup import display_label as publisher_label_for
+    from scripts.publisher_lookup import resolve as resolve_publisher
 
 PRIORITY_ORDER = ["A", "B", "C"]
 PRIORITY_LABEL = {
@@ -41,13 +47,15 @@ PRIORITY_LABEL = {
     "B": "B · Güçlü ikinci",
     "C": "C · Yedek / bağlam",
 }
-PUBLISHERS = [
+# Yayıncı adı artık serbest metindir ve ``publisher_lookup`` ile çözülür
+# (SAGE, APA, Frontiers, Johns Hopkins ...). "Diğer" kullanılmaz; bilinmeyen
+# durumda çözücü "Bilinmiyor" döndürür.
+PRIORITY_PUBLISHERS = [
     "Ovid LWW",
     "ScienceDirect",
     "SpringerLink",
     "Wiley",
     "Taylor & Francis",
-    "Diğer",
 ]
 LINK_KEYS = ["ovid_lww", "sciencedirect", "springerlink", "wiley", "taylor_francis"]
 QUARTILES = {"Q1", "Q2", "Q3", "Q4", "-", None}
@@ -114,8 +122,10 @@ def validate(data: Any) -> List[str]:
             elif key == "doi":
                 if not isinstance(value, str) or not DOI_RE.match(value):
                     errors.append(f"{path}.doi: '10.' ile başlayan geçerli DOI olmalı.")
-            elif key == "publisher" and value not in PUBLISHERS:
-                errors.append(f"{path}.publisher: {value!r} desteklenmiyor. Seçenekler: {PUBLISHERS}")
+            elif key == "publisher" and (not isinstance(value, str) or not value.strip()):
+                # Yayıncı adı serbest metindir: DOI ön eki ve metadata ile
+                # çözülür (SAGE, APA, Frontiers ...). Yalnızca boş olamaz.
+                errors.append(f"{path}.publisher: boş olmayan yayıncı adı olmalı.")
             elif key == "priority" and value not in PRIORITY_ORDER:
                 errors.append(f"{path}.priority: A/B/C olmalı.")
             elif key in ("supports", "does_not_support", "limits"):
@@ -214,6 +224,9 @@ def project_root_from_input(input_path: Path) -> Path:
 def doi_filename_keys(doi: str) -> List[str]:
     """İndirici dosya adındaki DOI parçası için olası anahtarları üret."""
     variants = {
+        # The downloader strips special characters rather than replacing them;
+        # keep that form first so detection matches real files exactly.
+        doi_stem(doi),
         doi.replace("/", "_"),
         doi.replace("/", ""),
         doi.replace("/", "-"),
@@ -283,7 +296,6 @@ def render_rows(candidates: List[Dict[str, Any]], downloaded_dois: Optional[set[
         authors = str(item["authors"])
         year = item["year"]
         journal = str(item["journal"])
-        publisher = str(item["publisher"])
         priority = str(item["priority"])
         rationale = str(item["rationale"])
         basis = str(item["assessment_basis"])
@@ -292,12 +304,15 @@ def render_rows(candidates: List[Dict[str, Any]], downloaded_dois: Optional[set[
         open_access = bool(item.get("open_access"))
         access = item.get("access") or ("Açık erişim" if open_access else "Kurum erişimi")
 
-        publisher_url = derive_publisher_url(item)
-        publisher_label = str(item.get("publisher") or "")
-        if not safe_http_url(item.get("publisher_url")):
-            derived_label, _derived_url = _doi_database_link(str(doi))
-            if derived_label:
-                publisher_label = derived_label
+        # Yayıncı adı tek kaynaktan çözülür: metadata adı (varsa) + DOI ön eki.
+        # Böylece JSON'da "Diğer" kalsa bile HTML gerçek yayıncıyı gösterir.
+        resolved_name, resolved_url, priority_platform = resolve_publisher(
+            str(doi), item.get("publisher")
+        )
+        # Düğme: platform adı (ScienceDirect/SpringerLink/...) varsa o,
+        # yoksa gerçek yayıncı (SAGE, APA ...).
+        publisher_label = publisher_label_for(str(doi), item.get("publisher"))
+        publisher_url = derive_publisher_url(item) or resolved_url
         oa_pdf_url = safe_http_url(item.get("oa_pdf_url"))
         doi_url = doi_href(doi)
         downloaded = doi in downloaded_dois
@@ -312,9 +327,16 @@ def render_rows(candidates: List[Dict[str, Any]], downloaded_dois: Optional[set[
             f'<a class="btn doi" href="{esc(doi_url)}" target="_blank" rel="noopener">DOI</a>',
         ]
         if publisher_url:
+            priority_mark = " priority-platform" if priority_platform else ""
+            title_attr = (
+                f' title="Öncelikli platform: {esc(priority_platform)}"'
+                if priority_platform
+                else ""
+            )
             links.append(
-                f'<a class="btn pub" href="{esc(publisher_url)}" target="_blank" rel="noopener">'
-                f'{esc(publisher_label or publisher)}</a>'
+                f'<a class="btn pub{priority_mark}" href="{esc(publisher_url)}"'
+                f' target="_blank" rel="noopener"{title_attr}>'
+                f'{esc(publisher_label)}</a>'
             )
         if oa_pdf_url:
             oa_label = "OA PDF (indirildi)" if downloaded else "OA PDF"
@@ -326,6 +348,17 @@ def render_rows(candidates: List[Dict[str, Any]], downloaded_dois: Optional[set[
         links.append(
             f'<div class="doi-address"><span class="link-label">doi</span>'
             f'<span class="plain-url">{esc(doi)}</span></div>'
+        )
+        # Dosya adı düz metin olarak gösterilmez: düğme tıklanınca düzeltilmiş
+        # DOI (dosya adı biçimi, uzantısız) panoya kopyalanır.
+        links.append(
+            f'<div class="file-row">'
+            f'<button type="button" class="btn file" '
+            f'data-filename="{esc(doi_stem(doi))}" '
+            f'aria-label="Dosya adını panoya kopyala">'
+            f'dosya adı</button>'
+            f'<span class="copy-status" aria-live="polite"></span>'
+            f'</div>'
         )
 
         checked_attr = " checked" if downloaded else ""
@@ -526,6 +559,10 @@ td.links { min-width: 260px; white-space: normal; }
   word-break: break-all;
   color: var(--ink);
 }
+/* "dosya adı" düğmesi: değer görünmez, tıklanınca panoya kopyalanır. */
+.file-row { margin: 5px 0; }
+.btn.file { border-color: var(--line); background: var(--soft); }
+.copy-status { font-size: 11.5px; color: var(--green); margin-left: 6px; }
 .url {
   display: block;
   font-size: 12px;
@@ -573,6 +610,7 @@ td.links { min-width: 260px; white-space: normal; }
 }
 .btn.doi { border-color: #b9d3ee; background: var(--accent-soft); }
 .btn.pub { background: #fff; }
+.btn.pub.priority-platform { border-color: #b9d3ee; }
 .btn.oa { border-color: #bfe3cd; background: #eefaf2; color: var(--green); }
 .notes {
   margin: 14px 0 0;
@@ -703,6 +741,46 @@ function applyFilter() {
   });
   empty.hidden = visible !== 0;
 }
+
+// "dosya adı" düğmesi: düzeltilmiş DOI'yi panoya kopyalar.
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    try {
+      document.execCommand("copy") ? resolve() : reject(new Error("copy failed"));
+    } catch (err) {
+      reject(err);
+    } finally {
+      document.body.removeChild(area);
+    }
+  });
+}
+
+document.querySelectorAll("button.file").forEach(button => {
+  button.addEventListener("click", () => {
+    const value = button.dataset.filename;
+    const status = button.parentElement.querySelector(".copy-status");
+    copyText(value)
+      .then(() => {
+        if (status) {
+          status.textContent = "kopyalandı";
+          setTimeout(() => { status.textContent = ""; }, 1500);
+        }
+      })
+      .catch(() => {
+        if (status) status.textContent = "kopyalanamadı";
+      });
+  });
+});
 
 boxes.forEach(box => box.addEventListener("change", writeState));
 if (filter) filter.addEventListener("input", applyFilter);
