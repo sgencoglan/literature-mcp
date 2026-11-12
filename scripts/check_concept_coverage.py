@@ -3,17 +3,10 @@
 
 Neden gerekli
 -------------
-Bir bölümün kavramsal çekirdeği literatürde tek bir terimle anılır:
-*de-escalation*, *scaffolding*, *self-regulated learning* ... Kullanıcının
-ifadesi bu kavramın Türkçe karşılığı olabilir ("kriz öncesi/anı/sonrası" =
-escalation cycle). Plan bu terimi ``search_terms`` içine almazsa zincirin
-tamamı kör kalır:
+Bir bölümün çekirdek kavramı planın ``search_terms`` alanına taşınmazsa
+arama, kaynak seçimi ve yazım sırasında kapsam dışında kalabilir:
 
     kavram -> sözlük -> toplama -> seçme -> yazma
-
-Ölçülen bir vakada plan 31 kaynağı taradı ama "de-escalation" hiçbir sorguda
-geçmediği için alanın çekirdek makalesi (Q1, 2023, "Loaded Moments") havuza
-girse bile atanmadı; 31 PDF'in yalnızca 1'inde kelime geçti.
 
 Bu betik üç halkayı denetler:
 
@@ -69,15 +62,15 @@ def _norm(text: str) -> str:
 
 
 def _variant_pattern(term: str) -> re.Pattern[str]:
-    """Terimin yazım varyantlarını yakala (de-escalation / deescalation / de escalation)."""
-    # Terim tireyle yazılmış olabilir ("de-escalation"); bileşenlerine ayır ki
+    """Terimin yazım varyantlarını yakala (example-term / exampleterm / example term)."""
+    # Terim tireyle yazılmış olabilir ("example-term"); bileşenlerine ayır ki
     # boşluklu ve bitişik yazımlar da yakalanabilsin.
     words = [re.escape(w) for w in re.split(r"[\s\-_]+", _norm(term)) if w]
     if not words:
         return re.compile(r"(?!)")
-    # Ayraç isteğe bağlı: "de-escalation", "de escalation", "deescalation".
+    # Ayraç isteğe bağlı: "example-term", "example term", "exampleterm".
     body = r"[\s\-_]*".join(words)
-    # Bileşik sözcükte ayraç tamamen kaybolabilir: "deescalation".
+    # Bileşik sözcükte ayraç tamamen kaybolabilir: "exampleterm".
     if len(words) > 1:
         body = f"(?:{body}|{''.join(words)})"
     return re.compile(rf"\b{body}\b", re.IGNORECASE)

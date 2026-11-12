@@ -8,6 +8,7 @@ yayımlarken uygulanacak kontrol listesini korur.
 ```bash
 git status --short
 git ls-files
+python3 scripts/check_repo_privacy.py
 git grep -nE '/home/[a-z]|file://|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY'
 git log -p --all -- . ':!LICENSE' | grep -nE '/home/[a-z]|Downloads/|ghp_|github_pat_|sk-[A-Za-z0-9]{20,}'
 ```
@@ -21,7 +22,13 @@ Depoda **bulunmaması gerekenler**:
 - `.venv/`, `.env`, API anahtarları, oturum belgeleri,
 - SCImago CSV'si (lisans nedeniyle; `scripts/fetch_scimago.sh` kullanılır).
 
-`bash scripts/validate_all.sh` bu kontrollerin bir kısmını otomatik yapar.
+`bash scripts/validate_all.sh` güncel dosyalarda gizlilik denetimini de çalıştırır.
+Denetim şüpheli değerleri yazdırmadan dosya, satır ve bulgu türünü bildirir.
+Bu tarama bilinen biçimlerle sınırlıdır; çalışma anlatıları ayrıca incelenmelidir.
+
+Güncel dosyayı temizlemek eski commitleri değiştirmez. Geçmişte hassas veri
+bulunursa erişim anahtarlarını iptal edin ve geçmiş temizliğini ayrı bir işlem
+olarak planlayın; paylaşılan geçmişi yeniden yazmak mevcut klonları etkiler.
 
 ## 2. Yer tutucuları düzeltin
 

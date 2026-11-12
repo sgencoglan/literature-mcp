@@ -207,7 +207,7 @@ def render_notice(notice: Any) -> str:
 
 
 def render_summary_strip(summary: Any) -> str:
-    """Render report counts as compact pills, b1-style."""
+    """Render report counts as compact pills."""
     if not isinstance(summary, dict):
         return ""
     labels = [

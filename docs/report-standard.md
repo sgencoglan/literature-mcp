@@ -1,6 +1,6 @@
 # Altın standart bölüm raporu
 
-Bu belge, b1 pilot raporu için beğenilen raporun tasarımını ve içerik
+Bu belge, bölüm raporunun tasarımını ve içerik
 kalitesini standartlaştırır. Amaç yalnızca “güzel HTML” üretmek değil; her
 düzeltmenin kaynağa, sayfaya ve birebir alıntıya bağlandığı **denetlenebilir**
 bir teslim üretmektir.
@@ -123,9 +123,8 @@ gerekir.
 
 Tasarım [`packages/report-kit/src/report_kit/templates/chapter-report.css`](../packages/report-kit/src/report_kit/templates/chapter-report.css)
 içinde tek kaynaktır. Rapor üreticisi bu dosyayı gömülü CSS olarak yazar.
-b1 raporunun görsel dili (geniş sayfa, sans-serif başlık, kart/kanıt/not
-düzeni) korunur; b1'deki yerel yol içeren footer bilinçli olarak dışarıda
-bırakılır.
+Görsel dil; geniş sayfa, sans-serif başlık ve kart/kanıt/not düzeninden
+oluşur. Alt bilgi kişisel dosya yolu içermez.
 
 ## Temizlik
 

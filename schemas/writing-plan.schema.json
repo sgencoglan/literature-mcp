@@ -206,7 +206,7 @@
         "type": "string",
         "minLength": 1
       },
-      "description": "Bölümün kavramsal çekirdeğinin literatürdeki adları (örn. 'de-escalation', 'escalation cycle', 'crisis prevention'). Bu terimler search_terms içinde geçmek zorundadır; geçmiyorsa toplama aşaması kavramı hiç aramaz."
+      "description": "Bölümün kavramsal çekirdeğinin literatürdeki adları (kullanıcının projesinde doğrulanır). Bu terimler search_terms içinde geçmek zorundadır; geçmiyorsa toplama aşaması kavramı hiç aramaz."
     },
     "anchor_terms_note": {
       "type": "string",

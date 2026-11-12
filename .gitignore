@@ -15,6 +15,14 @@ htmlcov/
 setup.txt
 SETUP.txt
 config/opencode.local.json
+config/opencode.json
+.literature-mcp/
+projects.json
+*.gguf
+*.log
+*.pid
+*.pem
+*.key
 
 # Runtime literature data
 indexes/
@@ -68,3 +76,11 @@ oa_indirme_raporu_*.json
 *.egg-info/
 build/
 dist/
+
+# Local research workspaces
+01_konu_belirleme/
+02_yazim_plani/
+03_kaynak_kesfi/
+04_taslak/
+05_analiz/
+arsiv/

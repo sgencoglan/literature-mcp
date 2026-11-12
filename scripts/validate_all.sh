@@ -26,22 +26,9 @@ while IFS= read -r -d '' f; do
   fi
 done < <(find . \( -path ./.git -o -path ./.venv -o -path '*/__pycache__' \) -prune -o -name '*.json' -print0)
 
-note "Kişisel veri / eski proje izi"
-if grep -RIn --exclude-dir=.git --exclude-dir=.venv --exclude-dir=__pycache__ \
-  -E '/home/[s]alih|okul-[r]iskleri|school-[r]isk|Downloads/[m]akaleler' .; then
-  bad "depoda kişisel yol veya eski proje adı var"
-else
-  echo "Temiz."
-fi
-
-note "Yerel proje adı / kişisel veri sızması"
-if grep -RInE --exclude-dir=.git --exclude-dir=.venv --exclude-dir=__pycache__ \
-  --exclude-dir=arsiv \
-  '(deneme[0-9]|/home/[a-z]+/[a-z0-9_-]+-proje)' scripts packages docs schemas examples \
-  AGENTS.md README.md CHANGELOG.md 2>/dev/null; then
-  bad "depo kodunda yerel proje adı var; kavramlar proje verisidir, kod sabiti değil"
-else
-  echo "Temiz."
+note "Kişisel veri / yerel çalışma dosyaları"
+if ! "$PY" scripts/check_repo_privacy.py; then
+  bad "depoda kişisel veri veya yerel çalışma dosyası var"
 fi
 
 note "Yazım kontrolü (PaperQA)"

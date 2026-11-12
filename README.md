@@ -65,7 +65,7 @@ HTML'inde DOI'yi panoya kopyalayan düğme korunur. Açık erişimli PDF'ler
 
 ## Altın standart bölüm raporu
 
-`chapter-report`, beğenilen b1 raporunun tasarımını ve kanıt disiplinini
+`chapter-report`, bölüm raporunun tasarımını ve kanıt disiplinini
 yeniden üretilebilir hâle getirir:
 
 - düzeltilmiş bölüm metni; yeniden düzenlenen cümlelerde kırmızı, ilk taslakta olmayan anlamlı MCP eklemelerinde mavi/yeşil zemin,
@@ -258,9 +258,9 @@ Elle kurulum için bağımlılık listesi:
 [`requirements-paperqa.txt`](requirements-paperqa.txt). İlk indeks kurulumunda
 `st-multi-qa-MiniLM-L6-cos-v1` embedding modeli indirilir.
 
-Yerel `paperqa_ask` için tek desteklenen arka uç **llama.cpp**'dir. Bu makine sınıfı
-için güvenli üst sınır **3B/4B quantized** modeldir; 7B model 8 GB RAM'li,
-GPU'suz bir sistemde swap'a düşer. Ayrıntılı kurulum:
+Yerel `paperqa_ask` için desteklenen arka uç **llama.cpp**'dir. Varsayılan
+model Qwen2.5-3B-Instruct Q4_K_M'dir; model ve bağlam boyutunu kullanılabilir
+belleğe göre ayarlayın. Ayrıntılı kurulum:
 [`docs/local-llm.md`](docs/local-llm.md).
 
 ```bash

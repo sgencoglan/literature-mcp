@@ -2,12 +2,9 @@
 
 Neden gerekli
 -------------
-Serbest metin aramaları eş anlamlıyı kaçırır. "de-escalation" yazınca
-"aggression management", "coercion reduction", "restraint minimization"
-literatürü gelmez. PubMed'in MeSH (Medical Subject Headings) sözlüğü bu boşluğu
-kapatır: terim bir kez MeSH'te bulunur, oradan hem PubMed'de hem de diğer
-motorlarda (OpenAlex, Semantic Scholar, Crossref) arama anahtarı olarak
-kullanılır.
+Serbest metin aramaları eş anlamlıları kaçırabilir. PubMed'in MeSH
+(Medical Subject Headings) sözlüğünden doğrulanan karşılıklar arama
+anahtarı olarak kullanılabilir. Alan bağlamı proje verisinden alınır.
 
 MeSH hiyerarşiktir: bir terimin alt terimleri (narrower) genellikle arama için
 üst terimden daha verimlidir. Bu modül terim, eş anlamlı ve alt terimleri
@@ -15,7 +12,7 @@ birlikte döndürür ki kavram haritası bunları sorguya çevirebilsin.
 
 Kullanım:
     async with mesh.session():
-        entry = await mesh.lookup("de-escalation")
+        entry = await mesh.lookup("<search-term>")
 """
 
 from __future__ import annotations
@@ -30,23 +27,6 @@ logger = logging.getLogger("sciencedirect-meta.mesh")
 
 ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-
-# MeSH XML ad alanı yok; düz etiket adları kullanılır.
-DEFAULT_ENTRY_TERMS: Dict[str, List[str]] = {
-    # Sık kullanılan kavramlar için hazır karşılıklar: MeSH isteği başarısız
-    # olduğunda ağ erişimi olmadan da harita kurulabilsin.
-    "de-escalation": [
-        "De-escalation",
-        "Crisis Intervention",
-        "Aggression",
-        "Restraint, Physical",
-        "Coercion",
-    ],
-    "classroom management": ["School Teachers", "Behavior Control", "Schools"],
-    "behavior screening": ["Mass Screening", "Risk Assessment", "School Health Services"],
-    "teacher referral": ["Referral and Consultation", "School Teachers"],
-}
-
 
 class MeshError(RuntimeError):
     """MeSH sorgusu tamamlanamadı."""
@@ -162,14 +142,18 @@ async def lookup(term: str, retmax: int = 3) -> Dict[str, Any]:
     }
 
 
-def fallback_terms(term: str) -> List[str]:
-    """Ağ yoksa hazır karşılıkları döndür."""
+def fallback_terms(
+    term: str, mappings: Optional[Dict[str, List[str]]] = None,
+) -> List[str]:
+    """Yalnızca çağıranın verdiği proje sözlüğünden karşılık döndür.
+
+    Ağ hatası projeye özel bir kavram listesini otomatik olarak devreye sokmaz.
+    """
     key = (term or "").strip().lower()
-    if key in DEFAULT_ENTRY_TERMS:
-        return list(DEFAULT_ENTRY_TERMS[key])
-    # Kısmi eşleşme: "de-escalation training" -> "de-escalation" karşılığı.
-    for known, values in DEFAULT_ENTRY_TERMS.items():
-        if known in key:
+    if not key:
+        return []
+    for known, values in (mappings or {}).items():
+        if key == known.strip().lower():
             return list(values)
     return []
 
@@ -246,19 +230,16 @@ async def concepts_from_pubmed(
 ) -> Dict[str, Any]:
     """Serbest metin terimini PubMed'de ara, sonuçların MeSH terimlerini topla.
 
-    Bu, MeSH'in doğru kullanımıdır: MeSH'te "de-escalation" diye bir descriptor
-    yoktur, ama o konudaki makalelerin MeSH başlıkları vardır (Crisis
-    Intervention, Aggression, Restraint, Physical ...). Makalelerden çıkan
-    terimler, kavramın kontrollü sözlükteki karşılığıdır ve diğer motorlara
-    arama anahtarı olarak taşınabilir.
+    Dönen kontrollü terimler sorgunun bağlamına göre değerlendirilir ve
+    diğer motorlara arama anahtarı olarak taşınabilir.
 
     İki koruma vardır:
 
     * ``context_terms`` — terim tek başına birden çok alana yayılabilir
-      ("de-escalation" tıpta kemoterapi dozu azaltma demektir). Alan bağlamı
+      ve farklı anlamlarda kullanılabilir. Alan bağlamı
       eklenince MeSH terimleri de o alana çekilir.
     * ``min_share`` — makalelerin yalnızca küçük bir kısmında geçen MeSH terimi
-      kavramın karşılığı sayılmaz; gürültü (örn. Chemoradiotherapy) elenir.
+      kavramın karşılığı sayılmaz; düşük sıklıklı terimler elenir.
     """
     query = (query or "").strip()
     if not query:

@@ -38,7 +38,7 @@ python3 scripts/build_concept_map.py <proje-kökü> --phase 1 \
    MeSH yalnızca `--domain medical` veya `psychology` projelerde `--mesh` ile
    uygulanır. Eğitim alanyazını PubMed'de indekslenmez; aynı terim orada başka
    bir alanın terimi olabilir. Tıp/psikoloji projesinde tohum dosyasına
-   `context_terms` yaz (örn. `["inpatient", "psychiatric"]`); MeSH projeksiyonu
+   `context_terms` yaz (projenin doğrulanmış İngilizce bağlam terimleri); MeSH projeksiyonu
    bu bağlama daraltılır. Bağlam verilmezse terim başka alanın MeSH'ini getirir.
 
 3. Varsayılan olarak **yedi kaynağın tümünde** tara: OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv ve ClinicalTrials.gov. `search_literature` / `search_all` / `deep_research` çağrılarında `sources` vermezsen hepsi sorgulanır; `priority_only=false` varsayılandır, böylece tüm yayıncılar döner. Yalnızca belirli bir alt küme gerekiyorsa `sources=[...]` ile daralt ve `coverage.per_source.status` alanında her kaynağın `ok`/`error`/`rate_limited` olduğunu kontrol et.

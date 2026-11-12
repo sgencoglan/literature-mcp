@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# llama.cpp sunucusunu bu makine sınıfı için güvenli bayraklarla başlatır.
+# llama.cpp sunucusunu yapılandırılabilir bayraklarla başlatır.
 #
 # Kullanım:
 #   bash scripts/start_llamacpp.sh              # Qwen2.5-3B

@@ -1,77 +1,106 @@
 {
   "schema": "writing-plan/1",
   "project": "ornek-proje",
-  "title": "Sınıfta Riskli Davranışları Tanıma ve Yönlendirme — Örnek Yazım Planı",
+  "title": "Kütüphane Veri Yönetimi — Kurgusal Örnek Yazım Planı",
   "generated_at": "2026-11-09",
   "genre": "uygulama_rehberi",
   "genre_note": "Bu dosya yalnızca biçim örneğidir; başlıklar ve hedefler kurgusaldır.",
-  "audience": "Sınıf ve branş öğretmenleri, okul rehber öğretmenleri",
+  "audience": "Kurgusal örnekteki kütüphane çalışanları",
   "target_total_words": 5000,
   "scope_in": [
-    "Okul çağı çocuklarda sınıf içi riskli davranış",
-    "Öğretmenin tanıma ve yönlendirme kararı",
-    "Okul düzeyinde kademeli destek"
+    "Katalog verisinin düzenlenmesi",
+    "Kayıt doğrulama süreçleri",
+    "Veri aktarımı"
   ],
   "scope_out": [
-    "Klinik tanı ve tedavi protokolleri",
-    "Okul dışı adli süreçler"
+    "Kişisel kullanıcı kayıtları",
+    "Ticari lisans sözleşmeleri"
   ],
   "plan_status": "approved",
   "approved_at": "2026-11-09",
   "sections": [
     {
       "id": "S1",
-      "heading": "1. Giriş: Rehber kime, ne için?",
-      "purpose": "Hedef kitleyi, kapsamı ve rehberin sınırlarını baştan tanımlamak.",
+      "heading": "1. Amaç ve kapsam",
+      "purpose": "Hedef kitleyi ve kapsamı tanımlamak.",
       "target_words": 600,
-      "evidence_needs": [{"design": "any", "min_count": 1}],
+      "evidence_needs": [
+        {
+          "design": "any",
+          "min_count": 1
+        }
+      ],
       "assigned_dois": [],
       "status": "planned"
     },
     {
       "id": "S2",
-      "heading": "2. Riskli davranış nedir, ne değildir?",
-      "purpose": "Tanımı netleştirmek; etiketleme ile tanıma arasındaki farkı kurmak.",
+      "heading": "2. Temel kavramlar",
+      "purpose": "Temel veri yönetimi kavramlarını açıklamak.",
       "target_words": 800,
       "evidence_needs": [
-        {"design": "qualitative", "min_count": 1},
-        {"design": "policy_document", "min_count": 1}
+        {
+          "design": "qualitative",
+          "min_count": 1
+        },
+        {
+          "design": "policy_document",
+          "min_count": 1
+        }
       ],
       "assigned_dois": [],
       "status": "planned"
     },
     {
       "id": "S3",
-      "heading": "3. Öğretmen tanıması ne kadar doğru?",
-      "purpose": "Dışsallaştırma/içselleştirme farkını ve tanıma yanlılığını kanıtla göstermek.",
+      "heading": "3. Veri doğrulama yöntemleri",
+      "purpose": "Doğrulama yöntemlerinin kapsamını karşılaştırmak.",
       "target_words": 900,
       "evidence_needs": [
-        {"design": "cross_sectional", "min_count": 1},
-        {"design": "rct", "min_count": 1}
+        {
+          "design": "cross_sectional",
+          "min_count": 1
+        },
+        {
+          "design": "rct",
+          "min_count": 1
+        }
       ],
       "assigned_dois": [],
       "status": "planned"
     },
     {
       "id": "S4",
-      "heading": "4. Sınıf düzeyinde önleme",
-      "purpose": "Yönlendirmeden önce denenecek düzenlemeleri etki büyüklüğüyle birlikte vermek.",
+      "heading": "4. Katalog düzenleme süreçleri",
+      "purpose": "Katalog düzenleme adımlarını kanıtlara bağlamak.",
       "target_words": 1000,
       "evidence_needs": [
-        {"design": "meta_analysis", "min_count": 1},
-        {"design": "systematic_review", "min_count": 1}
+        {
+          "design": "meta_analysis",
+          "min_count": 1
+        },
+        {
+          "design": "systematic_review",
+          "min_count": 1
+        }
       ],
       "assigned_dois": [],
       "status": "planned"
     },
     {
       "id": "S5",
-      "heading": "5. Kademeli destek ve yönlendirme kararı",
-      "purpose": "Yönlendirme eşiklerini ve aktarım akışını tanımlamak.",
+      "heading": "5. Veri aktarımı ve izleme",
+      "purpose": "Veri aktarımı ve izleme akışını tanımlamak.",
       "target_words": 900,
       "evidence_needs": [
-        {"design": "systematic_review", "min_count": 1},
-        {"design": "qualitative", "min_count": 1}
+        {
+          "design": "systematic_review",
+          "min_count": 1
+        },
+        {
+          "design": "qualitative",
+          "min_count": 1
+        }
       ],
       "assigned_dois": [],
       "status": "planned"
@@ -79,9 +108,14 @@
     {
       "id": "S6",
       "heading": "6. Sınırlılıklar ve uygulama kontrol listesi",
-      "purpose": "Kanıtın sınırlarını yazmak ve sınıfta kullanılabilir kontrol listesi vermek.",
+      "purpose": "Kanıtın sınırlarını ve uygulama adımlarını özetlemek.",
       "target_words": 800,
-      "evidence_needs": [{"design": "any", "min_count": 1}],
+      "evidence_needs": [
+        {
+          "design": "any",
+          "min_count": 1
+        }
+      ],
       "assigned_dois": [],
       "status": "planned"
     }

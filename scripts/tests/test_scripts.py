@@ -1170,8 +1170,8 @@ class WritingPlanTests(unittest.TestCase):
             "sections": [
                 {
                     "id": "S1",
-                    "heading": "Disruptive behaviour prevalence",
-                    "purpose": "Show how common disruptive behaviour is in classrooms.",
+                    "heading": "Catalog record completeness",
+                    "purpose": "Show how common incomplete catalog records are.",
                     "target_words": 400,
                     "evidence_needs": [
                         {"design": "systematic_review", "min_count": 1}
@@ -1181,8 +1181,8 @@ class WritingPlanTests(unittest.TestCase):
                 },
                 {
                     "id": "S2",
-                    "heading": "Teacher recognition of internalizing problems",
-                    "purpose": "Explain why internalizing behaviour goes unnoticed.",
+                    "heading": "Librarian detection of catalog errors",
+                    "purpose": "Explain why catalog errors go unnoticed.",
                     "target_words": 400,
                     "evidence_needs": [
                         {"design": "cross_sectional", "min_count": 1}
@@ -1192,8 +1192,8 @@ class WritingPlanTests(unittest.TestCase):
                 },
                 {
                     "id": "S3",
-                    "heading": "Referral workflow",
-                    "purpose": "Describe referral thresholds and handover.",
+                    "heading": "Record transfer workflow",
+                    "purpose": "Describe measurement thresholds and handover.",
                     "target_words": 200,
                     "evidence_needs": [{"design": "any", "min_count": 1}],
                     "assigned_dois": [],
@@ -1263,15 +1263,15 @@ class WritingPlanTests(unittest.TestCase):
         pool = [
             {
                 "doi": "10.1000/sr.1",
-                "title": "Systematic review of disruptive behaviour prevalence in classrooms",
-                "abstract": "Disruptive behaviour prevalence and classroom management.",
+                "title": "Systematic review of catalog record completeness",
+                "abstract": "Catalog record completeness and example management.",
                 "quartile": "Q1",
                 "citations": 100,
             },
             {
                 "doi": "10.1000/cs.2",
-                "title": "Teacher recognition of internalizing problems in students",
-                "abstract": "Cross-sectional survey of teacher recognition of internalizing behaviour.",
+                "title": "Librarian detection of catalog errors in records",
+                "abstract": "Cross-sectional survey of librarian detection of catalog errors.",
                 "quartile": "Q2",
                 "citations": 20,
             },
@@ -1299,8 +1299,8 @@ class WritingPlanTests(unittest.TestCase):
         draft = {
             "intro": {
                 "paragraphs": [
-                    "**Disruptive behaviour prevalence**",
-                    "Disruptive behaviour is common. " * 40,
+                    "**Catalog record completeness**",
+                    "Catalog records can be incomplete. " * 40,
                     "**Unplanned section**",
                     "Something else entirely. " * 10,
                 ]
@@ -1316,11 +1316,11 @@ class WritingPlanTests(unittest.TestCase):
         import check_plan_compliance as cp
 
         plan = self._plan()
-        plan["sections"][0]["heading"] = "1. Disruptive behaviour prevalence"
+        plan["sections"][0]["heading"] = "1. Catalog record completeness"
         draft = {
             "intro": {
                 "paragraphs": [
-                    "**1. Disruptive behaviour prevalence**",
+                    "**1. Catalog record completeness**",
                     "Text. " * 90,
                 ]
             }
@@ -1475,11 +1475,11 @@ class EvidenceGapRequestTests(unittest.TestCase):
     def _plan(self, **section_overrides):
         section = {
             "id": "S1",
-            "heading": "Kriz Öncesi",
+            "heading": "Bölüm A",
             "target_words": 1000,
             "evidence_needs": [{"design": "cross_sectional", "min_count": 1}],
             "assigned_dois": ["10.1/a", "10.1/b"],
-            "search_terms": ["screening", "referral", "teacher"],
+            "search_terms": ["sampling", "measurement", "researcher"],
         }
         section.update(section_overrides)
         return {"project": "p", "title": "T", "plan_status": "approved",
@@ -1547,11 +1547,11 @@ class EvidenceGapRequestTests(unittest.TestCase):
         plan["sections"].append(
             {
                 "id": "S2",
-                "heading": "Kriz Sonrası",
+                "heading": "Bölüm B",
                 "target_words": 900,
                 "evidence_needs": [{"design": "any", "min_count": 1}],
                 "assigned_dois": [],
-                "search_terms": ["reentry"],
+                "search_terms": ["followup"],
             }
         )
         report = preflight(plan, fulltext_list={"candidates": []},
@@ -1563,6 +1563,13 @@ class EvidenceGapRequestTests(unittest.TestCase):
 
 
 class EvidenceBankTests(unittest.TestCase):
+    def test_headings_do_not_inject_domain_keywords(self) -> None:
+        from build_evidence_bank import section_terms
+
+        for heading in ("Giriş", "Yeni Bir Alan", "Methods"):
+            self.assertEqual(section_terms({"heading": heading}), [heading.lower()])
+        self.assertEqual(section_terms({}), [])
+
     def test_pdf_filename_matches_downloader_rule(self) -> None:
         from build_evidence_bank import pdf_filename
         from doi_naming import doi_pdf_filename
@@ -1574,15 +1581,15 @@ class EvidenceBankTests(unittest.TestCase):
         from build_evidence_bank import section_terms
 
         self.assertEqual(
-            section_terms({"heading": "Kriz Öncesi", "search_terms": ["screening", "referral"]}),
-            ["screening", "referral"],
+            section_terms({"heading": "Bölüm A", "search_terms": ["sampling", "measurement"]}),
+            ["sampling", "measurement"],
         )
 
     def test_section_terms_falls_back_to_heading_keywords(self) -> None:
         from build_evidence_bank import section_terms
 
-        terms = section_terms({"heading": "Kriz Sonrası: İzleme"})
-        self.assertIn("reintegration", terms)
+        terms = section_terms({"heading": "Bölüm B: İzleme"})
+        self.assertEqual(terms, ["Bölüm B: İzleme".lower()])
 
     def test_design_detection(self) -> None:
         from build_evidence_bank import detect_design
@@ -1599,12 +1606,12 @@ class EvidenceBankTests(unittest.TestCase):
         text = (
             "Short one. "
             "This sentence is long enough to be a candidate because it carries "
-            "context about screening and referral practices in schools. "
+            "context about sampling and measurement practices in schools. "
             + long_sentence
         )
         picked = split_sentences(text)
         self.assertTrue(all(60 <= len(s) <= 420 for s in picked))
-        self.assertTrue(any("screening" in s for s in picked))
+        self.assertTrue(any("sampling" in s for s in picked))
 
 
 class ConceptCoverageTests(unittest.TestCase):
@@ -1614,12 +1621,12 @@ class ConceptCoverageTests(unittest.TestCase):
         return {
             "project": "p",
             "title": "T",
-            "anchor_terms": anchors if anchors is not None else ["de-escalation"],
+            "anchor_terms": anchors if anchors is not None else ["example-term"],
             "sections": [
                 {
                     "id": "S1",
-                    "heading": "Kriz Anı",
-                    "search_terms": terms if terms is not None else ["de-escalation", "crisis"],
+                    "heading": "Bölüm C",
+                    "search_terms": terms if terms is not None else ["example-term", "example context"],
                 }
             ],
         }
@@ -1634,9 +1641,9 @@ class ConceptCoverageTests(unittest.TestCase):
     def test_anchor_not_in_search_terms_fails(self) -> None:
         from check_concept_coverage import analyse
 
-        report = analyse(self._plan(terms=["classroom management", "screening"]))
+        report = analyse(self._plan(terms=["example management", "sampling"]))
         self.assertFalse(report["ok"])
-        self.assertEqual(report["dictionary"]["missing_from_search_terms"], ["de-escalation"])
+        self.assertEqual(report["dictionary"]["missing_from_search_terms"], ["example-term"])
 
     def test_anchor_in_search_terms_passes_dictionary(self) -> None:
         from check_concept_coverage import analyse
@@ -1647,34 +1654,34 @@ class ConceptCoverageTests(unittest.TestCase):
     def test_spelling_variants_are_matched(self) -> None:
         from check_concept_coverage import _variant_pattern
 
-        for text in ("de-escalation", "deescalation", "de escalation", "De-Escalation"):
-            self.assertTrue(_variant_pattern("de-escalation").search(text), text)
+        for text in ("example-term", "exampleterm", "example term", "Example-Term"):
+            self.assertTrue(_variant_pattern("example-term").search(text), text)
 
     def test_pool_record_with_anchor_must_be_assigned_or_rejected(self) -> None:
         from check_concept_coverage import analyse
 
         pool = {
             "records": [
-                {"doi": "10.1/loaded", "title": "Loaded moments toward escalation or de-escalation"},
+                {"doi": "10.1/example", "title": "Synthetic study of example-term"},
                 {"doi": "10.1/other", "title": "Something unrelated"},
             ]
         }
-        report = analyse(self._plan(), pool=pool, assigned={"10.1/loaded"})
+        report = analyse(self._plan(), pool=pool, assigned={"10.1/example"})
         self.assertTrue(report["selection"]["ok"])
         self.assertEqual(len(report["selection"]["matches"]), 1)
 
         report2 = analyse(self._plan(), pool=pool, assigned=set())
         self.assertFalse(report2["selection"]["ok"])
         dropped = report2["selection"]["dropped_without_reason"]
-        self.assertEqual([row["doi"] for row in dropped], ["10.1/loaded"])
+        self.assertEqual([row["doi"] for row in dropped], ["10.1/example"])
 
     def test_rejection_reason_clears_selection_gap(self) -> None:
         from check_concept_coverage import analyse
 
-        pool = {"records": [{"doi": "10.1/loaded", "title": "de-escalation in schools"}]}
+        pool = {"records": [{"doi": "10.1/example", "title": "example-term in schools"}]}
         report = analyse(
             self._plan(), pool=pool, assigned=set(),
-            rejections={"10.1/loaded": "örneklem uygun değil"},
+            rejections={"10.1/example": "örneklem uygun değil"},
         )
         self.assertTrue(report["selection"]["ok"])
 
@@ -1694,8 +1701,8 @@ class ConceptCoverageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             plan = Path(tmp) / "plan.json"
             plan.write_text(
-                '{"project":"p","title":"T","anchor_terms":["de-escalation"],'
-                '"sections":[{"id":"S1","heading":"H","search_terms":["disruptive behavior"]}]}',
+                '{"project":"p","title":"T","anchor_terms":["example-term"],'
+                '"sections":[{"id":"S1","heading":"H","search_terms":["example behavior"]}]}',
                 encoding="utf-8",
             )
             proc = subprocess.run(
@@ -1709,15 +1716,24 @@ class ConceptCoverageTests(unittest.TestCase):
 class ConceptMapTests(unittest.TestCase):
     """Başlıktan kavram haritası: türetme, bağlama, alan, kapsam."""
 
+    def test_background_search_is_not_tied_to_a_project_domain(self) -> None:
+        from unittest import mock
+
+        import build_concept_map as cm
+
+        with mock.patch.object(cm, "_fetch_corpus", return_value=[]) as fetch:
+            cm.mine_candidates("synthetic topic")
+        self.assertEqual(fetch.call_args_list, [
+            mock.call("synthetic topic", 50), mock.call("research", 100),
+        ])
+
     def test_repo_has_no_baked_in_concept_dictionary(self) -> None:
         """Kavramlar proje verisidir; kodda sabit sözlük olmamalı."""
         from pathlib import Path
 
         source = Path("scripts/build_concept_map.py").read_text(encoding="utf-8")
         self.assertNotIn("FRAMING_HINTS", source)
-        # Projeye özgü kavram adları kodda geçmemeli.
-        for forbidden in ("de-escalation", "riskli davranış", "escalation cycle"):
-            self.assertNotIn(forbidden, source, f"{forbidden!r} kodda sabitlenmiş")
+        self.assertNotIn("DOMAIN_BY_TERM", source)
 
     def test_seed_concepts_are_normalised(self) -> None:
         from build_concept_map import concepts_from_seed
@@ -1725,13 +1741,13 @@ class ConceptMapTests(unittest.TestCase):
         concepts = concepts_from_seed(
             {
                 "concepts": [
-                    {"term": "Kriz", "english_terms": ["de-escalation"], "role": "anchor"},
+                    {"term": "Kavram A", "english_terms": ["example-term"], "role": "anchor"},
                     "Tek metin kavram",
                 ]
             }
         )
         self.assertEqual(len(concepts), 2)
-        self.assertEqual(concepts[0]["english_terms"], ["de-escalation"])
+        self.assertEqual(concepts[0]["english_terms"], ["example-term"])
         self.assertEqual(concepts[0]["source"], "user_stated")
         self.assertEqual(concepts[1]["english_terms"], ["Tek metin kavram"])
 
@@ -1771,14 +1787,14 @@ class ConceptMapTests(unittest.TestCase):
 
         concepts = concepts_from_seed(
             {"concepts": [
-                {"term": "Kriz", "english_terms": ["de-escalation"], "role": "anchor"},
-                {"term": "Riskli davranış", "english_terms": ["disruptive behavior"]},
+                {"term": "Kavram A", "english_terms": ["example-term"], "role": "anchor"},
+                {"term": "Kavram B", "english_terms": ["example behavior"]},
             ]}
         )
         plan = {
             "sections": [
-                {"id": "S1", "heading": "Kriz Öncesi", "search_terms": ["de-escalation", "disruptive behavior"]},
-                {"id": "S2", "heading": "Okula Dönüş", "search_terms": ["reintegration"]},
+                {"id": "S1", "heading": "Bölüm A", "search_terms": ["example-term", "example behavior"]},
+                {"id": "S2", "heading": "Bölüm D", "search_terms": ["example followup"]},
             ]
         }
         coverage = link_sections(concepts, plan)
@@ -1790,7 +1806,7 @@ class ConceptMapTests(unittest.TestCase):
         from build_concept_map import concepts_from_seed, measure_coverage
 
         concepts = concepts_from_seed(
-            {"concepts": [{"term": "Kriz", "english_terms": ["de-escalation"]}]}
+            {"concepts": [{"term": "Kavram A", "english_terms": ["example-term"]}]}
         )
         measure_coverage(concepts, {"records": []}, set(), None)
         self.assertEqual(concepts[0]["coverage"]["status"], "missing")
@@ -1799,9 +1815,9 @@ class ConceptMapTests(unittest.TestCase):
         from build_concept_map import concepts_from_seed, measure_coverage
 
         concepts = concepts_from_seed(
-            {"concepts": [{"term": "Kriz", "english_terms": ["de-escalation"]}]}
+            {"concepts": [{"term": "Kavram A", "english_terms": ["example-term"]}]}
         )
-        pool = {"records": [{"doi": "10.1/x", "title": "de-escalation in schools"}]}
+        pool = {"records": [{"doi": "10.1/x", "title": "example-term in schools"}]}
         measure_coverage(concepts, pool, set(), None)
         cov = concepts[0]["coverage"]
         self.assertEqual(cov["pool_records"], 1)
@@ -1812,17 +1828,17 @@ class ConceptMapTests(unittest.TestCase):
         from build_concept_map import concepts_from_seed, update_from_literature
 
         concepts = concepts_from_seed(
-            {"concepts": [{"term": "Kriz", "english_terms": ["de-escalation"]}]}
+            {"concepts": [{"term": "Kavram A", "english_terms": ["example-term"]}]}
         )
         bank = {
             "sources": [
-                {"quotes": [{"text": "restorative practice reduces exclusion"}]},
-                {"quotes": [{"text": "restorative practice in schools"}]},
-                {"quotes": [{"text": "restorative practice works"}]},
+                {"quotes": [{"text": "catalog validation reduces exclusion"}]},
+                {"quotes": [{"text": "catalog validation in schools"}]},
+                {"quotes": [{"text": "catalog validation works"}]},
             ]
         }
         added = update_from_literature(concepts, bank, min_count=3)
-        self.assertTrue(any("restorative" in item for item in added))
+        self.assertTrue(any("catalog" in item for item in added))
         new = [c for c in concepts if c.get("source") == "literature"]
         self.assertTrue(new)
         self.assertEqual(new[0]["role"], "component")
@@ -1842,16 +1858,24 @@ class ConceptMapTests(unittest.TestCase):
     def test_variant_pattern_matches_spelling(self) -> None:
         from build_concept_map import _compile_variant
 
-        pattern = _compile_variant("de-escalation")
-        for text in ("de-escalation", "deescalation", "de escalation"):
+        pattern = _compile_variant("example-term")
+        for text in ("example-term", "exampleterm", "example term"):
             self.assertTrue(pattern.search(text), text)
 
 
 class MeshTests(unittest.TestCase):
-    def test_fallback_terms_known(self) -> None:
+    def test_fallback_requires_project_mapping(self) -> None:
         from sciencedirect_meta import mesh
 
-        self.assertIn("Crisis Intervention", mesh.fallback_terms("de-escalation"))
+        self.assertEqual(mesh.fallback_terms("example concept"), [])
+        self.assertEqual(
+            mesh.fallback_terms(" Example Concept ", {"example concept": ["Verified Term"]}),
+            ["Verified Term"],
+        )
+        self.assertEqual(
+            mesh.fallback_terms("another concept", {"example concept": ["Verified Term"]}),
+            [],
+        )
 
     def test_check_tags_are_excluded(self) -> None:
         from sciencedirect_meta import mesh

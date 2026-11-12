@@ -268,8 +268,8 @@ class CoverageTests(unittest.TestCase):
 
     def test_score_results_best_uses_matching_facet_query(self) -> None:
         item = {
-            "title": "Teacher classroom management practices: effects on disruptive student behavior",
-            "abstract": "Systematic review of teacher classroom management on disruptive behaviour.",
+            "title": "Synthetic library catalog management practices: effects on digital record access",
+            "abstract": "Systematic review of library catalog management on digital record access.",
             "journal": "Campbell Systematic Reviews",
             "year": 2011,
             "cited_by": 302,
@@ -279,13 +279,13 @@ class CoverageTests(unittest.TestCase):
         sources.score_results_best(
             [item],
             [
-                "Eğitimciler İçin Rehber: Sınıfta Riskli Davranışları Tanıma ve Yönlendirme",
-                "classroom disruptive behaviour teacher identification referral intervention",
+                "Kütüphane Veri Yönetimi — Kurgusal Örnek Başlık",
+                "library catalog management digital record access",
             ],
         )
         self.assertEqual(
             item["scored_query"],
-            "classroom disruptive behaviour teacher identification referral intervention",
+            "library catalog management digital record access",
         )
         self.assertGreater(item["score"], sources.HIGH_QUALITY_SCORE)
         self.assertTrue(item["high_quality"])

@@ -1,16 +1,22 @@
 # Değişiklik Günlüğü
 
+## Yayımlanmamış
+
+- Yerel donanım profili, kişisel performans ölçümleri, pilot rapor adları ve
+  gerçek çalışma ayrıntıları genel dokümantasyondan çıkarıldı.
+- Kanıt bankasındaki bölüm başlığı–anahtar kelime eşlemeleri kaldırıldı.
+- MeSH yedek sözlüğündeki projeye özel kavramlar kaldırıldı; çevrimdışı
+  karşılıklar yalnızca çağıranın verdiği sözlükten alınır.
+- Kişisel yol, e-posta, yaygın anahtar biçimleri ve yerel çalışma dosyaları için
+  değerleri yazdırmayan genel depo denetimi eklendi; `.gitignore` genişletildi.
+
 ## v2.13.2 — 2026-11-12
 
 ### Eklendi
 
-- **MeSH projeksiyonuna alan bağlamı (`context_terms`).** Tek başına
-  "de-escalation" PubMed'de onkoloji literatürüne düşüyor; projeksiyon boş
-  dönüyordu. Tohum dosyasına `context_terms` (örn. `inpatient`, `psychiatric`,
-  `mental health`) yazılınca sorgu o bağlama daraltılıyor. Ölçüm: bağlamsız
-  projeksiyon 0 MeSH terimi; bağlamla `Aggression`, `Violence` (ve ajitasyon
-  için `Mental Disorders`). Terimler `english_terms` alanına eklenir ve diğer
-  motorlara sorgu olarak taşınır.
+- **MeSH projeksiyonuna alan bağlamı (`context_terms`).** Tohum dosyasındaki
+  bağlam terimleri PubMed sorgusunu daraltır. Dönen MeSH terimleri
+  `english_terms` alanına eklenir ve diğer motorlara sorgu olarak taşınır.
 
 ## v2.13.1 — 2026-11-12
 
@@ -42,14 +48,8 @@
 
 ### Doğrulama
 
-Kör test (projede hiçbir kavram tanımlı değil):
-
-- `classroom crisis prevention intervention teacher` → 9 kavram.
-  `de-escalation` 7. sırada: 3/42 özette, arka plan külliyatında 0.
-- `crisis intervention teacher classroom` araması çekirdek makaleyi
-  getirmedi; `de-escalation classroom teacher` araması getirdi (2. sıra).
-  Yani en yüksek puanlı aday her zaman anchor değildir — doğrulama kapısı bu
-  yüzden zorunlu.
+Kavram adaylarının sıralanması, sorguyla doğrulanması ve kullanıcı tarafından
+onaylanan listenin `--concept-seed` ile verilmesi denetlendi.
 
 ## v2.13.0 — 2026-11-12
 
@@ -68,32 +68,24 @@ Kör test (projede hiçbir kavram tanımlı değil):
     `literature` kaynaklı olarak ekler.
 - **`sciencedirect_meta.mesh` modülü.** PubMed MeSH projeksiyonu: serbest metin
   terimini PubMed'de arar, dönen makalelerin MeSH başlıklarını toplar ve
-  kontrollü sözlüğe çevirir. MeSH'te "de-escalation" descriptor'ı yoktur; ama o
-  konudaki makalelerin MeSH başlıkları vardır (Aggression, Workplace Violence,
-  Restraint Physical ...). Demografik check-tag'ler ve `min_share` altındaki
-  gürültü elenir.
+  kontrollü sözlüğe çevirir. Demografik check-tag'ler ve `min_share`
+  altındaki gürültü elenir.
 - **Alan duyarlılığı.** Her kavram `domain` ve `authoritative_databases` alanı
-  taşır. MeSH yalnızca tıp/psikoloji kavramlarına uygulanır. Ölçülen tespit:
-  eğitim bağlamında "de-escalation" PubMed'de **onkoloji** demektir (kemoterapi
-  dozu azaltma); 20 makalenin yalnızca %20'sinde Aggression geçiyordu. Eğitim
-  kavramlarında MeSH terimleri reddedilir ve gerekçesi kaydedilir
-  (`mesh_rejected`). Yetkili veritabanları: eğitim → OpenAlex, Semantic Scholar,
-  Crossref; tıp → PubMed, Europe PMC.
+  taşır. MeSH yalnızca tıp/psikoloji kavramlarına uygulanır. Diğer alanlarda
+  MeSH terimleri reddedilir ve gerekçesi `mesh_rejected` alanına kaydedilir.
 - 12 yeni test: kavram türetme, alan eşlemesi, MeSH kabul/ret, bölüm bağlama,
   kapsam ölçümü, aşama 4 güncellemesi ve yazım varyantları.
 
 ### Doğrulama
 
-Bir proje üzerinde dört aşama da çalıştırıldı. Araç, elle bulunan hatayı
-otomatik yakaladı: anchor kavram (`de-escalation`) havuzda 2 kayıtta
-vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
+Dört aşamadaki kavram türetme, bölüm bağlama ve kapsam denetimleri sınandı.
 
 ## v2.12.0 — 2026-11-12
 
 ### Düzeltildi
 
 - **Anchor terim zinciri.** Bir bölümün kavramsal çekirdeği alanyazında tek bir
-  terimle anılır (*de-escalation*, *scaffolding*, *self-regulated learning* …).
+  terimle anılır (proje planında tanımlanan çekirdek kavramlar).
   Kullanıcının ifadesi bu kavramın Türkçe karşılığı olduğunda plan, terimi
   `search_terms` içine almıyordu; zincirin tamamı kör kalıyordu:
 
@@ -101,13 +93,6 @@ vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
   anchor terim -> search_terms -> toplama -> seçme -> yazma
   ```
 
-  Ölçülen vaka: "kriz öncesi / kriz anı / kriz sonrası" çerçevesi
-  (alanyazındaki adı *escalation cycle*) planlandı; 31 kaynak tarandı, 550 sayfa
-  okundu, 4.647 kelime yazıldı — ama "de-escalation" hiçbir sorguda geçmediği
-  için alanın çekirdek makalesi (*The Evolution of "Loaded Moments" Toward
-  Escalation or De-Escalation*, Q1, 2023) havuza girdiği hâlde atanmadı ve
-  31 PDF'in yalnızca 1'inde kelime geçti. Kavram, altı aşamanın hiçbirinde
-  görünmedi.
 - **`anchor_terms` alanı** `writing-plan` ve `topic-discovery` şemalarına
   eklendi. Akış 1'de kullanıcıya "bu kavramın alanyazındaki adı ne?" sorusu
   zorunlu hale geldi.
@@ -115,7 +100,7 @@ vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
   (a) anchor terim `search_terms` içinde mi, (b) indirilen PDF'lerin en az
   %15'inde anchor terim geçiyor mu, (c) havuzda anchor terim içeren kayıt
   atandı mı ya da gerekçesiyle reddedildi mi. Yazım varyantları yakalanır
-  (`de-escalation` / `deescalation` / `de escalation`). Kapı olarak çalışır:
+  (`example-term` / `exampleterm` / `example term`). Kapı olarak çalışır:
   külliyat kavramı taşımıyorsa akış 4 başlamaz.
 - Akış 2'ye "kavram kapsamı kapısı", akış 3'e "toplama sonrası kavram denetimi"
   adımları eklendi; `AGENTS.md` zorunlu kural listesine anchor terim maddesi
@@ -129,10 +114,8 @@ vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
   `scripts/build_evidence_bank.py` atanmış PDF'leri PaperQA2 indeksi üzerinde
   anlamsal aramayla tarar ve alt başlık başına sayfa numaralı alıntı adaylarını
   `taslak/_kanit_bankasi.json` içine yazar. Abstrakt okuyup yazmaya başlamak,
-  elde yüzlerce sayfa varken metni birkaç kaynakla sınırlıyordu; ölçülen bir
-  vakada 31 atanmış kaynağın yalnızca 10'u kullanılmış, 550 sayfanın ~20'si
-  okunmuştu. Bankadaki cümleler **alıntı adayıdır**; taslağa giren her cümle
-  `paperqa_read_pages` ile doğrulanır.
+  kaynak kapsamını daraltabilir. Bankadaki cümleler **alıntı adayıdır**;
+  taslağa giren her cümle `paperqa_read_pages` ile doğrulanır.
 - **İki motor:** `semantic` (varsayılan, PaperQA2 embedding) ve `keyword`
   (PyMuPDF + terim eşleşmesi, indeks yoksa yedek). Proje adı PDF klasöründen
   çözülür (plan `proje` ↔ indeks `proje-draft` uyuşmazlığı otomatik giderilir).
@@ -560,7 +543,7 @@ vardı, **0'ı atanmıştı** ve S2/S3/S4 bölümleri anchor'a bağlı değildi.
 
 ### Eklendi
 
-- `report-kit`: b1 pilot raporundan uyarlanan sayfa tasarımı — 980 px gövde,
+- `report-kit`: bölüm raporu sayfa tasarımı — 980 px gövde,
   sans-serif başlıklar, `<mark>` vurgusu, kart/kanıt/not düzeni ve baskı
   kuralları.
 - `report-kit`: opsiyonel `notice` kaynak politikası kutusu, sayı rozetleri

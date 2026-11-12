@@ -1,7 +1,7 @@
 # Yerel LLM: llama.cpp
 
 `paperqa_ask` gerektiğinde yerel modeli kullanır ve llama.cpp sunucusunu
-otomatik başlatır. Bu belge, bu makine sınıfı için arka uç ve model seçimini,
+otomatik başlatır. Bu belge, arka uç ve model yapılandırmasını,
 llama.cpp kurulumunu, otomatik yaşam döngüsünü ve OpenCode entegrasyonunu
 açıklar.
 
@@ -23,7 +23,7 @@ açıklar.
 ### Neden llama.cpp?
 
 - llama.cpp doğrudan GGUF çalıştırır; ayrı bir model yöneticisi veya daemon
-  katmanı yoktur. Bu makinede ek servis yükü ve model kopyası oluşmaz.
+  katmanı yoktur. Ek bir servis yönetimi katmanı gerekmez.
 - llama.cpp `llama-server` OpenAI uyumlu `/v1/chat/completions` sunar; hem
   PaperQA2/LiteLLM hem OpenCode aynı uç noktayı kullanabilir.
 - Bayraklar (`-c`, `-t`, `-ngl`, `--temp`) açıkça kontrol edilir.
@@ -31,24 +31,9 @@ açıklar.
 
 ### Neden Qwen2.5-3B varsayılan?
 
-Bu donanım sınıfında 3B–4B, Q4 quantized model güvenli üst sınırdır. Qwen2.5-3B-Instruct, Türkçe talimat takibi ve tutarlılık açısından bu sınıfta en dengeli seçenektir. Daha küçük modeller hızlı olsa da Türkçe akademik taslakta kalıp ifadelere ve yarım cümlelere daha sık düşer; bu nedenle depo tek varsayılan modelle gelir.
-
-## Donanım sınırı
-
-Ölçülen hedef sistem:
-
-- Intel i5-6300U, 2 fiziksel çekirdek / 4 iş parçacığı,
-- 7,6 GB RAM, GPU yok (Intel HD 520),
-- yaklaşık 4–5 GB kullanılabilir RAM.
-
-Bu sınıfta güvenli üst sınır **3B–4B, Q4 quantized** modeldir. 7B model
-(~4,7 GB ağırlık + bağlam + PaperQA2 yükü) RAM'i zorlar, swap'a düşer ve CPU'da
-pratik olmayacak kadar yavaşlar.
-
-| Model | Boyut (Q4_K_M) | Türkçe | Bu sistemde rol |
-|---|---:|---|---|
-| `Qwen2.5-3B-Instruct` | ~2,1 GB | Destekli | **Varsayılan denge** |
-| `Qwen2.5-7B-Instruct` | ~4,7 GB | Destekli | Bu makinede önerilmez (swap) |
+Depo, Qwen2.5-3B-Instruct Q4_K_M ile örnek bir başlangıç yapılandırması
+sunar. Model boyutu, bağlam penceresi ve eşzamanlı işler için gereken belleği
+kendi sisteminizde ölçün. Varsayılan seçim donanıma özel bir üst sınır değildir.
 
 ## llama.cpp kurulumu
 
@@ -109,8 +94,8 @@ Varsayılan bayraklar:
 ```text
 -m <model.gguf> --alias qwen2.5-3b-instruct
 -c 8192      # bağlam penceresi
--t 2         # 2 fiziksel çekirdek; en hafif ve en hızlı ölçüm
--ngl 0       # GPU yok
+-t 2         # THREADS ile değiştirilebilir
+-ngl 0       # varsayılan CPU çalıştırma
 --temp 0.1   # daha deterministik çıktı
 --host 127.0.0.1 --port 8080 --jinja
 ```
@@ -120,15 +105,12 @@ kullanmasını sağlar. `--alias`, OpenCode ve LiteLLM'in gördüğü model adı
 
 ### Bayrak notları
 
-- **`-c 8192`**: Bu makinede Qwen2.5-3B Q4_K_M ile test edildi. PaperQA
-  taslakları için 4096 yeterlidir; OpenCode tek isteği için 8192 gerekir.
-  Çok turlu OpenCode ajanı 16k+ bağlam ister; 8192'de ikinci istek bağlamı
-  aşabilir.
-- **`-t 2`**: 2 fiziksel çekirdeğin tamamı; hyper-threading'e taşmaz. Benchmarkta
-  üretim hızı 2 iş parçacığında daha yüksekti (7,2 tok/s). `THREADS=4` ile
-  kendi ölçümünüzü yapabilirsiniz.
-- **`-ngl 0`**: GPU yok. Intel HD 520 llama.cpp tarafından hızlandırıcı olarak
-  kullanılmaz.
+- **`-c 8192`**: Varsayılan bağlam penceresi; `CTX` ile değişir.
+  Uzun veya çok turlu oturumlarda ihtiyaca ve kullanılabilir belleğe göre ayarlayın.
+- **`-t 2`**: Varsayılan iş parçacığı sayısı; `THREADS` ile değişir.
+  Uygun değeri kendi donanımınızda ölçün.
+- **`-ngl 0`**: Varsayılan olarak CPU kullanılır. Uyumlu GPU ve derleme
+  kullanılıyorsa `NGL` ile GPU'ya aktarılacak katman sayısı ayarlanabilir.
 - **`--temp 0.1`**: Özet/taslak için tekrarlanabilirliği artırır. Yaratıcı
   metin için 0.3–0.7 denenebilir.
 
@@ -225,26 +207,15 @@ değiştirmek, sayfa doğrulamasını ve `report-kit` kalite kapısını riske a
 
 ## Benchmark
 
-Ölçüm: Intel i5-6300U, 2 fiziksel çekirdek / 4 iş parçacığı, GPU yok,
-7,6 GB RAM; llama.cpp b11954, Q4_K_M, `-ngl 0`, `-c 4096`, `--temp 0.1`.
-Türkçe akademik paragraf istemi; 160 token üretim sınırı.
+Kendi sisteminizde iş parçacığı sayılarının etkisini karşılaştırın:
 
-| Model | İş parçacığı | Üretim (tok/s) | Prompt (tok/s) |
-|---|---:|---:|---:|
-| Qwen2.5-3B-Instruct | 2 | 7,2 | 21,3 |
-| Qwen2.5-3B-Instruct | 4 | 6,7 | 22,3 |
+```bash
+python3 scripts/benchmark_local_llm.py --threads 2,4
+```
 
-Notlar:
-
-- **Qwen2.5-3B** Türkçe çıktı üretir; ancak 3B ölçeğinde cümleler kısa ve
-  yer yer kalıp ifadelere yakındır. Taslak/özet için kullanılabilir, nihai
-  kanıt veya düzeltme metni için değil.
-- Üretim hızı 2 ve 4 iş parçacığında belirgin fark göstermedi. Toplam süre
-  model yükleme ve disk önbelleği nedeniyle 13,8–34,8 s arasında değişti;
-  tek koşuya dayanarak iş parçacığı sayısı seçilmemelidir.
-- Ölçümler tek koşudur; arka plan yükü ve model sıcaklığı sonuçları
-  oynatabilir. Kendi makinenizde
-  `python3 scripts/benchmark_local_llm.py --threads 2,4` ile doğrulayın.
+Model, quantization, bağlam penceresi, üretim sınırı ve arka plan yükünü
+ölçümle birlikte kaydedin. Tek koşu yerine tekrarlı ölçümleri karşılaştırın.
+Kişisel donanım bilgilerini ve ölçüm çıktılarını yerel çalışma alanında tutun.
 
 ## Sorun giderme
 
@@ -257,4 +228,4 @@ Notlar:
 | Model listede yok | `--alias` ile `PAPERQA_LOCAL_LLM` aynı olmalı. |
 | OpenCode modeli göstermiyor | OpenCode'u yeniden başlatın; `baseURL` `/v1` ile bitmeli. |
 | Çok yavaş | `THREADS=2` deneyin; `-c 4096` ve `max_tokens=400` ile sınırlayın. |
-| RAM/swap sorunu | 7B model kullanmayın; `free -h` ve `swap` kullanımını izleyin. |
+| RAM/swap sorunu | Model/bağlam boyutunu azaltın; `free -h` ve swap kullanımını izleyin. |

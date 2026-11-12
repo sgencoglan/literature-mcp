@@ -1,8 +1,7 @@
 # literature-report-kit
 
 `chapter-report`, kitap bölümü düzeltmelerini **tek dosyalık, baskıya uygun HTML**
-olarak üretir. Tasarım, b1 pilot raporu için beğenilen altın standart raporun
-görsel dilini korur:
+olarak üretir. Raporun görsel yapısı:
 
 - geniş sayfa (980 px), sans-serif başlıklar, kart/kanıt/not düzeni,
 - düzeltilmiş bölüm metni; yeniden düzenleme kırmızı, anlamlı MCP eklemeleri mavi/yeşil `<mark>`,

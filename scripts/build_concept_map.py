@@ -221,8 +221,7 @@ GENERIC_WORDS = set(
     studies research results findings however therefore moreover furthermore
     although while because both each some many much very well used using use based
     approach approaches method methods analysis data paper article journal
-    university school schools student students teacher teachers education
-    educational classroom teaching learning children child year years group groups
+    university year years group groups
     time high low new two three first second""".split()
 )
 
@@ -237,7 +236,7 @@ def _abstract_text(inverted: Optional[Dict[str, List[int]]]) -> str:
 def _candidate_grams(text: str) -> set[str]:
     """Metinden kavram adayı n-gramları çıkar.
 
-    Tek sözcükler yalnızca tire içeriyorsa aday olur (``teacher-student`` gibi
+    Tek sözcükler yalnızca tire içeriyorsa aday olur (``example-term`` gibi
     bileşik terimler tekniktir); düz tek sözcükler ("intervention") çok genel
     kalır. İki-üç sözcüklü öbekler adaydır.
     """
@@ -312,7 +311,7 @@ def _corpus_stats(works: List[Dict[str, Any]]) -> tuple[Dict[str, int], Dict[str
 
 def mine_candidates(
     query: str,
-    background_query: str = "classroom",
+    background_query: str = "research",
     min_count: int = 3,
     limit: int = 14,
 ) -> Dict[str, Any]:
@@ -321,7 +320,7 @@ def mine_candidates(
     Yöntem:
 
     * Hedef külliyat: sorgunun ilk 50 sonucu (başlık + özet).
-    * Arka plan külliyatı: aynı alanın genel sorgusu (varsayılan ``classroom``).
+    * Arka plan külliyatı: aynı alanın genel sorgusu (varsayılan genel ``research``).
     * Aday, hedef külliyatta en az ``min_count`` makalede geçmeli.
     * Ayırt edicilik = hedef oran / arka plan oranı. Genel terimler her iki
       külliyatta da geçtiği için düşer; alana özgü teknik terimler öne çıkar.
@@ -697,15 +696,14 @@ def update_from_literature(
     stop = {
         "which", "there", "these", "those", "their", "about", "would", "could",
         "should", "other", "where", "while", "after", "before", "between",
-        "students", "student", "teachers", "teacher", "study", "studies",
+        "study", "studies",
         "research", "findings", "results", "however", "therefore", "moreover",
         # Genel akademik sözcükler kavram değildir; tek başına haritaya girmez.
-        "classroom", "school", "schools", "management", "behavior", "behaviour",
         "practice", "practices", "support", "supports", "intervention",
-        "interventions", "education", "educational", "positive", "negative",
+        "interventions", "positive", "negative",
         "significant", "associated", "increased", "decreased", "evidence",
         "approach", "approaches", "strategies", "strategy", "outcomes", "outcome",
-        "children", "child", "years", "level", "levels", "forms", "based",
+        "years", "level", "levels", "forms", "based",
     }
     for source in sources:
         text = _norm(" ".join(str(q.get("text") or "") for q in source.get("quotes") or []))
@@ -720,8 +718,7 @@ def update_from_literature(
                 continue
             counts[bigram] = counts.get(bigram, 0) + 1
 
-    # İkili öbekler tek sözcüklerden daha bilgilendirici: "classroom
-    # management" bir kavramdır, "classroom" değildir. Aynı sayımda geçen ve
+    # İkili öbekler tek sözcüklerden daha bilgilendirici olabilir. Aynı sayımda geçen ve
     # bir öbeğin parçası olan tek sözcük eklenmez.
     added: List[str] = []
     chosen: List[str] = []

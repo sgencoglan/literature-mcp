@@ -45,7 +45,7 @@
           "variants": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Yazım varyantları: de-escalation / deescalation / de escalation."
+            "description": "Yazım varyantları: example-term / exampleterm / example term."
           },
           "mesh": { "type": "array", "items": { "type": "string" } },
           "relations": {

@@ -95,15 +95,6 @@ DESIGN_PATTERNS = [
 
 SKIP_PAGE = re.compile(r"^\s*(references|bibliography|kaynakça|appendix)", re.IGNORECASE)
 
-# Plan `search_terms` taşımıyorsa başlık için İngilizce eşleme tablosu.
-TERM_FALLBACK: Dict[str, List[str]] = {
-    "giriş": ["classroom management", "disruptive behavior", "student achievement", "prevention"],
-    "kriz öncesi": ["screening", "identification", "judgment", "perception", "referral", "at risk"],
-    "kriz anı": ["reprimand", "praise", "intervention", "escalation", "engagement"],
-    "kriz sonrası": ["reintegration", "reentry", "suspension", "expulsion", "follow-up", "outcome"],
-}
-
-
 def esc(value: Any) -> str:
     return html.escape("" if value is None else str(value), quote=True)
 
@@ -135,10 +126,7 @@ def section_terms(section: Dict[str, Any]) -> List[str]:
     if terms:
         return terms
     heading = str(section.get("heading") or "").lower()
-    for needle, mapped in TERM_FALLBACK.items():
-        if needle in heading:
-            return mapped
-    # Son çare: başlığın kendisi.
+    # Arama terimleri kullanıcı planından gelir; başlık konu sözlüğüne çevrilmez.
     return [heading] if heading else []
 
 
