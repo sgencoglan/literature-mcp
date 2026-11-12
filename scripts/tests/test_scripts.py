@@ -1607,5 +1607,104 @@ class EvidenceBankTests(unittest.TestCase):
         self.assertTrue(any("screening" in s for s in picked))
 
 
+class ConceptCoverageTests(unittest.TestCase):
+    """Anchor terim zinciri: sözlük -> külliyat -> seçim."""
+
+    def _plan(self, anchors=None, terms=None):
+        return {
+            "project": "p",
+            "title": "T",
+            "anchor_terms": anchors if anchors is not None else ["de-escalation"],
+            "sections": [
+                {
+                    "id": "S1",
+                    "heading": "Kriz Anı",
+                    "search_terms": terms if terms is not None else ["de-escalation", "crisis"],
+                }
+            ],
+        }
+
+    def test_missing_anchor_terms_fails(self) -> None:
+        from check_concept_coverage import analyse
+
+        report = analyse(self._plan(anchors=[]))
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("anchor_terms" in f for f in report["failures"]))
+
+    def test_anchor_not_in_search_terms_fails(self) -> None:
+        from check_concept_coverage import analyse
+
+        report = analyse(self._plan(terms=["classroom management", "screening"]))
+        self.assertFalse(report["ok"])
+        self.assertEqual(report["dictionary"]["missing_from_search_terms"], ["de-escalation"])
+
+    def test_anchor_in_search_terms_passes_dictionary(self) -> None:
+        from check_concept_coverage import analyse
+
+        report = analyse(self._plan())
+        self.assertTrue(report["dictionary"]["ok"])
+
+    def test_spelling_variants_are_matched(self) -> None:
+        from check_concept_coverage import _variant_pattern
+
+        for text in ("de-escalation", "deescalation", "de escalation", "De-Escalation"):
+            self.assertTrue(_variant_pattern("de-escalation").search(text), text)
+
+    def test_pool_record_with_anchor_must_be_assigned_or_rejected(self) -> None:
+        from check_concept_coverage import analyse
+
+        pool = {
+            "records": [
+                {"doi": "10.1/loaded", "title": "Loaded moments toward escalation or de-escalation"},
+                {"doi": "10.1/other", "title": "Something unrelated"},
+            ]
+        }
+        report = analyse(self._plan(), pool=pool, assigned={"10.1/loaded"})
+        self.assertTrue(report["selection"]["ok"])
+        self.assertEqual(len(report["selection"]["matches"]), 1)
+
+        report2 = analyse(self._plan(), pool=pool, assigned=set())
+        self.assertFalse(report2["selection"]["ok"])
+        dropped = report2["selection"]["dropped_without_reason"]
+        self.assertEqual([row["doi"] for row in dropped], ["10.1/loaded"])
+
+    def test_rejection_reason_clears_selection_gap(self) -> None:
+        from check_concept_coverage import analyse
+
+        pool = {"records": [{"doi": "10.1/loaded", "title": "de-escalation in schools"}]}
+        report = analyse(
+            self._plan(), pool=pool, assigned=set(),
+            rejections={"10.1/loaded": "örneklem uygun değil"},
+        )
+        self.assertTrue(report["selection"]["ok"])
+
+    def test_corpus_check_is_skipped_without_pdfs(self) -> None:
+        from check_concept_coverage import analyse
+
+        report = analyse(self._plan())
+        self.assertIsNone(report["corpus"]["ok"])
+
+    def test_cli_exit_code_reflects_failure(self) -> None:
+        import subprocess
+        import sys
+        import tempfile
+        from pathlib import Path
+
+        plugin = Path("scripts/check_concept_coverage.py").resolve()
+        with tempfile.TemporaryDirectory() as tmp:
+            plan = Path(tmp) / "plan.json"
+            plan.write_text(
+                '{"project":"p","title":"T","anchor_terms":["de-escalation"],'
+                '"sections":[{"id":"S1","heading":"H","search_terms":["disruptive behavior"]}]}',
+                encoding="utf-8",
+            )
+            proc = subprocess.run(
+                [sys.executable, str(plugin), str(plan), "--check"],
+                capture_output=True, text=True,
+            )
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("KALDI", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

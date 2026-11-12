@@ -142,11 +142,18 @@ def section_terms(section: Dict[str, Any]) -> List[str]:
     return [heading] if heading else []
 
 
-def detect_design(title: str, sample_text: str) -> str:
-    haystack = f"{title} {sample_text[:4000]}".lower()
-    for pattern, label in DESIGN_PATTERNS:
-        if re.search(pattern, haystack):
-            return label
+def detect_design(title: str, sample_text: str = "") -> str:
+    """Tasarımı başlıktan, sonra metinden çıkar.
+
+    Başlık daha güvenilirdir: bir çalışma hem yarı deneysel hem randomize kol
+    bildirebilir; künyede yazan tasarım esas alınır. Bu yüzden başlık önce ve
+    ``quasi_experimental`` deseni ``rct`` deseninden önce denenir.
+    """
+    for haystack in (title or "", sample_text[:4000] if sample_text else ""):
+        lowered = haystack.lower()
+        for pattern, label in DESIGN_PATTERNS:
+            if re.search(pattern, lowered):
+                return label
     return "any"
 
 
@@ -160,6 +167,7 @@ def read_source(
     path: Path,
     terms: List[str],
     title: Optional[str] = None,
+    min_hits: int = MIN_TERM_HITS,
 ) -> Dict[str, Any]:
     entry: Dict[str, Any] = {
         "doi": doi,
@@ -201,7 +209,7 @@ def read_source(
             continue
         for sentence in split_sentences(text):
             hits = _score(sentence, terms)
-            if hits >= MIN_TERM_HITS:
+            if hits >= min_hits:
                 scored.append((hits, page_number, sentence))
 
     scored.sort(key=lambda item: (-item[0], item[1]))
@@ -331,6 +339,9 @@ def build_semantic(
     project: str,
     k_per_section: int = 12,
     max_chars: int = 900,
+    pdf_dir: Optional[Path] = None,
+    include_keyword: bool = True,
+    titles: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Alt başlık başına tek semantik arama; hangi PDF'in ilgili olduğunu bulur.
 
@@ -341,6 +352,7 @@ def build_semantic(
     """
     import asyncio
 
+    titles = titles or {}
     paperqa = _paperqa_module()
     if paperqa is None:
         raise RuntimeError(
@@ -411,9 +423,12 @@ def build_semantic(
                     "doi": doi,
                     "pdf": pdf_filename(doi),
                     "exists": True,
-                    "title": hit.get("title"),
+                    "title": hit.get("title") or titles.get(doi) or None,
                     "pages": 0,
-                    "design": detect_design(hit.get("title") or "", hit.get("text") or ""),
+                    "design": detect_design(
+                        (hit.get("title") or titles.get(doi) or ""),
+                        hit.get("text") or "",
+                    ),
                     "quotes": [],
                     "error": None,
                     "sections": set(),
@@ -431,6 +446,64 @@ def build_semantic(
                     "source": "semantic",
                 }
             )
+
+    # Keyword taraması: semantik top-k kesmesinde dışarıda kalan kaynakların
+    # kapsamı garanti altına alınır. Semantik isabeti, keyword kapsamı sağlar.
+    if include_keyword and pdf_dir is not None:
+        for section in plan.get("sections") or []:
+            if not isinstance(section, dict):
+                continue
+            sid = str(section.get("id") or "")
+            terms = section_terms(section)
+            for doi in (plan.get("_assignments") or {}).get(sid) or []:
+                key = str(doi).lower()
+                entry = by_doi.get(key)
+                needs_fill = entry is None or not entry["quotes"]
+                if not needs_fill:
+                    continue
+                fallback = read_source(
+                    key, pdf_dir / pdf_filename(key), terms, titles.get(key)
+                )
+                if not fallback["quotes"] and len(terms) > 1:
+                    # Tek terim eşleşmesi de kapsam için yeterli: hassasiyeti
+                    # semantik aşama sağlıyor, burada amaç boşluk bırakmamak.
+                    fallback = read_source(
+                        key,
+                        pdf_dir / pdf_filename(key),
+                        terms,
+                        titles.get(key),
+                        min_hits=1,
+                    )
+                if not fallback["quotes"]:
+                    continue
+                if entry is None:
+                    entry = {
+                        "doi": key,
+                        "pdf": fallback["pdf"],
+                        "exists": fallback["exists"],
+                        "title": fallback["title"],
+                        "pages": fallback["pages"],
+                        "design": fallback["design"],
+                        "quotes": [],
+                        "error": fallback["error"],
+                        "sections": set(),
+                        "semantic": True,
+                    }
+                    by_doi[key] = entry
+                entry["pages"] = fallback["pages"] or entry["pages"]
+                entry["title"] = entry["title"] or fallback["title"]
+                # Başlık artık elimizdeyse tasarımı yeniden çıkar: künyede
+                # "quasi-experimental" yazıyorsa rct etiketi düzeltilir.
+                redesign = detect_design(entry["title"] or "", "")
+                if redesign != "any":
+                    entry["design"] = redesign
+                else:
+                    entry["design"] = fallback["design"] or entry["design"]
+                entry["sections"].add(sid)
+                for quote in fallback["quotes"]:
+                    quote["section_id"] = sid
+                    quote["source"] = "keyword"
+                    entry["quotes"].append(quote)
 
     sources = []
     for entry in by_doi.values():
@@ -670,6 +743,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=12,
         help="Semantik motorda alt başlık başına getirilecek pasaj sayısı.",
     )
+    parser.add_argument(
+        "--no-keyword-fill",
+        action="store_true",
+        help=(
+            "Semantik aramada pasaj çıkmayan kaynaklar için keyword taraması "
+            "yapma (kapsam düşer, hız artar)."
+        ),
+    )
     parser.add_argument("--check", action="store_true", help="Yalnızca doğrula/özetle")
     parser.add_argument("--force", action="store_true", help="Var olan çıktının üzerine yaz")
     add_timestamp_argument(parser)
@@ -716,6 +797,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                 plan,
                 project=project_name,
                 k_per_section=max(1, min(int(args.per_section_k), 20)),
+                pdf_dir=pdfs,
+                include_keyword=not args.no_keyword_fill,
+                titles=titles,
             )
         except RuntimeError as exc:
             print(f"Hata: {exc}", file=sys.stderr)

@@ -1,5 +1,38 @@
 # Değişiklik Günlüğü
 
+## v2.12.0 — 2026-11-12
+
+### Düzeltildi
+
+- **Anchor terim zinciri.** Bir bölümün kavramsal çekirdeği alanyazında tek bir
+  terimle anılır (*de-escalation*, *scaffolding*, *self-regulated learning* …).
+  Kullanıcının ifadesi bu kavramın Türkçe karşılığı olduğunda plan, terimi
+  `search_terms` içine almıyordu; zincirin tamamı kör kalıyordu:
+
+  ```text
+  anchor terim -> search_terms -> toplama -> seçme -> yazma
+  ```
+
+  Ölçülen vaka: "kriz öncesi / kriz anı / kriz sonrası" çerçevesi
+  (alanyazındaki adı *escalation cycle*) planlandı; 31 kaynak tarandı, 550 sayfa
+  okundu, 4.647 kelime yazıldı — ama "de-escalation" hiçbir sorguda geçmediği
+  için alanın çekirdek makalesi (*The Evolution of "Loaded Moments" Toward
+  Escalation or De-Escalation*, Q1, 2023) havuza girdiği hâlde atanmadı ve
+  31 PDF'in yalnızca 1'inde kelime geçti. Kavram, altı aşamanın hiçbirinde
+  görünmedi.
+- **`anchor_terms` alanı** `writing-plan` ve `topic-discovery` şemalarına
+  eklendi. Akış 1'de kullanıcıya "bu kavramın alanyazındaki adı ne?" sorusu
+  zorunlu hale geldi.
+- **`scripts/check_concept_coverage.py` (yeni).** Üç halkayı denetler:
+  (a) anchor terim `search_terms` içinde mi, (b) indirilen PDF'lerin en az
+  %15'inde anchor terim geçiyor mu, (c) havuzda anchor terim içeren kayıt
+  atandı mı ya da gerekçesiyle reddedildi mi. Yazım varyantları yakalanır
+  (`de-escalation` / `deescalation` / `de escalation`). Kapı olarak çalışır:
+  külliyat kavramı taşımıyorsa akış 4 başlamaz.
+- Akış 2'ye "kavram kapsamı kapısı", akış 3'e "toplama sonrası kavram denetimi"
+  adımları eklendi; `AGENTS.md` zorunlu kural listesine anchor terim maddesi
+  girdi.
+
 ## v2.11.0 — 2026-11-12
 
 ### Değişti

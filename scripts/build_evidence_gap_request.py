@@ -33,9 +33,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
-    from output_naming import add_timestamp, add_timestamp_argument, write_versioned
+    from output_naming import (
+        add_timestamp,
+        add_timestamp_argument,
+        write_versioned_pair,
+    )
 except ImportError:
-    from scripts.output_naming import add_timestamp, add_timestamp_argument, write_versioned
+    from scripts.output_naming import (
+        add_timestamp,
+        add_timestamp_argument,
+        write_versioned_pair,
+    )
 
 SCHEMA_ID = "evidence-gap-request/1"
 OUTPUT_STEM = "02_kanit_boslugu_talebi"
@@ -303,6 +311,7 @@ def preflight(
     fulltext_list: Optional[Dict[str, Any]] = None,
     available_pdfs: Optional[set[str]] = None,
     min_words_ratio: float = DEFAULT_MIN_WORDS_RATIO,
+    evidence_bank: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Taslak yazılmadan önce her alt başlığın kanıt kapasitesini ölçer.
 
@@ -311,6 +320,21 @@ def preflight(
     değildir, ama "yazmaya başlamadan önce eksik olduğunu bil" için yeterlidir.
     """
     # ``None`` = PDF durumu bilinmiyor (denetimi atla); boş küme = hiç PDF yok.
+    # Tasarım tespiti için en güvenilir kaynak kanıt bankasıdır: tasarım, PDF
+    # tam metninden çıkarılır. Tam metin yoksa başlık+abstrakta düşülür.
+    design_by_doi: Dict[str, str] = {}
+    pages_by_doi: Dict[str, int] = {}
+    for source in (evidence_bank or {}).get("sources") or []:
+        if not isinstance(source, dict):
+            continue
+        doi_key = str(source.get("doi") or "").lower()
+        if not doi_key:
+            continue
+        if source.get("design") and source["design"] != "any":
+            design_by_doi[doi_key] = str(source["design"])
+        if source.get("pages"):
+            pages_by_doi[doi_key] = int(source["pages"])
+
     by_doi: Dict[str, Dict[str, Any]] = {}
     for candidate in (fulltext_list or {}).get("candidates") or []:
         if isinstance(candidate, dict) and candidate.get("doi"):
@@ -329,7 +353,7 @@ def preflight(
         missing_pdf: List[str] = []
         for doi in assigned:
             record = by_doi.get(doi) or {}
-            design = _detect_design(
+            design = design_by_doi.get(doi) or _detect_design(
                 str(record.get("title") or ""), str(record.get("abstract") or "")
             )
             designs.append(design)
@@ -465,9 +489,15 @@ def render_html(report: Dict[str, Any]) -> str:
             f'<p class="muted">{esc(gap["reason"])}</p>'
             f'<dl>'
             f'<dt>Hedef kelime</dt><dd>{gap["target_words"]}</dd>'
-            f'<dt>Yazılan</dt><dd>{gap["written_words"]} '
-            f'(%{gap["completion_ratio"] * 100:.0f})</dd>'
-            f'<dt>Atanan kaynak</dt><dd>{gap["assigned_source_count"]}</dd>'
+            + (
+                f'<dt>Yazılan</dt><dd>{gap["written_words"]} '
+                f'(%{gap["completion_ratio"] * 100:.0f})</dd>'
+                if gap.get("written_words") is not None
+                else f'<dt>Tahmini kapasite</dt>'
+                     f'<dd>{gap.get("estimated_capacity_words", 0)} kelime '
+                     f'(%{gap.get("capacity_ratio", 0) * 100:.0f})</dd>'
+            )
+            + f'<dt>Atanan kaynak</dt><dd>{gap["assigned_source_count"]}</dd>'
             f'<dt>Gereken tasarım</dt>'
             f'<dd>{esc(", ".join(gap["required_designs"]) or "—")}</dd>'
             f'</dl>'
@@ -554,6 +584,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="Preflight için fulltext listesi JSON (kaynak tasarımları).",
     )
     parser.add_argument(
+        "--evidence-bank",
+        type=Path,
+        help=(
+            "Kanıt bankası JSON (tasarım bilgisi buradan alınır; verilmezse "
+            "04_taslak/taslak/_kanit_bankasi.json aranır)."
+        ),
+    )
+    parser.add_argument(
         "--fulltext-dir",
         type=Path,
         help="Preflight için PDF klasörü (erişilebilirlik denetimi).",
@@ -581,11 +619,21 @@ def main(argv: Optional[List[str]] = None) -> int:
         available: set[str] = set()
         if args.fulltext_dir and args.fulltext_dir.is_dir():
             available = {p.stem.lower() for p in args.fulltext_dir.glob("*.pdf")}
+        evidence_bank = None
+        bank_candidates = [
+            args.evidence_bank,
+            (args.plan.parent.parent / "04_taslak" / "taslak" / "_kanit_bankasi.json"),
+        ]
+        for candidate in bank_candidates:
+            if candidate and Path(candidate).is_file():
+                evidence_bank = json.loads(Path(candidate).read_text(encoding="utf-8"))
+                break
         report = preflight(
             plan,
             fulltext_list=fulltext_list,
             available_pdfs=available,
             min_words_ratio=args.min_words_ratio,
+            evidence_bank=evidence_bank,
         )
     else:
         report = analyse(plan, draft, args.min_words_ratio)
@@ -604,7 +652,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     html_text = render_html(report)
     target = add_timestamp(output_dir / f"{OUTPUT_STEM}.json", enabled=args.timestamp)
-    result = write_versioned(
+    result = write_versioned_pair(
         target,
         {
             ".json": json.dumps(report, ensure_ascii=False, indent=2) + "\n",

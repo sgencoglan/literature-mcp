@@ -41,6 +41,16 @@ python3 scripts/build_writing_plan.py <json> -o <proje-kökü>/02_yazim_plani/01
 
 6. **Kapı:** kullanıcı iskeleti onaylar (`plan_status: approved`). Onay yoksa akış 3 başlamaz.
 
+7. **Kavram kapsamı kapısı.** Plan onaylanmadan önce anchor terim zincirini
+   doğrula:
+
+```bash
+python3 scripts/check_concept_coverage.py <plan.json> --check
+```
+
+Her anchor terim `search_terms` içinde olmalı. Eksikse iskelet tamamlanmamıştır;
+onaya sunma.
+
 ### İş akışı 3 — Plana göre kaynak keşfi ve fulltext seçimi
 
 1. Onaylı plandaki her alt başlık için 2–4 hedefli sorgu üret (Türkçe + İngilizce, eş anlamlı + MeSH). Eş anlamlı/MeSH/dil dönüşümünü `query_expansion` ile açıkça ver.
@@ -56,7 +66,20 @@ python3 scripts/build_assignment_matrix.py <plan.json> <havuz.json> -o <proje-k�
 6. `schemas/fulltext-list.schema.json` biçiminde listeyi yaz; `scripts/build_fulltext_list.py` ile HTML üret (tıklanabilir DOI/veritabanı düğmeleri, kısa düz `doi`, "Neden seçildi", "Kalite skoru"; DOI metni kopyalanmaz, ancak "dosya adı" düğmesi tıklanınca düzeltilmiş DOI'yi panoya kopyalar).
 7. `scripts/build_search_coverage.py ... --fulltext-list <liste.json> --auto-report` ile kapsam raporunu yaz; `scripts/build_fulltext_index.py <proje-kökü>/03_kaynak_kesfi` ile giriş sayfasını üret.
 8. Açık erişimli PDF'leri **yalnızca atanmış DOI'ler için** indir. Varsayılan hedef `03_kaynak_kesfi/fulltext/`; rapor aynı klasörde `oa_indirme_raporu_<zaman>.json`.
-9. **Kapı:** her alt başlıkta `evidence_needs.min_count` karşılanmadan akış 4 başlamaz.
+9. **Kavram kapsamı (külliyat + seçim).** İndirme sonrası ve atama öncesi:
+
+```bash
+python3 scripts/check_concept_coverage.py <plan.json> \
+  --project-root <proje-kökü> --workflow 4
+```
+
+Üç şeyi denetler: (a) anchor terim `search_terms` içinde mi, (b) indirilen
+PDF'lerin en az %15'inde anchor terim geçiyor mu, (c) havuzda anchor terim
+içeren kayıt atandı mı veya gerekçesiyle reddedildi mi. Külliyat anchor terimi
+taşımıyorsa veya anchor terimli kayıt sessizce atlanmışsa **akış 4 başlamaz**;
+akış 3'e dönüp anchor terimle yeni arama yapılır.
+
+10. **Kapı:** her alt başlıkta `evidence_needs.min_count` karşılanmadan akış 4 başlamaz.
 
 ### İş akışı 4 — Taslak yazma
 
@@ -127,7 +150,9 @@ python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
 2. **Kanıt hiyerarşisi.** Tam metin cümlesi > abstract. `paperqa_ask` çıktısı taslaktır; kanıt olarak kullanılamaz. `evidence_check` lexical benzerliktir; entailment kanıtı değildir.
 3. **Sayfa numarası.** Her alıntı için 1 tabanlı PDF sayfası ver. Sayfa yoksa iddia `not_found` sayılır.
 4. **DOI biçimi.** Teslimlerde yalnızca `https://doi.org/<doi>` kullan. Yerel PDF yolu, `file://` linki veya kullanıcı klasör yolu teslim dosyasına yazılmaz.
-5. **Uydurma yasağı.** DOI, yazar, yıl, dergi, sayfa, alıntı veya sonuç uydurma. Emin değilsen `not_found`, kısmi kanıt varsa `partially_supported` yaz ve kullanıcıya bildir.
+5. **Anchor terim.** Bölümün kavramsal çekirdeğinin alanyazındaki adı `anchor_terms` alanında yazılı olmalı ve `search_terms` içinde geçmelidir. Kullanıcının Türkçe ifadesini genel eğitim terimlerine çevirmek yeterli değildir; çeviri, alan terimini kaybettirir. Anchor terim doğrulanmadan (`check_concept_coverage.py`) konu keşfi veya kaynak ataması tamamlanmış sayılmaz.
+
+6. **Uydurma yasağı.** DOI, yazar, yıl, dergi, sayfa, alıntı veya sonuç uydurma. Emin değilsen `not_found`, kısmi kanıt varsa `partially_supported` yaz ve kullanıcıya bildir.
 6. **Dil.** Teslim Türkçedir. Kaynak cümlesi İngilizceyse özgün hâliyle ver; Türkçe çevirisini ayrı yaz. Çeviri, alıntının yerine geçmez.
 7. **Renk kuralı.** HTML'de yalnızca yeniden düzenlenen cümle/parça kırmızı; MCP'nin eklediği anlamlı yeni ifade mavi/yeşil işaretlenir. Paragrafın tamamı, başlık veya kaynak listesi renklendirilmez.
 8. **Beş platform.** Yalnızca Ovid LWW, ScienceDirect, SpringerLink, Wiley ve Taylor & Francis linkleri önceliklidir. Başka bir dizin sağlayıcısına bağımlılık kurma.
@@ -315,7 +340,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.11.0; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.12.0; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
@@ -380,6 +405,11 @@ python3 scripts/download_open_access.py adaylar.json --dry-run
 
 # Akış 1 → 4 PDF aktarımı (DOI adına çevirir)
 python3 scripts/promote_fulltext.py <proje-kökü> --to 4 --dry-run
+
+# Kavram kapsamı (anchor terim zinciri)
+python3 scripts/check_concept_coverage.py <plan.json> --check
+python3 scripts/check_concept_coverage.py <plan.json> \
+  --project-root <proje-kökü> --workflow 4
 
 # Akış 4/5 ilk adımı: fulltext okuma + kanıt bankası
 python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 4
