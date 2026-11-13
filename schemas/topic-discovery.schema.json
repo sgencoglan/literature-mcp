@@ -287,6 +287,38 @@
         "minLength": 1
       },
       "description": "Konunun literatürdeki çekirdek terimleri. Kullanıcının ifadesi bir kavramın Türkçe karşılığıysa, o kavramın alandaki adı buraya yazılır."
+    },
+    "search_reports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "payload"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "coverage",
+              "platform_results"
+            ]
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "fulltext_reading": {
+      "type": "object",
+      "required": [
+        "schema"
+      ],
+      "properties": {
+        "schema": {
+          "const": "fulltext-reading/1"
+        }
+      }
     }
   },
   "additionalProperties": true

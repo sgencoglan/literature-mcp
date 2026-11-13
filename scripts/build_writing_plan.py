@@ -23,8 +23,10 @@ from typing import Any, Dict, List, Optional
 
 try:
     from output_naming import add_timestamp_argument
+    from search_progress import render_search_progress
 except ImportError:
     from scripts.output_naming import add_timestamp_argument
+    from scripts.search_progress import render_search_progress
 
 GENRE_LABELS = {
     "kitap_bolumu": "Kitap bölümü",
@@ -255,6 +257,7 @@ footer {{ max-width:1080px; margin:0 auto; padding:0 22px 36px; color:var(--mute
   <p>{esc(GENRE_LABELS.get(genre, genre))} · Hedef {esc(budget["target_total_words"])} kelime · Plan durumu: {esc(plan_status)}</p>
 </header>
 <main>
+  {render_search_progress(data)}
   <section class="stats">
     <div class="stat"><span class="num">{budget["sections_total"]}</span><small>Alt başlık</small></div>
     <div class="stat"><span class="num">{esc(budget["planned_section_words"])}</span><small>Planlanan kelime</small></div>

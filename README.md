@@ -4,7 +4,7 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.14.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
+> **Sürüm:** v2.15.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
 
 Konu başlığından kaynak izi olan kavram çerçevesi oluşturmak için
@@ -16,6 +16,16 @@ Scholar arama bağlantıları içerir; model önerisi ile kaynakta görülme ayr
 [kaynak kapsam denetimini](docs/literature-audit.md) kullanın: site filtresiz
 Scholar keşfi, JSON/CSV/RIS içe aktarma, DOI/PMID ve başlık karşılaştırması,
 bilinen yayınlarla kontrol ve taranmamış kaynakları gösteren HTML raporu.
+
+[Modelin site: sorgularıyla araması](docs/model-platform-search.md): model,
+bağlı web aracını kullanarak Cochrane ve tıp/psikiyatri platformlarında
+keşif yapar. `prepare_platform_search` ve `collect_platform_results` araçları
+sorgu görevlerini, gerçek arama izlerini ve eksik kalan kapsamı düzenler.
+
+[Tam metin okuma ve geçiş kontrolü](docs/fulltext-reading.md): 1–3. akış
+HTML'leri ortak tarama paneli içerir. Akış 4/5 öncesinde bütün PDF sayfaları
+hazırlanır, modelin gerçek sayfa incelemeleri raporlanır; eksik/değişmiş
+belge varsa preflight geçişe izin vermez.
 
 ## Ne çözer?
 
@@ -131,7 +141,7 @@ yalnızca listeler; `--yes` onay sormaz.
 
 | Bileşen | Konum | Görev |
 |---|---|---|
-| `sciencedirect-meta` MCP | [`packages/sciencedirect-meta`](packages/sciencedirect-meta) | 23 araç: metadata/DOI arama (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, ClinicalTrials.gov), kapsam/kanıt sinyali, DOI doğrulama, dergi quartile, yerel PDF okuma, kanıt denetimi, rapor dışa aktarma |
+| `sciencedirect-meta` MCP | [`packages/sciencedirect-meta`](packages/sciencedirect-meta) | 25 araç: metadata/DOI arama (OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv, ClinicalTrials.gov), kapsam/kanıt sinyali, DOI doğrulama, dergi quartile, yerel PDF okuma, kanıt denetimi, rapor dışa aktarma |
 | `paperqa-local` MCP | [`packages/paperqa-local`](packages/paperqa-local) | 10 araç: proje klasörlerini başlatma, fulltext aktarımı, kayıt, manifest, PaperQA2 indeksi, semantik arama, sayfa okuma, LLM durumu, yerel taslak |
 | `report-kit` | [`packages/report-kit`](packages/report-kit) | Altın standart HTML raporu, kalite kapısı ve manifest tabanlı temizlik |
 | Ortak proje kaydı | `projects.json` (varsayılan: `~/.literature-mcp/projects.json`) | Her projenin PDF klasörü, manifesti ve indeksi; projeler izoledir |
@@ -623,7 +633,8 @@ Yazmadan önce kapasite de ölçülür:
 ```bash
 python3 scripts/build_evidence_gap_request.py <plan.json> --preflight \
   --fulltext-list <03_kaynak_kesfi>/01_fulltext_listesi.json \
-  --fulltext-dir <04_taslak>/fulltext
+  --fulltext-dir <04_taslak>/fulltext \
+  --reading-report <03_kaynak_kesfi>/reading-4/03_fulltext_okuma_REVIEWED.json --workflow 4
 ```
 
 `plan_change_required` çıkarsa plan değişikliği için kullanıcıya sorulur;

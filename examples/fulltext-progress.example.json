@@ -1,0 +1,170 @@
+{
+  "project": "ornek-proje",
+  "title": "Sentetik örnek — tarama durum paneli",
+  "query": "Uzaktan çalışmanın çalışan refahı ve iş-yaşam dengesi üzerindeki etkileri",
+  "generated_at": "2026-10-20",
+  "target_count": 4,
+  "notes": "Bu paneldeki sayılar ve hatalar yalnızca biçim gösterimi içindir; gerçek tarama yapılmadı.",
+  "candidates": [
+    {
+      "doi": "10.5555/example.2026.001",
+      "title": "Uzaktan çalışma ve çalışan refahı: sistematik derleme",
+      "authors": "Örnek, A.; Demo, B.; Test, C.",
+      "year": 2026,
+      "journal": "Journal of Example Work",
+      "quartile": "Q1",
+      "citations": 12,
+      "open_access": true,
+      "publisher": "ScienceDirect",
+      "publisher_url": "https://www.sciencedirect.com/science/article/pii/EXAMPLE0001",
+      "oa_pdf_url": "https://example.org/oa/example-0001.pdf",
+      "priority": "A",
+      "access": "Açık erişim",
+      "rationale": "Uzaktan çalışma ile refah arasındaki ilişkiyi doğrudan sentezliyor.",
+      "project_relevance": "Bu çalışmada uzaktan çalışma ve çalışan refahı arasındaki ilişkiye odaklanan temel aday kaynak.",
+      "supports": [
+        "Başlık ve arama kapsamı bakımından refah ilişkilerini inceleyen kaynak olarak değerlendirilebilir."
+      ],
+      "does_not_support": [
+        "Yalnızca bu bibliyografik kayıttan herhangi bir etki yönü, nedensellik veya alt grup sonucu çıkarılamaz."
+      ],
+      "limits": [
+        "Yöntem, örneklem, ölçümler ve sonuçlar tam metin/özet incelenmeden doğrulanmış değildir."
+      ],
+      "assessment_basis": "metadata",
+      "score": 0.82
+    },
+    {
+      "doi": "10.5555/example.2025.002",
+      "title": "Hibrit çalışma düzenlerinde iş-yaşam dengesi: boylamsal bulgular",
+      "authors": "Demo, B.; Örnek, A.",
+      "year": 2025,
+      "journal": "Example Journal of Organizational Behavior",
+      "quartile": "Q2",
+      "citations": 34,
+      "open_access": false,
+      "publisher": "SpringerLink",
+      "publisher_url": "https://link.springer.com/article/10.5555/example.2025.002",
+      "oa_pdf_url": null,
+      "priority": "A",
+      "access": "Kurum erişimi",
+      "rationale": "Hibrit düzenlerde zaman içindeki değişimi boylamsal veriyle gösteriyor.",
+      "project_relevance": "Hibrit çalışma ve iş–yaşam dengesi konusunda zaman içindeki değişim için aday kaynak.",
+      "supports": [
+        "Boylamsal çalışma türü bilgisi doğrulanırsa zaman boyutlu iş–yaşam dengesi tartışmasına katkı sağlayabilir."
+      ],
+      "does_not_support": [
+        "Başlık tek başına hibrit çalışmanın dengeyi iyileştirdiğini veya bozduğunu kanıtlamaz."
+      ],
+      "limits": [
+        "Örneklem, ölçüm aralığı ve nedensel sınırlılıklar henüz incelenmedi."
+      ],
+      "assessment_basis": "metadata",
+      "score": 0.71
+    },
+    {
+      "doi": "10.5555/example.2024.003",
+      "title": "Uzaktan çalışmada sınır yönetimi ve tükenmişlik",
+      "authors": "Test, C.; Örnek, A.",
+      "year": 2024,
+      "journal": "Example Journal of Occupational Health",
+      "quartile": "Q3",
+      "citations": 7,
+      "open_access": false,
+      "publisher": "Wiley",
+      "publisher_url": "https://onlinelibrary.wiley.com/doi/10.5555/example.2024.003",
+      "oa_pdf_url": null,
+      "priority": "B",
+      "access": "Kurum erişimi",
+      "rationale": "Sınır yönetimi mekanizması için nitel bağlam sağlıyor.",
+      "project_relevance": "Uzaktan çalışma, sınır yönetimi ve tükenmişlik arasındaki olası mekanizmayı incelemek için aday kaynak.",
+      "supports": [
+        "Sınır yönetimi temasının tükenmişlik tartışmasıyla bağlantısını kurmaya yardımcı olabilir."
+      ],
+      "does_not_support": [
+        "Bu kayıt, mekanizmanın yönünü veya tüm çalışanlarda geçerli olduğunu göstermiyor."
+      ],
+      "limits": [
+        "Nitel/tam metin bulguları ve örneklem kapsamı doğrulanmalı."
+      ],
+      "assessment_basis": "metadata",
+      "score": 0.54
+    },
+    {
+      "doi": "10.5555/example.2023.004",
+      "title": "Çalışan refahı için örgütsel destek: kavramsal bir çerçeve",
+      "authors": "Demo, B.; Test, C.",
+      "year": 2023,
+      "journal": "Example Review of Management",
+      "quartile": "-",
+      "citations": null,
+      "open_access": true,
+      "publisher": "Taylor & Francis",
+      "publisher_url": "https://www.tandfonline.com/doi/full/10.5555/example.2023.004",
+      "oa_pdf_url": "https://example.org/oa/example-0004.pdf",
+      "priority": "C",
+      "access": "Açık erişim",
+      "rationale": "Kavramsal çerçeve; doğrudan veri değil, bağlam ve tanım desteği.",
+      "project_relevance": "Örgütsel destek kavramını tanımlamak ve bölümün kavramsal çerçevesine bağlamak için aday kaynak.",
+      "supports": [
+        "Kavramsal tanım ve örgütsel destek çerçevesi sunabilir."
+      ],
+      "does_not_support": [
+        "Ampirik etki büyüklüğü veya doğrudan müdahale sonucu kanıtı olarak kullanılamaz."
+      ],
+      "limits": [
+        "Kaydın kapsamı ve kavramsal yaklaşımı tam metinden kontrol edilmeli."
+      ],
+      "assessment_basis": "metadata",
+      "score": 0.66
+    }
+  ],
+  "search_reports": [
+    {
+      "kind": "coverage",
+      "payload": {
+        "query": "synthetic example",
+        "coverage": {
+          "timestamp": "2026-01-01T00:00:00Z",
+          "per_source": {
+            "pubmed": {
+              "status": "ok",
+              "returned": 12,
+              "unique_dois": 8,
+              "new_candidates": 3,
+              "selected": 2,
+              "duration_ms": 1500,
+              "note": "Sentetik başarılı sorgu örneği"
+            },
+            "openalex": {
+              "status": "rate_limited",
+              "returned": 0,
+              "retry_after_seconds": 600,
+              "error": "HTTP 429",
+              "note": "Sentetik kota örneği"
+            },
+            "embase": {
+              "status": "unavailable",
+              "note": "Sentetik erişim yok örneği"
+            },
+            "psycinfo": {
+              "status": "not_run",
+              "note": "Sentetik henüz aranmamış kaynak"
+            },
+            "crossref": {
+              "status": "error",
+              "error": "HTTP 503",
+              "note": "Sentetik servis hatası"
+            },
+            "europepmc": {
+              "status": "ok",
+              "returned": 0,
+              "unique_dois": 0,
+              "note": "Sentetik sıfır sonuçlu başarılı sorgu"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

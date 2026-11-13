@@ -133,6 +133,10 @@ td.links { min-width: 260px; white-space: normal; }
   word-break: break-all;
   color: var(--ink);
 }
+/* "dosya adı" düğmesi: değer görünmez, tıklanınca panoya kopyalanır. */
+.file-row { margin: 5px 0; }
+.btn.file { border-color: var(--line); background: var(--soft); }
+.copy-status { font-size: 11.5px; color: var(--green); margin-left: 6px; }
 .url {
   display: block;
   font-size: 12px;
@@ -180,6 +184,7 @@ td.links { min-width: 260px; white-space: normal; }
 }
 .btn.doi { border-color: #b9d3ee; background: var(--accent-soft); }
 .btn.pub { background: #fff; }
+.btn.pub.priority-platform { border-color: #b9d3ee; }
 .btn.oa { border-color: #bfe3cd; background: #eefaf2; color: var(--green); }
 .notes {
   margin: 14px 0 0;
@@ -221,6 +226,7 @@ footer {
   <div class="meta">Proje: <strong>ornek-proje</strong> &middot; Oluşturma: 2026-10-20 &middot; Hedef: 4 kaynak</div>
 </header>
 <main>
+  <section class="search-progress"><h2>Tarama durumu</h2><p>Bu HTML’e ayrıntılı tarama günlüğü eklenmedi. Kaynakların tarandığı veya tamamlandığı varsayılmaz.</p></section>
   <section class="stats" aria-label="Özet">
     <div class="stat"><span class="num">4</span><small>Toplam kaynak</small></div>
     <div class="stat"><span class="num">2</span><small>Açık erişim</small></div>
@@ -274,7 +280,7 @@ footer {
           <div class="muted">Açık erişim</div>
           
         </td>
-        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2026.001" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://www.sciencedirect.com/science/article/pii/EXAMPLE0001" target="_blank" rel="noopener">ScienceDirect</a><a class="btn oa" href="https://example.org/oa/example-0001.pdf" target="_blank" rel="noopener">OA PDF</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2026.001</span></div></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2026.001" target="_blank" rel="noopener">DOI</a><a class="btn pub priority-platform" href="https://www.sciencedirect.com/science/article/pii/EXAMPLE0001" target="_blank" rel="noopener" title="Öncelikli platform: ScienceDirect">ScienceDirect</a><a class="btn oa" href="https://example.org/oa/example-0001.pdf" target="_blank" rel="noopener">OA PDF</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2026.001</span></div><div class="file-row"><button type="button" class="btn file" data-filename="10.5555example.2026.001" aria-label="Dosya adını panoya kopyala">dosya adı</button><span class="copy-status" aria-live="polite"></span></div></td>
       </tr>
 <tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Bu çalışmada uzaktan çalışma ve çalışan refahı arasındaki ilişkiye odaklanan temel aday kaynak.</p><p><strong>Neden seçildi:</strong> Uzaktan çalışma ile refah arasındaki ilişkiyi doğrudan sentezliyor.</p><p><strong>Kalite skoru:</strong> 0.820 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Başlık ve arama kapsamı bakımından refah ilişkilerini inceleyen kaynak olarak değerlendirilebilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Yalnızca bu bibliyografik kayıttan herhangi bir etki yönü, nedensellik veya alt grup sonucu çıkarılamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Yöntem, örneklem, ölçümler ve sonuçlar tam metin/özet incelenmeden doğrulanmış değildir.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
 
@@ -299,7 +305,7 @@ footer {
           <div class="muted">Kurum erişimi</div>
           
         </td>
-        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2025.002" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://link.springer.com/article/10.5555/example.2025.002" target="_blank" rel="noopener">SpringerLink</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2025.002</span></div></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2025.002" target="_blank" rel="noopener">DOI</a><a class="btn pub priority-platform" href="https://link.springer.com/article/10.5555/example.2025.002" target="_blank" rel="noopener" title="Öncelikli platform: SpringerLink">SpringerLink</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2025.002</span></div><div class="file-row"><button type="button" class="btn file" data-filename="10.5555example.2025.002" aria-label="Dosya adını panoya kopyala">dosya adı</button><span class="copy-status" aria-live="polite"></span></div></td>
       </tr>
 <tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Hibrit çalışma ve iş–yaşam dengesi konusunda zaman içindeki değişim için aday kaynak.</p><p><strong>Neden seçildi:</strong> Hibrit düzenlerde zaman içindeki değişimi boylamsal veriyle gösteriyor.</p><p><strong>Kalite skoru:</strong> 0.710 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Boylamsal çalışma türü bilgisi doğrulanırsa zaman boyutlu iş–yaşam dengesi tartışmasına katkı sağlayabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Başlık tek başına hibrit çalışmanın dengeyi iyileştirdiğini veya bozduğunu kanıtlamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Örneklem, ölçüm aralığı ve nedensel sınırlılıklar henüz incelenmedi.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
 
@@ -324,7 +330,7 @@ footer {
           <div class="muted">Kurum erişimi</div>
           
         </td>
-        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2024.003" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://onlinelibrary.wiley.com/doi/10.5555/example.2024.003" target="_blank" rel="noopener">Wiley</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2024.003</span></div></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2024.003" target="_blank" rel="noopener">DOI</a><a class="btn pub priority-platform" href="https://onlinelibrary.wiley.com/doi/10.5555/example.2024.003" target="_blank" rel="noopener" title="Öncelikli platform: Wiley">Wiley</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2024.003</span></div><div class="file-row"><button type="button" class="btn file" data-filename="10.5555example.2024.003" aria-label="Dosya adını panoya kopyala">dosya adı</button><span class="copy-status" aria-live="polite"></span></div></td>
       </tr>
 <tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Uzaktan çalışma, sınır yönetimi ve tükenmişlik arasındaki olası mekanizmayı incelemek için aday kaynak.</p><p><strong>Neden seçildi:</strong> Sınır yönetimi mekanizması için nitel bağlam sağlıyor.</p><p><strong>Kalite skoru:</strong> 0.540 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Sınır yönetimi temasının tükenmişlik tartışmasıyla bağlantısını kurmaya yardımcı olabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Bu kayıt, mekanizmanın yönünü veya tüm çalışanlarda geçerli olduğunu göstermiyor.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Nitel/tam metin bulguları ve örneklem kapsamı doğrulanmalı.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
 
@@ -349,7 +355,7 @@ footer {
           <div class="muted">Açık erişim</div>
           
         </td>
-        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2023.004" target="_blank" rel="noopener">DOI</a><a class="btn pub" href="https://www.tandfonline.com/doi/full/10.5555/example.2023.004" target="_blank" rel="noopener">Taylor &amp; Francis</a><a class="btn oa" href="https://example.org/oa/example-0004.pdf" target="_blank" rel="noopener">OA PDF</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2023.004</span></div></td>
+        <td class="links"><div class="button-row"><a class="btn doi" href="https://doi.org/10.5555/example.2023.004" target="_blank" rel="noopener">DOI</a><a class="btn pub priority-platform" href="https://www.tandfonline.com/doi/full/10.5555/example.2023.004" target="_blank" rel="noopener" title="Öncelikli platform: Taylor &amp; Francis">Taylor &amp; Francis</a><a class="btn oa" href="https://example.org/oa/example-0004.pdf" target="_blank" rel="noopener">OA PDF</a></div><div class="doi-address"><span class="link-label">doi</span><span class="plain-url">10.5555/example.2023.004</span></div><div class="file-row"><button type="button" class="btn file" data-filename="10.5555example.2023.004" aria-label="Dosya adını panoya kopyala">dosya adı</button><span class="copy-status" aria-live="polite"></span></div></td>
       </tr>
 <tr class="contribution-row"><td colspan="8"><div class="contribution"><p><strong>Bu çalışmadaki rolü:</strong> Örgütsel destek kavramını tanımlamak ve bölümün kavramsal çerçevesine bağlamak için aday kaynak.</p><p><strong>Neden seçildi:</strong> Kavramsal çerçeve; doğrudan veri değil, bağlam ve tanım desteği.</p><p><strong>Kalite skoru:</strong> 0.660 <span class="muted">(0–1; ön eleme göstergesi, kanıt değil)</span></p><div><strong>Neyi destekliyor:</strong><ul><li>Kavramsal tanım ve örgütsel destek çerçevesi sunabilir.</li></ul></div><div><strong>Neyi desteklemiyor / göstermiyor:</strong><ul><li>Ampirik etki büyüklüğü veya doğrudan müdahale sonucu kanıtı olarak kullanılamaz.</li></ul></div><div><strong>Sınırlar ve dikkat noktaları:</strong><ul><li>Kaydın kapsamı ve kavramsal yaklaşımı tam metinden kontrol edilmeli.</li></ul></div><p class="contribution-basis"><strong>Değerlendirme dayanağı:</strong> Bibliyografik metaveri — ön değerlendirme; PDF sayfası doğrulanmış kanıt değildir</p></div></td></tr>
       </tbody>
@@ -409,6 +415,46 @@ function applyFilter() {
   });
   empty.hidden = visible !== 0;
 }
+
+// "dosya adı" düğmesi: düzeltilmiş DOI'yi panoya kopyalar.
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    try {
+      document.execCommand("copy") ? resolve() : reject(new Error("copy failed"));
+    } catch (err) {
+      reject(err);
+    } finally {
+      document.body.removeChild(area);
+    }
+  });
+}
+
+document.querySelectorAll("button.file").forEach(button => {
+  button.addEventListener("click", () => {
+    const value = button.dataset.filename;
+    const status = button.parentElement.querySelector(".copy-status");
+    copyText(value)
+      .then(() => {
+        if (status) {
+          status.textContent = "kopyalandı";
+          setTimeout(() => { status.textContent = ""; }, 1500);
+        }
+      })
+      .catch(() => {
+        if (status) status.textContent = "kopyalanamadı";
+      });
+  });
+});
 
 boxes.forEach(box => box.addEventListener("change", writeState));
 if (filter) filter.addEventListener("input", applyFilter);

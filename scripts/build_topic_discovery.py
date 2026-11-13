@@ -13,8 +13,10 @@ from typing import Any
 
 try:  # scripts/ içinden çalışırken
     from output_naming import add_timestamp_argument
+    from search_progress import render_search_progress
 except ImportError:  # python -m scripts.build_topic_discovery
     from scripts.output_naming import add_timestamp_argument
+    from scripts.search_progress import render_search_progress
 
 DOI_RE = re.compile(r"^10\.\d{4,9}/\S+$")
 DATABASE_LABELS = {
@@ -110,18 +112,6 @@ def validate(data: Any) -> list[str]:
 
 
 def render(data: dict[str, Any]) -> str:
-    rows: list[str] = []
-    for item in data["database_searches"]:
-        database = item.get("database_label") or DATABASE_LABELS[item["database"]]
-        status = item["status"]
-        rows.append(
-            "<tr>"
-            f"<td>{esc(database)}</td><td>{esc(item['query'])}</td>"
-            f'<td class="status {esc(status)}">{esc(STATUS_LABELS[status])}</td>'
-            f"<td>{esc(item['result_count'])}</td>"
-            f"<td>{esc(item.get('note') or '—')}</td></tr>"
-        )
-
     cards: list[str] = []
     for item in sorted(data["proposals"], key=lambda proposal: proposal["rank"]):
         studies: list[str] = []
@@ -185,7 +175,7 @@ h1,h2,h3{{line-height:1.25}}h1{{margin:0 0 .5rem;font-size:2rem}}h2{{font-size:1
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:.6rem">
 <div><strong>Kapsam içi</strong><ul>{scope_in}</ul></div><div><strong>Kapsam dışı</strong><ul>{scope_out}</ul></div></div></div>
 <aside class="callout"><strong>Özgünlük notu:</strong> Bu rapor, seçilen veri tabanlarında bulunan kayıtlar üzerinden olası araştırma boşluklarını gösterir. “Özgünlük fırsatı” kesin yenilik kanıtı değildir; kapsamlı sistematik tarama, atıf zinciri ve alan uzmanı doğrulaması gerekir.</aside>
-<h2>Veri tabanı tarama kaydı</h2><div class="table-wrap"><table><thead><tr><th>Veri tabanı</th><th>Sorgu</th><th>Durum</th><th>Kayıt</th><th>Not</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
+{render_search_progress(data)}
 <h2>Sıralı çalışma önerileri</h2>{''.join(cards)}
 <h2>Taramanın sınırları</h2>{limitations}{next_step}
 <footer>Öneriler karar desteğidir; kullanıcı onayı olmadan araştırma başlığı veya çalışma tasarımı kesinleştirilmez.</footer>

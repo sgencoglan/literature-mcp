@@ -34,12 +34,14 @@ try:  # scripts/ içinden çalışırken
     from project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
     from publisher_lookup import display_label as publisher_label_for
     from publisher_lookup import resolve as resolve_publisher
+    from search_progress import progress_rows, render_search_progress
 except ImportError:  # python -m scripts.build_fulltext_list
     from scripts.doi_naming import doi_filename as doi_stem
     from scripts.output_naming import add_timestamp_argument
     from scripts.project_layout import WORKFLOW_DIRECTORIES, fulltext_dir
     from scripts.publisher_lookup import display_label as publisher_label_for
     from scripts.publisher_lookup import resolve as resolve_publisher
+    from scripts.search_progress import progress_rows, render_search_progress
 
 PRIORITY_ORDER = ["A", "B", "C"]
 PRIORITY_LABEL = {
@@ -165,6 +167,10 @@ def validate(data: Any) -> List[str]:
         ):
             errors.append(f"{path}.score: 0–1 arası sayı veya null olmalı.")
 
+    try:
+        progress_rows(data.get("search_reports") or [])
+    except (ValueError, TypeError, KeyError, AttributeError):
+        errors.append("search_reports: geçerli coverage/platform_results raporları gerekli.")
     return errors
 
 
@@ -652,6 +658,7 @@ footer {
   <div class="meta">Proje: <strong>__PROJECT__</strong> &middot; Oluşturma: __GENERATED__ &middot; Hedef: __TARGET__ kaynak</div>
 </header>
 <main>
+  __SEARCH_PROGRESS__
   <section class="stats" aria-label="Özet">
     <div class="stat"><span class="num">__TOTAL__</span><small>Toplam kaynak</small></div>
     <div class="stat"><span class="num">__OA_COUNT__</span><small>Açık erişim</small></div>
@@ -836,6 +843,7 @@ def build_html(data: Dict[str, Any], downloaded_dois: Optional[set[str]] = None)
         "__ROWS__": render_rows(candidates, downloaded_dois),
         "__NOTES__": notes_html,
         "__PROJECT_JS__": project_js,
+        "__SEARCH_PROGRESS__": render_search_progress(data),
     }
     pattern = re.compile("|".join(re.escape(key) for key in replacements))
     return pattern.sub(lambda match: replacements[match.group(0)], HTML_TEMPLATE)
@@ -847,6 +855,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("-o", "--output", type=Path, help="Çıktı HTML dosyası")
     parser.add_argument("--check", action="store_true", help="Yalnızca doğrula; HTML üretme")
     parser.add_argument("--force", action="store_true", help="Var olan çıktı dosyasının üzerine yaz")
+    parser.add_argument("--coverage", type=Path, action="append", default=[], help="API tarama kapsam JSON'u; tekrar verilebilir")
+    parser.add_argument("--platform-results", type=Path, action="append", default=[], help="Modelin gerçek web arama sonuç JSON'u")
+    parser.add_argument("--reading-report", type=Path, help="Sayfa bazlı tam metin okuma raporu")
     parser.add_argument(
         "--fulltext-dir",
         type=Path,
@@ -866,6 +877,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"Hata: JSON çözümlenemedi: {exc}", file=sys.stderr)
         return 2
 
+    try:
+        reports = list(data.get("search_reports") or [])
+        for kind, paths in (("coverage", args.coverage), ("platform_results", args.platform_results)):
+            reports.extend({"kind": kind, "payload": json.loads(path.read_text(encoding="utf-8"))} for path in paths)
+        data["search_reports"] = reports
+        if args.reading_report:
+            data["fulltext_reading"] = json.loads(args.reading_report.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        print("Hata: tarama raporu okunamadı.", file=sys.stderr)
+        return 2
     errors = validate(data)
     if errors:
         print("Girdi doğrulama hataları:", file=sys.stderr)

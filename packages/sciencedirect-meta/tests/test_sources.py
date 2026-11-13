@@ -903,14 +903,12 @@ class RatePolicyTests(unittest.TestCase):
 
         self.assertEqual(rate_limit.interval_for("example.org"), rate_limit.DEFAULT_INTERVAL)
 
-    def test_retry_after_header_is_honoured_but_capped(self) -> None:
+    def test_retry_after_header_is_never_shortened(self) -> None:
         from sciencedirect_meta import rate_limit
 
         self.assertEqual(rate_limit.retry_after_seconds("3", 0), 3.0)
-        self.assertEqual(rate_limit.retry_after_seconds("999", 0), rate_limit.MAX_RETRY_AFTER)
-        self.assertLessEqual(
-            rate_limit.retry_after_seconds("999", 0, "export.arxiv.org"), 5.0
-        )
+        self.assertEqual(rate_limit.retry_after_seconds("999", 0), 999.0)
+        self.assertEqual(rate_limit.retry_after_seconds("999", 0, "export.arxiv.org"), 999.0)
 
     def test_backoff_grows_and_stays_capped(self) -> None:
         from sciencedirect_meta import rate_limit

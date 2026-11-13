@@ -9,6 +9,8 @@ what triggers a 429.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Dict, Optional, Tuple
 
 # host -> (interval without a key, interval with a key), in seconds.
@@ -24,11 +26,12 @@ RATE_INTERVALS: Dict[str, Tuple[float, float]] = {
 }
 
 # How long a host stays disabled after it keeps answering 429.
-COOLDOWN_SECONDS = 20.0
-# Nothing waits longer than this, even if the service asks for more.
-MAX_RETRY_AFTER = 20.0
-# arXiv returns 429 aggressively; a long wait would stall the whole run.
-MAX_RETRY_AFTER_BY_HOST: Dict[str, float] = {"export.arxiv.org": 5.0}
+COOLDOWN_SECONDS = 60.0
+# Only fallback backoff is bounded; an explicit Retry-After is never shortened.
+MAX_RETRY_AFTER = 60.0
+MAX_INLINE_WAIT = 20.0
+MAX_PARALLEL_SOURCES = 2
+MAX_RETRY_AFTER_BY_HOST: Dict[str, float] = {}
 
 # Used when a host is not listed above.
 DEFAULT_INTERVAL = 0.5
@@ -44,16 +47,28 @@ def retry_after_seconds(
     retry_after_header: Optional[str],
     attempt: int,
     host: str = "",
+    now: Optional[datetime] = None,
 ) -> float:
-    """Delay before retrying, honouring ``Retry-After`` within a safe ceiling."""
+    """Sunucunun saniye veya HTTP-date Retry-After süresini kısaltma."""
     ceiling = min(
         MAX_RETRY_AFTER,
         MAX_RETRY_AFTER_BY_HOST.get(host.lower(), MAX_RETRY_AFTER),
     )
     value = (retry_after_header or "").strip()
     if value.isdigit():
-        return min(float(value), ceiling)
-    return min(2.0 * (attempt + 1), ceiling)
+        return float(value)
+    if value:
+        try:
+            date = parsedate_to_datetime(value)
+            if date.tzinfo is None:
+                date = date.replace(tzinfo=timezone.utc)
+            reference = now or datetime.now(timezone.utc)
+            if reference.tzinfo is None:
+                reference = reference.replace(tzinfo=timezone.utc)
+            return max(0.0, (date - reference).total_seconds())
+        except (ValueError, TypeError, OverflowError):
+            pass
+    return min(5.0 * 2 ** min(max(attempt, 0), 8), ceiling)
 
 
 def cooldown_for(host: str = "") -> float:

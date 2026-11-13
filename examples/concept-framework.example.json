@@ -86,7 +86,62 @@
       "concept_ids": [
         "C1"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:cochranelibrary.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Acochranelibrary.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:cochrane.org \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Acochrane.org+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:pubmed.ncbi.nlm.nih.gov \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Apubmed.ncbi.nlm.nih.gov+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:nice.org.uk \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Anice.org.uk+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:who.int \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Awho.int+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:sciencedirect.com \"example construct\"",
@@ -97,18 +152,7 @@
       "concept_ids": [
         "C1"
       ],
-      "purpose": "Yayıncıda keşif",
-      "priority": "supplementary",
-      "database": "scholar",
-      "query": "site:taylorfrancis.com \"example construct\"",
-      "url": "https://scholar.google.com/scholar?q=site%3Ataylorfrancis.com+%22example+construct%22",
-      "status": "not_run"
-    },
-    {
-      "concept_ids": [
-        "C1"
-      ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:tandfonline.com \"example construct\"",
@@ -119,7 +163,18 @@
       "concept_ids": [
         "C1"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:taylorfrancis.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ataylorfrancis.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:link.springer.com \"example construct\"",
@@ -130,7 +185,18 @@
       "concept_ids": [
         "C1"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:nature.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Anature.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:onlinelibrary.wiley.com \"example construct\"",
@@ -141,11 +207,99 @@
       "concept_ids": [
         "C1"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:journals.sagepub.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ajournals.sagepub.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:psycnet.apa.org \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Apsycnet.apa.org+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:cambridge.org \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Acambridge.org+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:academic.oup.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Aacademic.oup.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:bmj.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Abmj.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:jamanetwork.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ajamanetwork.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:psychiatryonline.org \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Apsychiatryonline.org+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:journals.lww.com \"example construct\"",
       "url": "https://scholar.google.com/scholar?q=site%3Ajournals.lww.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:ovid.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Aovid.com+%22example+construct%22",
       "status": "not_run"
     },
     {
@@ -173,7 +327,62 @@
       "concept_ids": [
         "C2"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:cochranelibrary.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Acochranelibrary.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:cochrane.org \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Acochrane.org+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:pubmed.ncbi.nlm.nih.gov \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Apubmed.ncbi.nlm.nih.gov+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:nice.org.uk \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Anice.org.uk+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:who.int \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Awho.int+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:sciencedirect.com \"example setting\"",
@@ -184,18 +393,7 @@
       "concept_ids": [
         "C2"
       ],
-      "purpose": "Yayıncıda keşif",
-      "priority": "supplementary",
-      "database": "scholar",
-      "query": "site:taylorfrancis.com \"example setting\"",
-      "url": "https://scholar.google.com/scholar?q=site%3Ataylorfrancis.com+%22example+setting%22",
-      "status": "not_run"
-    },
-    {
-      "concept_ids": [
-        "C2"
-      ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:tandfonline.com \"example setting\"",
@@ -206,7 +404,18 @@
       "concept_ids": [
         "C2"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:taylorfrancis.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ataylorfrancis.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:link.springer.com \"example setting\"",
@@ -217,7 +426,18 @@
       "concept_ids": [
         "C2"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:nature.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Anature.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:onlinelibrary.wiley.com \"example setting\"",
@@ -228,11 +448,99 @@
       "concept_ids": [
         "C2"
       ],
-      "purpose": "Yayıncıda keşif",
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:journals.sagepub.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ajournals.sagepub.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:psycnet.apa.org \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Apsycnet.apa.org+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:cambridge.org \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Acambridge.org+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:academic.oup.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Aacademic.oup.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:bmj.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Abmj.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:jamanetwork.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ajamanetwork.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:psychiatryonline.org \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Apsychiatryonline.org+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
       "priority": "supplementary",
       "database": "scholar",
       "query": "site:journals.lww.com \"example setting\"",
       "url": "https://scholar.google.com/scholar?q=site%3Ajournals.lww.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Platformda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:ovid.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Aovid.com+%22example+setting%22",
       "status": "not_run"
     },
     {

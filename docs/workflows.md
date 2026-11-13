@@ -230,7 +230,8 @@ Yazmadan önce kapasite denetimi:
 ```bash
 python3 scripts/build_evidence_gap_request.py <plan.json> --preflight \
   --fulltext-list <03_kaynak_kesfi>/01_fulltext_listesi.json \
-  --fulltext-dir <04_taslak>/fulltext
+  --fulltext-dir <04_taslak>/fulltext \
+  --reading-report <03_kaynak_kesfi>/reading-4/03_fulltext_okuma_REVIEWED.json --workflow 4
 ```
 
 `plan_change_required` → yazmaya başlama, kullanıcıya sor.

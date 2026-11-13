@@ -211,6 +211,38 @@
     "anchor_terms_note": {
       "type": "string",
       "description": "Anchor terimlerin kullanıcı çerçevesinden nasıl türetildiği."
+    },
+    "search_reports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "payload"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "coverage",
+              "platform_results"
+            ]
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "fulltext_reading": {
+      "type": "object",
+      "required": [
+        "schema"
+      ],
+      "properties": {
+        "schema": {
+          "const": "fulltext-reading/1"
+        }
+      }
     }
   }
 }

@@ -36,6 +36,7 @@ from mcp.server.stdio import stdio_server
 from sciencedirect_meta import __version__, bootstrap
 from sciencedirect_meta.rate_limit import (
     COOLDOWN_SECONDS,
+    MAX_INLINE_WAIT,
     MAX_RETRY_AFTER_BY_HOST,
     RATE_INTERVALS,
     cooldown_for,
@@ -322,7 +323,8 @@ async def polite_get(
     host = _host(url)
     if host_in_cooldown(url):
         raise RateLimitedError(
-            f"{host}: hız limiti nedeniyle geçici olarak devre dışı", source=host
+            f"{host}: hız limiti nedeniyle geçici olarak devre dışı", source=host,
+            retry_after=max(0.0, _HOST_COOLDOWN_UNTIL[host] - time.monotonic()),
         )
 
     last_error: Optional[Exception] = None
@@ -332,6 +334,10 @@ async def polite_get(
         request_kwargs["follow_redirects"] = follow_redirects
     for attempt in range(attempts):
         await _throttle(url)
+        # Başka eşzamanlı çağrı beklerken host 429 aldıysa yeniden istek atma.
+        if host_in_cooldown(url):
+            raise RateLimitedError(f"{host}: bekleme sürüyor", source=host,
+                                   retry_after=max(0.0, _HOST_COOLDOWN_UNTIL[host] - time.monotonic()))
         try:
             response = await client_for_loop().get(
                 url, params=params, headers=headers, **request_kwargs
@@ -344,11 +350,13 @@ async def polite_get(
             raise
 
         if response.status_code == 429:
-            if attempt < attempts - 1:
-                await asyncio.sleep(_retry_after_seconds(response, attempt, host))
+            delay = _retry_after_seconds(response, attempt, host)
+            _HOST_COOLDOWN_UNTIL[host] = max(_HOST_COOLDOWN_UNTIL.get(host, 0.0), time.monotonic() + delay)
+            if attempt < attempts - 1 and delay <= MAX_INLINE_WAIT:
+                await asyncio.sleep(delay)
                 continue
-            _HOST_COOLDOWN_UNTIL[host] = time.monotonic() + cooldown_for(host)
-            cooldown = cooldown_for(host)
+            cooldown = max(delay, cooldown_for(host))
+            _HOST_COOLDOWN_UNTIL[host] = max(_HOST_COOLDOWN_UNTIL.get(host, 0.0), time.monotonic() + cooldown)
             raise RateLimitedError(
                 f"{host}: HTTP 429 (deneme {attempts}); kaynak "
                 f"{int(cooldown)} sn devre dışı",
@@ -356,7 +364,11 @@ async def polite_get(
                 retry_after=cooldown,
             )
         if response.status_code >= 500 and attempt < attempts - 1:
-            await asyncio.sleep(_retry_after_seconds(response, attempt, host))
+            delay = _retry_after_seconds(response, attempt, host)
+            if delay > MAX_INLINE_WAIT:
+                _HOST_COOLDOWN_UNTIL[host] = max(_HOST_COOLDOWN_UNTIL.get(host, 0.0), time.monotonic() + delay)
+                raise RateLimitedError(f"{host}: HTTP {response.status_code}; Retry-After bekleniyor", source=host, retry_after=delay)
+            await asyncio.sleep(delay)
             continue
         return response
 

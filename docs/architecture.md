@@ -42,7 +42,7 @@ araçların gerçekten kullandığı değeri değiştirir.
 └───────────────┬───────────────────────────────┬─────────────────────┘
                 │ MCP                           │ MCP
 ┌───────────────▼───────────────┐   ┌───────────▼─────────────────────┐
-│ sciencedirect-meta (23 araç)  │   │ paperqa-local (10 araç)         │
+│ sciencedirect-meta (25 araç)  │   │ paperqa-local (10 araç)         │
 │ • DOI/metadata arama          │   │ • proje kaydı + manifest        │
 │ • DOI doğrulama, provenance   │   │ • PaperQA2 indeksi              │
 │ • journal quartile (SCImago)  │   │ • semantik arama (LLM'siz)      │

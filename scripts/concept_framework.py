@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import html
 import re
+import sys
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
@@ -22,13 +24,11 @@ DIMENSIONS = {
     "ethics": "Etik ve güvenlik",
     "unclassified": "Sınıflandırılmamış",
 }
-PUBLISHER_DOMAINS = (
-    "sciencedirect.com",
-    "taylorfrancis.com",
-    "tandfonline.com",
-    "link.springer.com",
-    "onlinelibrary.wiley.com",
-    "journals.lww.com",
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages/sciencedirect-meta/src"))
+from sciencedirect_meta.platform_search import PLATFORMS
+
+PLATFORM_DOMAINS = tuple(
+    dict.fromkeys(domain for spec in PLATFORMS.values() for domain in spec["domains"])
 )
 
 
@@ -107,12 +107,12 @@ def build_framework(
                     **_query_link("scholar", general_query),
                 }
             )
-            for domain in PUBLISHER_DOMAINS:
+            for domain in PLATFORM_DOMAINS:
                 query = f"site:{domain} {_quote(names[0])}"
                 queries.append(
                     {
                         "concept_ids": [cid],
-                        "purpose": "Yayıncıda keşif",
+                        "purpose": "Platformda keşif",
                         "priority": "supplementary",
                         **_query_link("scholar", query),
                     }

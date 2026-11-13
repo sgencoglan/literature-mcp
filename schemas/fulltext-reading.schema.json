@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sayfa bazlı tam metin okuma raporu",
+  "type": "object",
+  "required": ["schema", "workflow", "documents", "semantic_review"],
+  "properties": {
+    "schema": {"const": "fulltext-reading/1"},
+    "workflow": {"enum": ["4", "5"]},
+    "semantic_review": {"const": "model_declared_page_review"},
+    "documents": {"type": "array", "items": {
+      "type": "object", "required": ["filename", "status", "pages"],
+      "properties": {
+        "filename": {"type": "string"}, "status": {"enum": ["extracted", "error"]},
+        "pages": {"type": "array", "items": {"type": "object", "required": ["page", "text_sha256", "image_sha256", "requires_visual", "review"], "properties": {
+          "page": {"type": "integer", "minimum": 1}, "requires_visual": {"type": "boolean"},
+          "review": {"type": ["object", "null"], "properties": {"mode": {"enum": ["text", "visual", "text_and_visual"]}, "summary": {"type": "string", "minLength": 1}}}
+        }}}
+      }
+    }},
+    "reading_gate": {"type": "object", "required": ["complete", "issues", "reviewed_pages", "total_pages"], "properties": {"complete": {"type": "boolean"}, "issues": {"type": "array", "items": {"type": "string"}}}}
+  }
+}

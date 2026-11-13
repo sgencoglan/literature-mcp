@@ -143,7 +143,37 @@ python3 scripts/build_concept_map.py <proje-kökü> --phase 3
     yakalanma oranı değildir. Erişilemeyen/taranmayan veritabanlarını açık
     bırak. [Kullanım](docs/literature-audit.md).
 
+13. **Aramayı model yürütür.** `prepare_platform_search` ile site filtresiz
+    ve kaynak alan adına özel görevleri hazırla; host'un bağlı web aracıyla
+    gerçekten çalıştır. `collect_platform_results` ile servis, sorgu,
+    tarih, kaynak URL'si ve okuma düzeyini koru. Normal web sonuçlarını
+    Scholar sonucu diye etiketleme. Başarısız/çalıştırılmamış görevleri açık
+    bırak. Önemli yayınları kaçırmamak için keşif aşamasında yayıncı,
+    quartile, atıf veya yayın türüyle erken eleme yapma; kaynakça/ileri atıf
+    ve bilinen kaynak denetimini tamamla. Cochrane dahil platform listesi
+    ve sözleşme: [model araması](docs/model-platform-search.md).
+
+14. **Hız değil kapsam.** Aynı sağlayıcıda sıralı, bağımsız sağlayıcılarda
+    en fazla iki paralel arama yürüt. Farklı site: hedefleri aynı web
+    sağlayıcısının kotasını paylaşır. Üç sorguluk partilerden sonra gerçek
+    sonuçları ve checkpoint'i proje klasörüne kaydet. Retry-After süresini
+    kısaltma; beklerken bağımsız kaynakta ilerle. Süre dolduğu için kaynak
+    tamamlanmış sayılmaz. HTML'lerde durum, kayıt sayıları, hata, yeniden
+    deneme ve kalan görevleri göster; eksik sayıları uydurma.
+
 ### İş akışı 4 — Taslak yazma
+
+0. **Zorunlu tam okuma kapısı.** Önce atanmış PDF'leri hedef akışın fulltext
+   klasörüne aktar (`paperqa_promote_fulltext` / `promote_fulltext.py`).
+   `scripts/fulltext_reading.py` ile hedef
+   akışın bütün PDF sayfalarını hazırla. Model metinleri ve gerekli sayfa
+   görsellerini gerçekten inceleyip her sayfaya özet, terim ve bölüm ilişkisi
+   yazar; `review` ile kaydeder. Sonra `check --fulltext-dir ... --workflow 4`
+   ve okuma raporu ekli `build_evidence_gap_request.py --preflight` başarılı
+   olmalı. Çıkarma/indeksleme veya hash kopyalama okuma değildir.
+   Eksik sayfa, değişen PDF/küme veya plan boşluğu varsa taslak başlamaz.
+   Yeni terimler ve ek makale ihtiyaçları akış 3'e geri beslenir.
+   [Sözleşme](docs/fulltext-reading.md).
 
 1. **Önce oku, sonra yaz.** Taslağa başlamadan önce atanmış fulltext'lerin tamamını oku:
 
@@ -170,7 +200,8 @@ python3 scripts/build_concept_map.py <proje-kökü> --phase 4
 ```bash
 python3 scripts/build_evidence_gap_request.py <plan.json> --preflight \
   --fulltext-list <03_kaynak_kesfi>/01_fulltext_listesi.json \
-  --fulltext-dir <04_taslak>/fulltext
+  --fulltext-dir <04_taslak>/fulltext \
+  --reading-report <03_kaynak_kesfi>/reading-4/03_fulltext_okuma_REVIEWED.json --workflow 4
 ```
 
 `plan_change_required` çıkarsa **yazmaya başlama**; kullanıcıya sor. Yalnızca
@@ -187,6 +218,12 @@ listesini ezme), sonra devam et.
 9. JSON'u `04_taslak/taslak/04_taslak_<zaman>.json` olarak yaz; `chapter-report build` ile HTML, Markdown ve manifest üret. **Kapı:** kalite kapısı 0 hata.
 
 ### İş akışı 5 — Taslak analizi
+
+0. **Analiz öncesi tam okuma.** Hedef PDF kümesinin sayfa inceleme defterini
+   `--workflow 5` ile tamamla ve `check` çalıştır. Plan varsa okuma raporu
+   ekli `--preflight --workflow 5` de çalıştırılır. Kullanıcı taslağında plan
+   yoksa plan şartı aranmaz; bütün sayfaların gerçek okuması ve güncellik
+   kontrolü yine zorunludur.
 
 1. **Önce oku, sonra denetle.** Denetlenecek taslağın dayandığı fulltext'lerin
 tamamını oku:
@@ -409,9 +446,9 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.14.0; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.15.0; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
-- Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
+- Depodaki MCP: `sciencedirect-meta` 25 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur
   (varsayılan: `~/.literature-mcp/projects.json`). Depoda yalnızca
   `examples/projects.example.json` örneği bulunur.
@@ -494,7 +531,8 @@ python3 scripts/build_evidence_bank.py <proje-kökü> --workflow 5 --check
 python3 scripts/build_evidence_gap_request.py \
   <proje-kökü>/02_yazim_plani/01_yazim_plani.json --preflight \
   --fulltext-list <proje-kökü>/03_kaynak_kesfi/01_fulltext_listesi.json \
-  --fulltext-dir <proje-kökü>/04_taslak/fulltext
+  --fulltext-dir <proje-kökü>/04_taslak/fulltext \
+  --reading-report <proje-kökü>/03_kaynak_kesfi/reading-4/03_fulltext_okuma_REVIEWED.json --workflow 4
 
 # Taslak sonrası boşluk talebi
 python3 scripts/build_evidence_gap_request.py \

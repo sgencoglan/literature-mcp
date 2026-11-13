@@ -1,6 +1,6 @@
 # Araç Kataloğu
 
-İki MCP sunucusunda toplam **32 araç** vardır. Makine okunabilir tam sürüm (JSON Schema dâhil): [`tool-catalog.json`](tool-catalog.json). Bu dosya, aynı katalogun insan okunabilir özetidir.
+İki MCP sunucusunda toplam **35 araç** vardır. Makine okunabilir tam sürüm (JSON Schema dâhil): [`tool-catalog.json`](tool-catalog.json). Bu dosya, aynı katalogun insan okunabilir özetidir.
 
 Yeniden üretmek için:
 
@@ -9,7 +9,7 @@ cd <repo>
 bash scripts/dump_tool_catalog.sh
 ```
 
-## sciencedirect-meta (23 araç)
+## sciencedirect-meta (25 araç)
 
 Açık metadata kaynaklarını kullanır; LLM çağırmaz. `project` parametresi verilen araçlar yalnızca o projenin klasöründe çalışır.
 
@@ -80,3 +80,10 @@ PaperQA2 indeksleri üzerinde çalışır. `paperqa_search` ve `paperqa_read_pag
 | `compare_studies` | Hayır (yardımcı) | Özet tablo |
 | `get_article` abstract | Bağlam | Tam metin yoksa kanıt yerine geçmez |
 | `journal_rank` | Bağlam | Dergi metriği; makale kalitesi kanıtı değil |
+
+### Modelin platform keşfi
+
+- `prepare_platform_search`: site filtresiz ve Cochrane dahil platforma özel sorgu görevleri. Host modelin web aracı çalıştırır.
+- `collect_platform_results`: gerçek servis/sorgu/zaman izleri, eksik kapsam ve checkpoint.
+
+Bkz. [model araması](model-platform-search.md) ve [tam okuma kapısı](fulltext-reading.md).

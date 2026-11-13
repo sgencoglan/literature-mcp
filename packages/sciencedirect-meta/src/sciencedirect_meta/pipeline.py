@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from sciencedirect_meta import bootstrap
 from sciencedirect_meta import sources as extra_sources
+from sciencedirect_meta.rate_limit import MAX_PARALLEL_SOURCES
 from sciencedirect_meta.server import (
     MAX_ENRICH,
     _dedupe_key,
@@ -169,17 +170,18 @@ async def collect_source_results(
     """
     tasks = _build_tasks(requested, query, limit, year_from, year_to, priority_only)
 
-    gathered = await asyncio.gather(
-        *(
-            extra_sources.run_source(
+    source_slots = asyncio.Semaphore(MAX_PARALLEL_SOURCES)
+
+    async def run_bounded(name: str, coro: Any) -> Dict[str, Any]:
+        async with source_slots:
+            return await extra_sources.run_source(
                 name,
                 coro,
                 requested_limit=limit,
                 rate_limited_when_empty=name in RATE_LIMITED_WHEN_EMPTY,
             )
-            for name, coro in tasks.items()
-        )
-    )
+
+    gathered = await asyncio.gather(*(run_bounded(name, coro) for name, coro in tasks.items()))
 
     merged: Dict[str, Dict[str, Any]] = {}
     notes: List[str] = []

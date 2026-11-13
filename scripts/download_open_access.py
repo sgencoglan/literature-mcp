@@ -80,8 +80,17 @@ except ImportError:  # MCP paketi kurulu değil: aynı varsayılanlarla devam et
     def _retry_after_seconds(header, attempt: int, host: str = "") -> float:
         value = (header or "").strip()
         if value.isdigit():
-            return min(float(value), 20.0)
-        return min(2.0 * (attempt + 1), 20.0)
+            return float(value)
+        if value:
+            from email.utils import parsedate_to_datetime
+            try:
+                date = parsedate_to_datetime(value)
+                if date.tzinfo is None:
+                    date = date.replace(tzinfo=timezone.utc)
+                return max(0.0, (date - datetime.now(timezone.utc)).total_seconds())
+            except (ValueError, TypeError, OverflowError):
+                pass
+        return min(5.0 * 2 ** min(max(attempt, 0), 8), 60.0)
 
 
 def _host_of(url: str) -> str:

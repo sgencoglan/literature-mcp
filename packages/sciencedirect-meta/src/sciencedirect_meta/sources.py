@@ -22,7 +22,7 @@ import re
 import time
 import unicodedata
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Dict, List, Optional, Sequence, Tuple
 
 from sciencedirect_meta import server as meta_server
@@ -142,6 +142,8 @@ async def run_source(
             "rate_limited": True,
             "requested_limit": requested_limit,
             "duration_ms": 0,
+            "retry_after_seconds": max(0.0, cooldown_until - now) if math.isfinite(cooldown_until) else None,
+            "retry_at": (datetime.now(timezone.utc) + timedelta(seconds=max(0.0, cooldown_until - now))).isoformat() if math.isfinite(cooldown_until) else None,
             "note": (
                 note
                 or f"{name}: hız limiti nedeniyle {int(cooldown_until - now)} sn "
@@ -152,6 +154,7 @@ async def run_source(
     started = time.monotonic()
     status = "ok"
     error: Optional[str] = None
+    retry_delay = 0.0
     try:
         items = list(await awaitable or [])
     except RateLimitedError as exc:
@@ -159,6 +162,7 @@ async def run_source(
         status = "rate_limited"
         error = redact_secrets(exc)
         cooldown = exc.retry_after or meta_server.RATE_LIMIT_COOLDOWN_SECONDS
+        retry_delay = cooldown if math.isfinite(cooldown) else 0.0
         _SOURCE_COOLDOWN[name] = time.monotonic() + cooldown
         note = str(exc)
         logger.info("%s rate limited: %s", name, error)
@@ -175,6 +179,8 @@ async def run_source(
         rate_limited = True
 
     if status == "rate_limited" and not note:
+        remaining = _S2_COOLDOWN_UNTIL - time.monotonic()
+        retry_delay = max(retry_delay, remaining if math.isfinite(remaining) else 0.0, 0.0)
         note = (
             f"{name}: hız limiti (429); kaynak "
             f"{int(_s2_cooldown_seconds())} sn devre dışı bırakıldı."
@@ -188,6 +194,8 @@ async def run_source(
         "requested_limit": requested_limit,
         "duration_ms": duration_ms,
         "note": note or DEFAULT_SOURCE_NOTES.get(name),
+        "retry_after_seconds": retry_delay or None,
+        "retry_at": (datetime.now(timezone.utc) + timedelta(seconds=retry_delay)).isoformat() if retry_delay else None,
     }
 
 # A result is "high quality" when the score reaches this threshold *and* the
@@ -310,20 +318,19 @@ async def search_semantic_scholar(
     for attempt in range(attempts):
         try:
             await _s2_wait_turn()
+            if time.monotonic() < _S2_COOLDOWN_UNTIL:
+                return []
             response = await client_for_loop().get(
                 SEMANTIC_SCHOLAR_API,
                 params=params,
                 headers=headers or None,
             )
             if response.status_code == 429:
-                if attempt < attempts - 1:
-                    retry_after = response.headers.get("Retry-After", "")
-                    delay = 2.0
-                    if retry_after.strip().isdigit():
-                        delay = min(float(retry_after.strip()), 10.0)
+                delay = meta_server._retry_after_seconds(response, attempt, "api.semanticscholar.org")
+                if attempt < attempts - 1 and delay <= meta_server.MAX_INLINE_WAIT:
                     await asyncio.sleep(delay)
                     continue
-                cooldown = _s2_cooldown_seconds()
+                cooldown = max(delay, _s2_cooldown_seconds())
                 _S2_COOLDOWN_UNTIL = time.monotonic() + cooldown
                 logger.info("Semantic Scholar rate limited; cooling down for %.0fs", cooldown)
                 return []
@@ -1191,6 +1198,8 @@ def _coverage_payload(
                 "requested_limit": info.get("requested_limit", requested_limit),
                 "duration_ms": info.get("duration_ms"),
                 "rate_limited": bool(info.get("rate_limited")),
+                "retry_after_seconds": info.get("retry_after_seconds"),
+                "retry_at": info.get("retry_at"),
             }
         )
         if info.get("error"):
@@ -1316,6 +1325,9 @@ def merge_coverage(
             meta["duration_ms"] = int(meta.get("duration_ms") or 0) + int(
                 stats.get("duration_ms") or 0
             )
+            if float(stats.get("retry_after_seconds") or 0) > float(meta.get("retry_after_seconds") or 0):
+                meta["retry_after_seconds"] = stats["retry_after_seconds"]
+                meta["retry_at"] = stats.get("retry_at")
         for entry in block.get("skipped_sources") or []:
             if entry not in skipped:
                 skipped.append(dict(entry))

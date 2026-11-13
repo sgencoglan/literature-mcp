@@ -530,7 +530,7 @@ class LocalResearchTests(unittest.TestCase):
 
         tools = asyncio.run(unified.handle_list_tools())
         names = {tool.name for tool in tools}
-        self.assertEqual(len(names), 23)
+        self.assertEqual(len(names), 25)
         self.assertIn("get_links", names)
         self.assertIn("search_diagnostics", names)
         self.assertIn("search_semantic_scholar", names)

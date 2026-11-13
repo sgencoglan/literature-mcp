@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-12T08:42:26+00:00",
+  "generated_at": "2026-11-13T11:34:38+00:00",
   "description": "İki MCP sunucusunun araç kataloğu. input_schema alanı MCP JSON Schema'dır; ajanlar araç seçimi ve parametre doğrulaması için kullanır.",
   "servers": {
     "sciencedirect-meta": {
-      "tool_count": 23,
+      "tool_count": 25,
       "tools": [
         {
           "name": "search_sciencedirect",
@@ -994,6 +994,158 @@
               }
             }
           }
+        },
+        {
+          "name": "prepare_platform_search",
+          "description": "Prepare site: web-search tasks for the host model across medical/psychiatry publishers. Includes unrestricted searches first. Does not execute searches; use the host's web tool, record the actual engine, and preserve books/new/low-citation sources to minimize missed publications.",
+          "input_schema": {
+            "type": "object",
+            "required": [
+              "topic"
+            ],
+            "properties": {
+              "topic": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "query_variants": {
+                "type": "array",
+                "maxItems": 4,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "platforms": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cochrane",
+                    "pubmed",
+                    "guidelines",
+                    "sciencedirect",
+                    "taylor_francis",
+                    "springer_nature",
+                    "wiley",
+                    "sage",
+                    "apa",
+                    "cambridge",
+                    "oxford",
+                    "bmj",
+                    "jama",
+                    "psychiatryonline",
+                    "ovid_lww"
+                  ]
+                }
+              },
+              "exact_title": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        },
+        {
+          "name": "collect_platform_results",
+          "description": "Consolidate real host-model web-search runs against a prepared platform plan. Returns records, per-query coverage, missing searches and source sightings. Source domain is not an indexing/quality check. Feed records into the literature coverage audit and present citations with the actual reading level.",
+          "input_schema": {
+            "type": "object",
+            "required": [
+              "plan",
+              "runs"
+            ],
+            "properties": {
+              "plan": {
+                "type": "object"
+              },
+              "runs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "task_id",
+                    "status",
+                    "engine",
+                    "searched_at"
+                  ],
+                  "properties": {
+                    "task_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "ok",
+                        "partial",
+                        "error",
+                        "rate_limited",
+                        "unavailable"
+                      ]
+                    },
+                    "engine": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "searched_at": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "retry_after_seconds": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "title",
+                          "url"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string"
+                          },
+                          "doi": {
+                            "type": "string"
+                          },
+                          "year": {
+                            "type": "integer"
+                          },
+                          "publication_type": {
+                            "type": "string"
+                          },
+                          "excerpt": {
+                            "type": "string"
+                          },
+                          "abstract": {
+                            "type": "string"
+                          },
+                          "read_level": {
+                            "enum": [
+                              "metadata",
+                              "snippet",
+                              "abstract",
+                              "fulltext"
+                            ]
+                          },
+                          "relevance_note": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       ]
     },
@@ -1335,5 +1487,5 @@
       ]
     }
   },
-  "total_tools": 33
+  "total_tools": 35
 }

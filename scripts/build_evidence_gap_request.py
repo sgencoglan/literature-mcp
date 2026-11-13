@@ -33,12 +33,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
+    from fulltext_reading import reading_advice, reading_gate, render_reading
     from output_naming import (
         add_timestamp,
         add_timestamp_argument,
         write_versioned_pair,
     )
 except ImportError:
+    from scripts.fulltext_reading import reading_advice, reading_gate, render_reading
     from scripts.output_naming import (
         add_timestamp,
         add_timestamp_argument,
@@ -312,6 +314,9 @@ def preflight(
     available_pdfs: Optional[set[str]] = None,
     min_words_ratio: float = DEFAULT_MIN_WORDS_RATIO,
     evidence_bank: Optional[Dict[str, Any]] = None,
+    reading_manifest: Optional[Dict[str, Any]] = None,
+    fulltext_root: Optional[Path] = None,
+    workflow: str = "4",
 ) -> Dict[str, Any]:
     """Taslak yazılmadan önce her alt başlığın kanıt kapasitesini ölçer.
 
@@ -428,9 +433,15 @@ def preflight(
         )
 
     plan_changes = [gap for gap in gaps if gap["status"] == "plan_change_required"]
+    gate = reading_gate(reading_manifest, fulltext_root, workflow)
     return {
         "schema": SCHEMA_ID,
         "mode": "preflight",
+        "workflow": workflow,
+        "reading_gate": gate,
+        "reading_manifest": reading_manifest,
+        "reading_advice": reading_advice(reading_manifest, plan) if reading_manifest else None,
+        "transition_allowed": gate["complete"] and not gaps and plan.get("plan_status") == "approved",
         "project": plan.get("project"),
         "title": plan.get("title"),
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -542,6 +553,7 @@ code{{background:var(--soft);border:1px solid var(--line);border-radius:4px;padd
   <div class="stat"><b>{report["written_total_words"]}</b><span class="muted">Yazılan kelime</span></div>
 </div>
 {''.join(rows) or '<p class="muted">Boşluk bulunmadı.</p>'}
+{render_reading(report['reading_manifest'], report['reading_gate'], report.get('reading_advice')) if report.get('reading_manifest') else '<p>Tam metin okuma raporu eklenmedi; 4/5 akışına geçiş doğrulanmadı.</p>' if report.get('mode') == 'preflight' else ''}
 <div class="next">
 <h3>Sonraki adım</h3>
 <p><strong>Yalnızca kanıt eksikse:</strong> {esc(report["next_action"]["if_only_evidence_shortfall"])}</p>
@@ -597,9 +609,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="Preflight için PDF klasörü (erişilebilirlik denetimi).",
     )
     parser.add_argument("--check", action="store_true", help="Yalnızca doğrula/özetle")
+    parser.add_argument("--reading-report", type=Path, help="Bütün sayfalar için model incelemesi içeren fulltext-reading/1 raporu")
+    parser.add_argument("--workflow", choices=["4", "5"], default="4", help="Geçişi denetlenecek hedef akış")
     parser.add_argument("--force", action="store_true", help="Var olan çıktının üzerine yaz")
     add_timestamp_argument(parser)
     args = parser.parse_args(argv)
+    if args.reading_report and not args.reading_report.is_file():
+        parser.error("Okuma raporu bulunamadı")
 
     if not args.plan.is_file():
         print(f"Hata: plan bulunamadı: {args.plan}", file=sys.stderr)
@@ -618,11 +634,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             fulltext_list = json.loads(args.fulltext_list.read_text(encoding="utf-8"))
         available: set[str] = set()
         if args.fulltext_dir and args.fulltext_dir.is_dir():
-            available = {p.stem.lower() for p in args.fulltext_dir.glob("*.pdf")}
+            available = {p.stem.lower() for p in args.fulltext_dir.rglob("*") if p.is_file() and p.suffix.lower() == ".pdf"}
         evidence_bank = None
         bank_candidates = [
             args.evidence_bank,
-            (args.plan.parent.parent / "04_taslak" / "taslak" / "_kanit_bankasi.json"),
+            (args.plan.parent.parent / ("04_taslak" if args.workflow == "4" else "05_analiz") / "taslak" / "_kanit_bankasi.json"),
         ]
         for candidate in bank_candidates:
             if candidate and Path(candidate).is_file():
@@ -634,6 +650,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             available_pdfs=available,
             min_words_ratio=args.min_words_ratio,
             evidence_bank=evidence_bank,
+            reading_manifest=json.loads(args.reading_report.read_text(encoding="utf-8")) if args.reading_report else None,
+            fulltext_root=args.fulltext_dir,
+            workflow=args.workflow,
         )
     else:
         report = analyse(plan, draft, args.min_words_ratio)
@@ -646,6 +665,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             f"({summary['evidence_shortfall']} kanıt eksik, "
             f"{summary['plan_change_required']} plan değişikliği)."
         )
+        if args.preflight and not report["transition_allowed"]:
+            print("GEÇİŞ ENGELLİ: okuma raporu, kaynak boşlukları veya plan onayı tamamlanmadı.", file=sys.stderr)
+            return 1
         return 0
 
     output_dir = args.output_dir or args.plan.parent
@@ -677,7 +699,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "sormadan planı değiştirmeyin.",
             file=sys.stderr,
         )
-    return 0
+    return 1 if args.preflight and not report["transition_allowed"] else 0
 
 
 if __name__ == "__main__":

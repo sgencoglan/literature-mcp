@@ -16,6 +16,7 @@ from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
 from sciencedirect_meta import local_research as local
+from sciencedirect_meta import platform_search
 from sciencedirect_meta import server as metadata
 
 server = Server("literature")
@@ -50,9 +51,90 @@ LOCAL_TOOLS = {
 }
 
 
+def platform_tools() -> List[types.Tool]:
+    return [
+        types.Tool(
+            name="prepare_platform_search",
+            description="Prepare site: web-search tasks for the host model across medical/psychiatry publishers. Includes unrestricted searches first. Does not execute searches; use the host's web tool, record the actual engine, and preserve books/new/low-citation sources to minimize missed publications.",
+            inputSchema={
+                "type": "object",
+                "required": ["topic"],
+                "properties": {
+                    "topic": {"type": "string", "minLength": 1, "maxLength": 1000},
+                    "query_variants": {"type": "array", "maxItems": 4, "items": {"type": "string"}},
+                    "platforms": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(platform_search.PLATFORMS)},
+                    },
+                    "exact_title": {"type": "boolean", "default": False},
+                },
+            },
+        ),
+        types.Tool(
+            name="collect_platform_results",
+            description="Consolidate real host-model web-search runs against a prepared platform plan. Returns records, per-query coverage, missing searches and source sightings. Source domain is not an indexing/quality check. Feed records into the literature coverage audit and present citations with the actual reading level.",
+            inputSchema={
+                "type": "object",
+                "required": ["plan", "runs"],
+                "properties": {
+                    "plan": {"type": "object"},
+                    "runs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["task_id", "status", "engine", "searched_at"],
+                            "properties": {
+                                "task_id": {"type": "string"},
+                                "status": {
+                                    "enum": [
+                                        "ok",
+                                        "partial",
+                                        "error",
+                                        "rate_limited",
+                                        "unavailable",
+                                    ]
+                                },
+                                "engine": {"type": "string", "minLength": 1},
+                                "searched_at": {"type": "string", "minLength": 1},
+                                "note": {"type": "string"},
+                            "retry_after_seconds": {"type": "number", "minimum": 0},
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "required": ["title", "url"],
+                                        "properties": {
+                                            "title": {"type": "string"},
+                                            "url": {"type": "string"},
+                                            "doi": {"type": "string"},
+                                            "year": {"type": "integer"},
+                                            "publication_type": {"type": "string"},
+                                            "excerpt": {"type": "string"},
+                                            "abstract": {"type": "string"},
+                                            "read_level": {
+                                                "enum": [
+                                                    "metadata",
+                                                    "snippet",
+                                                    "abstract",
+                                                    "fulltext",
+                                                ]
+                                            },
+                                            "relevance_note": {"type": "string"},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        ),
+    ]
+
+
 @server.list_tools()
 async def handle_list_tools() -> List[types.Tool]:
-    return await metadata.handle_list_tools() + await local.handle_list_tools()
+    return await metadata.handle_list_tools() + await local.handle_list_tools() + platform_tools()
 
 
 @server.call_tool()
@@ -60,6 +142,15 @@ async def handle_call_tool(
     name: str,
     arguments: Optional[Dict[str, Any]],
 ) -> List[types.TextContent]:
+    if name in {"prepare_platform_search", "collect_platform_results"}:
+        try:
+            function = getattr(platform_search, name)
+            result = function(**(arguments or {}))
+        except (ValueError, TypeError, KeyError, AttributeError):
+            result = {
+                "error": "Geçersiz platform arama girdisi; araç şemasını ve görev kimliklerini kontrol edin."
+            }
+        return [types.TextContent(type="text", text=json.dumps(result, ensure_ascii=False))]
     if name in METADATA_TOOLS:
         return await metadata.handle_call_tool(name, arguments)
     if name in LOCAL_TOOLS:

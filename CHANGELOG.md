@@ -1,5 +1,22 @@
 # Değişiklik Günlüğü
 
+## v2.15.0 — 2026-11-13
+
+- Modelin bağlı web aracıyla çalıştıracağı site: görevleri ve gerçek sonuç
+  kayıtları için iki MCP aracı eklendi. Cochrane, PubMed, NICE/WHO ve
+  tıp/psikiyatri platformları ortak katalogdan gelir. Genel sorgular önce
+  çalışır; keşifte yayın türü/atıf/quartile ile erken eleme yapılmaz.
+- Küçük sorgu partileri, sağlayıcı bazlı ortak kota, checkpoint ve yeniden
+  başlama planı eklendi. API Retry-After saniye/HTTP-date süreleri kısaltılmaz;
+  uzun beklemeler raporlanarak ertelenir, bağımsız kaynaklar ilerleyebilir.
+- Konu/yazım planı/fulltext HTML'lerinde ortak tarama paneli: gerçek kaynak
+  durumu, sayılar, hata, zaman, bekleme ve sonraki işlem.
+- Bütün PDF sayfaları için metin/görsel çıkarma ve model inceleme defteri
+  eklendi. Yeni kavram adayları kaynak sayfalarıyla ve ek makale ihtiyaçları
+  planla ilişkilendirilir. Çıkarma, anlamsal okuma sayılmaz.
+- Akış 4/5 preflight; eksik model incelemesi, güncel olmayan PDF kümesi veya
+  çözümlenmemiş plan/kanıt boşluğu varsa geçişi engeller ve rapor yazar.
+
 ## v2.14.0 — 2026-11-13
 
 - Site filtresiz, eş anlamlıları içeren Scholar sorguları ana keşif adımı
