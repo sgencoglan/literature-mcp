@@ -41,6 +41,17 @@ python3 scripts/build_concept_map.py <proje-kökü> --phase 1 \
    `context_terms` yaz (projenin doğrulanmış İngilizce bağlam terimleri); MeSH projeksiyonu
    bu bağlama daraltılır. Bağlam verilmezse terim başka alanın MeSH'ini getirir.
 
+   **Kaynaklı çerçeve:** `framework` alanında kapsam boyutları, kaynak
+   kimliği/pasajı, tanımlar ve arama planı bulunur. Ajan başlığı kavramsal
+   boyutlara ayırıp `concept-seed` dosyasına yazar; kod kendi başına dil modeli
+   çağırmaz veya Türkçe başlığı çevirmez. Model önerisi `proposed` kalır.
+   `mesh_entries` NLM RDF sözlüğündeki tam etiket eşleşmesidir;
+   `related_mesh` PubMed birlikte-görülmesidir, eş anlamlı sayılmaz.
+   Tıp/psikolojide aday keşfinin varsayılanı PubMed'dir; diğer kaynak için
+   `--discovery-source openalex` verilir. Scholar bağlantıları `not_run`
+   durumundadır; sonuç toplanmış gibi raporlanmaz. Ayrıntı:
+   [`docs/concept-framework.md`](docs/concept-framework.md).
+
 3. Varsayılan olarak **yedi kaynağın tümünde** tara: OpenAlex, Semantic Scholar, PubMed, Europe PMC, Crossref, arXiv ve ClinicalTrials.gov. `search_literature` / `search_all` / `deep_research` çağrılarında `sources` vermezsen hepsi sorgulanır; `priority_only=false` varsayılandır, böylece tüm yayıncılar döner. Yalnızca belirli bir alt küme gerekiyorsa `sources=[...]` ile daralt ve `coverage.per_source.status` alanında her kaynağın `ok`/`error`/`rate_limited` olduğunu kontrol et.
 4. Her sorgu ve her veritabanı için `sources_status`, `coverage`, kayıt sayısı ve hata/not bilgisini kaydet. Aranmayan veya başarısız kaynağı başarılı gibi işaretleme. `evidence_scarcity=true` ise kullanıcıya söyle.
 5. En yakın bulunan yayınlara ve kapsanmayan bağlam/örneklem/yöntem/sonuçlara dayalı sıralı başlık, araştırma sorusu, genel/özel amaç, kapsam içi/dışı ve gerekçe ver. Mutlak özgünlük iddiasında bulunma.
@@ -123,6 +134,15 @@ python3 scripts/build_concept_map.py <proje-kökü> --phase 3
 
 11. **Kapı:** her alt başlıkta `evidence_needs.min_count` karşılanmadan akış 4 başlamaz.
 
+12. **Eksik kaynak denetimi.** Yayıncıya özel `site:` sorgularından önce
+    Scholar'da yayıncıdan bağımsız keşfi planla; yalnızca gerçekten yapılan
+    aramaları günlüğe `ok` yaz. `scripts/build_literature_audit.py` ile havuzu
+    ek sonuçlar ve bağımsız bilinen yayın listesiyle karşılaştır. Başlık
+    eşleşmesi kesin kimlik eşleşmesi değildir. İnceleme önceliği kalite
+    puanı değildir; bilinen yayınları bulma oranı literatürün tamamının
+    yakalanma oranı değildir. Erişilemeyen/taranmayan veritabanlarını açık
+    bırak. [Kullanım](docs/literature-audit.md).
+
 ### İş akışı 4 — Taslak yazma
 
 1. **Önce oku, sonra yaz.** Taslağa başlamadan önce atanmış fulltext'lerin tamamını oku:
@@ -204,7 +224,7 @@ python3 scripts/check_plan_compliance.py <plan.json> <taslak.json> --strict
 6. **Uydurma yasağı.** DOI, yazar, yıl, dergi, sayfa, alıntı veya sonuç uydurma. Emin değilsen `not_found`, kısmi kanıt varsa `partially_supported` yaz ve kullanıcıya bildir.
 6. **Dil.** Teslim Türkçedir. Kaynak cümlesi İngilizceyse özgün hâliyle ver; Türkçe çevirisini ayrı yaz. Çeviri, alıntının yerine geçmez.
 7. **Renk kuralı.** HTML'de yalnızca yeniden düzenlenen cümle/parça kırmızı; MCP'nin eklediği anlamlı yeni ifade mavi/yeşil işaretlenir. Paragrafın tamamı, başlık veya kaynak listesi renklendirilmez.
-8. **Beş platform.** Yalnızca Ovid LWW, ScienceDirect, SpringerLink, Wiley ve Taylor & Francis linkleri önceliklidir. Başka bir dizin sağlayıcısına bağımlılık kurma.
+8. **Yayıncıdan bağımsız keşif.** Ovid LWW, ScienceDirect, SpringerLink, Wiley ve Taylor & Francis bağlantıları sunulabilir; keşif bu yayıncılarla sınırlandırılmaz. PubMed/PsycInfo/Embase gibi alan kaynakları, site filtresiz Scholar ve atıf takibi araştırma sorusuna göre önceliklendirilir. İndeks veya yayıncı adı makale kalitesinin kanıtı sayılmaz.
 9. **Mevcut projelere dokunma.** Kayıtlı bir projenin PDF klasörü, manifesti, indeksi veya `analysis_json` dosyası, kullanıcı açıkça istemedikçe değiştirilmez. Yeni çalışma için yeni klasör/manifest/indeks kullan.
 10. **Çıktı sözleşmesi.** Dosya adları, sütunlar ve biçimler [`docs/output-spec.md`](docs/output-spec.md) dosyasına uyar. JSON çıktıları `schemas/` altındaki şemalara uyumlu olur. Klasör düzeni beş akıştır (01–05); her akış çıktısını kendi klasörüne yazar, PDF'ler yalnızca `fulltext/` altındadır.
 11. **Altın standart.** İnsan teslimi `05_analiz_<zaman>.html`'dir; `chapter-report` kalite kapısından 0 hatayla geçmeden teslim edilmez. `05_analiz_<zaman>.json/md` yalnızca denetim odaklı ara çıktıdır. Bölüm raporu HTML'inde DOI kopyalama düğmesi bulunur; kopyalama betiği dışında gömülü betik kullanılmaz. Fulltext listesinde DOI metnini kopyalayan düğme yoktur; tıklanabilir DOI/veritabanı düğmeleri, düz metin DOI ve tıklandığında düzeltilmiş DOI'yi (dosya adı biçimi, uzantısız) panoya kopyalayan "dosya adı" düğmesi bulunur.
@@ -389,7 +409,7 @@ Teslimden önce:
 
 - Bu depo **kod ve dokümantasyon** deposudur; PDF, indeks, manifest veya kişisel
   analiz dosyası içermez.
-- Depo sürümü v2.13.2; önceki public sürüm v2.7.1'dir.
+- Depo sürümü v2.14.0; önceki public sürüm v2.7.1'dir.
   Yayımlanmamış bölüm metni ve gerçek proje çıktıları depoya konmaz.
 - Depodaki MCP: `sciencedirect-meta` 23 araç, `paperqa-local` 10 araç.
 - Kayıtlı projeler kullanıcıya özeldir ve `projects.json` içinde tutulur

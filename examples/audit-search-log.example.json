@@ -1,0 +1,4 @@
+[
+  {"source": "pubmed", "query": "example construct", "status": "not_run", "searched_at": null, "note": "Giriş şablonu; sorgu henüz çalıştırılmadı."},
+  {"source": "scholar", "query": "example setting", "status": "not_run", "searched_at": null, "note": "İçe aktarılan sentetik dosya gerçek Scholar araması değildir."}
+]

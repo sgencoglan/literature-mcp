@@ -1,0 +1,7 @@
+{
+  "note": "Sentetik kontrol listesi; DOI'ler gerçek yayın iddiası taşımaz.",
+  "records": [
+    {"doi": "10.1000/fixture-new", "title": "Example setting and its conceptual framework"},
+    {"doi": "10.1000/fixture-missing", "title": "Example foundational work"}
+  ]
+}

@@ -1,0 +1,261 @@
+{
+  "schema": "concept-framework/1",
+  "status": "proposed",
+  "scope": {
+    "population": "Hedef grubu yazın",
+    "context": "Çalışma ortamını yazın",
+    "outcome": "İncelenecek sonuçları yazın"
+  },
+  "dimensions": {
+    "phenomenon": [
+      "C1"
+    ],
+    "population": [],
+    "context": [
+      "C2"
+    ],
+    "intervention": [],
+    "outcome": [],
+    "theory": [],
+    "measurement": [],
+    "ethics": [],
+    "unclassified": []
+  },
+  "nodes": [
+    {
+      "id": "C1",
+      "term": "Örnek ana kavram",
+      "dimension": "phenomenon",
+      "search_terms": [
+        "example construct"
+      ],
+      "status": "proposed",
+      "observed_in_sources": false,
+      "vocabulary_match": false,
+      "evidence": [],
+      "proposed_definition": {
+        "text": "",
+        "source_id": null,
+        "status": "missing"
+      },
+      "vocabulary_definitions": []
+    },
+    {
+      "id": "C2",
+      "term": "Örnek bağlam",
+      "dimension": "context",
+      "search_terms": [
+        "example setting"
+      ],
+      "status": "proposed",
+      "observed_in_sources": false,
+      "vocabulary_match": false,
+      "evidence": [],
+      "proposed_definition": {
+        "text": "",
+        "source_id": null,
+        "status": "missing"
+      },
+      "vocabulary_definitions": []
+    }
+  ],
+  "relations": [],
+  "search_plan": [
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Kavramı ayrı sına",
+      "database": "pubmed",
+      "query": "(\"example construct\"[Title/Abstract])",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/?term=%28%22example+construct%22%5BTitle%2FAbstract%5D%29",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Yayıncıdan bağımsız keşif",
+      "priority": "primary",
+      "database": "scholar",
+      "query": "\"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:sciencedirect.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Asciencedirect.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:taylorfrancis.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ataylorfrancis.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:tandfonline.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Atandfonline.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:link.springer.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Alink.springer.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:onlinelibrary.wiley.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Aonlinelibrary.wiley.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C1"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:journals.lww.com \"example construct\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ajournals.lww.com+%22example+construct%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Kavramı ayrı sına",
+      "database": "pubmed",
+      "query": "(\"example setting\"[Title/Abstract])",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/?term=%28%22example+setting%22%5BTitle%2FAbstract%5D%29",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Yayıncıdan bağımsız keşif",
+      "priority": "primary",
+      "database": "scholar",
+      "query": "\"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:sciencedirect.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Asciencedirect.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:taylorfrancis.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ataylorfrancis.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:tandfonline.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Atandfonline.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:link.springer.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Alink.springer.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:onlinelibrary.wiley.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Aonlinelibrary.wiley.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "concept_ids": [
+        "C2"
+      ],
+      "purpose": "Yayıncıda keşif",
+      "priority": "supplementary",
+      "database": "scholar",
+      "query": "site:journals.lww.com \"example setting\"",
+      "url": "https://scholar.google.com/scholar?q=site%3Ajournals.lww.com+%22example+setting%22",
+      "status": "not_run"
+    },
+    {
+      "purpose": "Geniş olgu taraması",
+      "database": "pubmed",
+      "query": "((\"example construct\"[Title/Abstract]))",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/?term=%28%28%22example+construct%22%5BTitle%2FAbstract%5D%29%29",
+      "status": "not_run"
+    },
+    {
+      "purpose": "Olgu + Ortam ve bağlam",
+      "database": "pubmed",
+      "query": "((\"example construct\"[Title/Abstract])) AND ((\"example setting\"[Title/Abstract]))",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/?term=%28%28%22example+construct%22%5BTitle%2FAbstract%5D%29%29+AND+%28%28%22example+setting%22%5BTitle%2FAbstract%5D%29%29",
+      "status": "not_run"
+    }
+  ],
+  "missing_dimensions": [],
+  "warnings": [],
+  "limitations": [
+    "Başlık/özette terim geçmesi, tanımı veya kavramlar arasındaki ilişkiyi kanıtlamaz.",
+    "MeSH eşleşmesi sözlük karşılığını gösterir; proje bağlamına uygunluğu ayrıca değerlendirilir.",
+    "Model/kullanıcı tanımları ve ilişkileri, kaynak verilse bile otomatik doğrulanmaz.",
+    "Arama bağlantıları hazırlandı; bağlantının varlığı aramanın yapıldığı anlamına gelmez."
+  ]
+}

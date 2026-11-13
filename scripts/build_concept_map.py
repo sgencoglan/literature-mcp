@@ -40,8 +40,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
+    from concept_framework import build_framework, render_framework
     from output_naming import add_timestamp, add_timestamp_argument, write_versioned_pair
 except ImportError:
+    from scripts.concept_framework import build_framework, render_framework
     from scripts.output_naming import (
         add_timestamp,
         add_timestamp_argument,
@@ -194,6 +196,10 @@ def concepts_from_seed(seed: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "relations": entry.get("relations") or [],
                 "source": str(entry.get("source") or "user_stated"),
                 "definition_scope": str(entry.get("definition_scope") or ""),
+                "definition": entry.get("definition") or {},
+                "evidence": entry.get("evidence") or [],
+                "dimension": str(entry.get("dimension") or "unclassified"),
+                "validation_status": "proposed",
                 **({"domain": str(entry["domain"])} if entry.get("domain") else {}),
             }
         )
@@ -236,25 +242,25 @@ def _abstract_text(inverted: Optional[Dict[str, List[int]]]) -> str:
 def _candidate_grams(text: str) -> set[str]:
     """Metinden kavram adayı n-gramları çıkar.
 
-    Tek sözcükler yalnızca tire içeriyorsa aday olur (``example-term`` gibi
-    bileşik terimler tekniktir); düz tek sözcükler ("intervention") çok genel
-    kalır. İki-üç sözcüklü öbekler adaydır.
+    Tek sözcüklü alan terimleri de adaydır; genel sözcükler elenir.
+    Cümle sınırlarından sözcük birleştirerek sahte terim üretilmez.
     """
-    words = re.findall(r"[a-z][a-z\-]{2,}", _norm(text))
     found: set[str] = set()
-    for size in (1, 2, 3):
-        for index in range(len(words) - size + 1):
-            seq = words[index : index + size]
-            if any(word in GENERIC_WORDS for word in seq):
-                continue
-            if size == 1 and "-" not in seq[0]:
-                continue
-            phrase = " ".join(seq)
-            if phrase in GENERIC_PHRASES:
-                continue
-            if seq[-1].endswith(("based", "related", "focused", "oriented")):
-                continue  # niteleyici, kavram değil ("school-based")
-            found.add(phrase)
+    for sentence in re.split(r"[.!?;:\n]+", _norm(text)):
+        words = re.findall(r"[a-z][a-z\-]{2,}", sentence)
+        for size in (1, 2, 3):
+            for index in range(len(words) - size + 1):
+                seq = words[index : index + size]
+                if any(word in GENERIC_WORDS for word in seq):
+                    continue
+                if size == 1 and len(seq[0]) < 5 and "-" not in seq[0]:
+                    continue
+                phrase = " ".join(seq)
+                if phrase in GENERIC_PHRASES:
+                    continue
+                if seq[-1].endswith(("based", "related", "focused", "oriented")):
+                    continue
+                found.add(phrase)
     return found
 
 
@@ -268,8 +274,8 @@ def _fetch_corpus(query: str, limit: int) -> List[Dict[str, Any]]:
             str(Path(__file__).resolve().parents[1] / "packages" / "sciencedirect-meta" / "src"),
         )
         from sciencedirect_meta.server import _openalex_params, polite_get
-    except Exception:  # noqa: BLE001 - paket yoksa harita literatürsüz kurulur
-        return []
+    except ImportError as exc:
+        raise RuntimeError("Arama paketi yüklenemedi") from exc
 
     async def _run() -> List[Dict[str, Any]]:
         response = await polite_get(
@@ -284,23 +290,61 @@ def _fetch_corpus(query: str, limit: int) -> List[Dict[str, Any]]:
             attempts=3,
         )
         if response.status_code != 200:
-            return []
+            raise RuntimeError(f"OpenAlex HTTP {response.status_code}")
         return response.json().get("results") or []
 
-    try:
-        return asyncio.run(_run())
-    except Exception:  # noqa: BLE001
-        return []
+    return asyncio.run(_run())
+
+
+def _fetch_pubmed_corpus(query: str, limit: int) -> List[Dict[str, Any]]:
+    import asyncio
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "sciencedirect-meta" / "src"))
+    from sciencedirect_meta import mesh
+
+    result = asyncio.run(mesh.concepts_from_pubmed(query, limit=limit))
+    if result.get("error"):
+        raise RuntimeError(f"PubMed: {result['error']}")
+    return [
+        {
+            "id": f"https://pubmed.ncbi.nlm.nih.gov/{a['pmid']}/",
+            "pmid": a["pmid"], "title": a["title"], "abstract": a["abstract"],
+            "doi": a.get("doi"), "publication_year": a.get("year"),
+            "source": "pubmed",
+        }
+        for a in result.get("articles", [])
+    ]
+
+
+def work_abstract(work: Dict[str, Any]) -> str:
+    return str(work.get("abstract") or _abstract_text(work.get("abstract_inverted_index")))
+
+
+def candidate_evidence(work: Dict[str, Any], term: str) -> Dict[str, Any]:
+    """Terimin geçtiği başlığı veya cümleyi kimliğiyle birlikte sakla."""
+    pattern = _compile_variant(term)
+    title = str(work.get("title") or "")
+    field = "title" if pattern.search(title) else "abstract"
+    text = title if field == "title" else work_abstract(work)
+    sentences = re.split(r"(?<=[.!?])\s+|\n+", text)
+    passage = next((s for s in sentences if pattern.search(s)), "")
+    return {
+        "source_id": work.get("id") or work.get("doi") or work.get("pmid"),
+        "doi": work.get("doi"), "pmid": work.get("pmid"), "title": title,
+        "year": work.get("publication_year"), "field": field,
+        "passage": passage, "read_level": field,
+        "relation": "term_occurrence", "status": "observed",
+    }
 
 
 def _corpus_stats(works: List[Dict[str, Any]]) -> tuple[Dict[str, int], Dict[str, int], int]:
     """Aday terim başına belge sıklığı ve başlık sıklığı."""
     doc_freq: Dict[str, int] = {}
     title_freq: Dict[str, int] = {}
-    usable = [w for w in works if w.get("abstract_inverted_index")]
+    usable = [w for w in works if work_abstract(w)]
     for work in usable:
         grams = _candidate_grams(
-            f"{work.get('title') or ''} {_abstract_text(work.get('abstract_inverted_index'))}"
+            f"{work.get('title') or ''}. {work_abstract(work)}"
         )
         for gram in grams:
             doc_freq[gram] = doc_freq.get(gram, 0) + 1
@@ -314,6 +358,8 @@ def mine_candidates(
     background_query: str = "research",
     min_count: int = 3,
     limit: int = 14,
+    source: str = "openalex",
+    corpus: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Alanyazından kavram adaylarını çıkar ve ayırt ediciliğe göre sırala.
 
@@ -329,26 +375,58 @@ def mine_candidates(
     Dönen ``candidates`` listesi ajanın doğrulaması içindir; hiçbiri kendiliğinden
     "doğru kavram" ilan edilmez.
     """
-    target = _fetch_corpus(query, 50)
-    background = _fetch_corpus(background_query, 100)
+    fetch = _fetch_pubmed_corpus if source == "pubmed" else _fetch_corpus
+    coverage: Dict[str, Any] = {}
+    errors = []
+    def load(label: str, search: str, size: int) -> List[Dict[str, Any]]:
+        try:
+            works = fetch(search, size)
+            coverage[label] = {"source": source, "query": search, "status": "ok", "records": len(works)}
+            return works
+        except Exception as exc:  # noqa: BLE001 - ağ hatasını boş sonuçtan ayır
+            status = "error"
+            coverage[label] = {"source": source, "query": search, "status": status, "error_type": type(exc).__name__}
+            errors.append(f"{source} {label} sorgusu başarısız ({type(exc).__name__}).")
+            return []
+    if corpus is not None:
+        target, background = corpus, []
+        coverage["target"] = {"source": "local_corpus", "status": "provided", "records": len(corpus)}
+        coverage["background"] = {"source": source, "status": "not_run"}
+    else:
+        target = load("target", query, 50)
+        background = load("background", background_query, 100)
+    def deduplicate(works: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        unique = {}
+        for work in works:
+            key = str(work.get("doi") or work.get("pmid") or work.get("id") or work.get("title") or "").lower()
+            key = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", key)
+            if key and (key not in unique or (not work_abstract(unique[key]) and work_abstract(work))):
+                unique[key] = work
+        return list(unique.values())
+    target, background = deduplicate(target), deduplicate(background)
     doc_freq, title_freq, target_n = _corpus_stats(target)
     bg_freq, _, bg_n = _corpus_stats(background)
 
     if target_n == 0:
-        return {"query": query, "candidates": [], "sample_size": 0, "note": "hedef külliyat boş"}
+        return {"query": query, "candidates": [], "sample_size": 0, "note": "hedef külliyat boş",
+                "coverage": coverage, "errors": errors, "source": source}
 
     examples: Dict[str, List[str]] = {}
+    evidence: Dict[str, List[Dict[str, Any]]] = {}
     for work in target:
-        if not work.get("abstract_inverted_index"):
+        if not work_abstract(work):
             continue
         grams = _candidate_grams(
-            f"{work.get('title') or ''} {_abstract_text(work.get('abstract_inverted_index'))}"
+            f"{work.get('title') or ''}. {work_abstract(work)}"
         )
         for gram in grams:
             bucket = examples.setdefault(gram, [])
             title = str(work.get("title") or "").strip()
             if title and len(bucket) < 2:
                 bucket.append(title)
+            proofs = evidence.setdefault(gram, [])
+            if len(proofs) < 3:
+                proofs.append(candidate_evidence(work, gram))
 
     candidates = []
     for gram, count in doc_freq.items():
@@ -356,8 +434,8 @@ def mine_candidates(
             continue
         target_share = count / target_n
         background_share = bg_freq.get(gram, 0) / max(1, bg_n)
-        ratio = target_share / (background_share + 0.004)
-        score = ratio * (1 + 2 * title_freq.get(gram, 0))
+        ratio = target_share / (background_share + 0.004) if bg_n else None
+        score = (ratio if ratio is not None else target_share) * (1 + 2 * title_freq.get(gram, 0))
         candidates.append(
             {
                 "term": gram,
@@ -366,9 +444,11 @@ def mine_candidates(
                 "share": round(target_share, 3),
                 "background_share": round(background_share, 3),
                 "title_hits": title_freq.get(gram, 0),
-                "specificity": round(ratio, 1),
+                "specificity": round(ratio, 1) if ratio is not None else None,
                 "score": round(score, 1),
                 "examples": examples.get(gram, []),
+                "evidence": evidence.get(gram, []),
+                "validation_status": "proposed",
             }
         )
     candidates.sort(key=lambda row: (-row["score"], -row["documents"], row["term"]))
@@ -379,6 +459,9 @@ def mine_candidates(
         "sample_size": target_n,
         "background_size": bg_n,
         "note": None,
+        "source": source,
+        "coverage": coverage,
+        "errors": errors,
     }
 
 
@@ -388,6 +471,8 @@ def derive_concepts_from_literature(
     min_share: float = 0.05,
     max_concepts: int = 10,
     query_en: Optional[str] = None,
+    source: str = "openalex",
+    corpus: Optional[List[Dict[str, Any]]] = None,
 ) -> tuple[List[Dict[str, Any]], str, Dict[str, Any]]:
     """Başlık/çerçeveden alanyazın taramasıyla kavram çıkar.
 
@@ -403,7 +488,7 @@ def derive_concepts_from_literature(
     if not query:
         return [], "Boş başlık/çerçeve; kavram çıkarılamadı.", {"candidates": []}
 
-    mined = mine_candidates(query)
+    mined = mine_candidates(query) if source == "openalex" and corpus is None else mine_candidates(query, source=source, corpus=corpus)
     candidates = mined.get("candidates") or []
     sample = int(mined.get("sample_size") or 0)
 
@@ -424,22 +509,24 @@ def derive_concepts_from_literature(
                     "mesh": [],
                     "relations": [],
                     "source": "literature",
+                    "validation_status": "proposed",
+                    "evidence": row.get("evidence") or [],
                     "definition_scope": (
                         f"Hedef külliyatta {row['documents']}/{row['sample_size']} "
-                        f"makalede geçti; genel alana göre ayırt edicilik "
-                        f"{row['specificity']}×."
+                        f"yayında geçti; ayırt edicilik: "
+                        + (f"{row['specificity']}×." if row.get("specificity") is not None else "hesaplanmadı.")
                     ),
                 }
             )
         note_parts.append(
-            f"Kavramlar başlık+özet metninden çıkarıldı (OpenAlex, {sample} "
+            f"Kavram adayları başlık+özet metninden çıkarıldı ({source}, {sample} "
             f"makale, ayırt edicilik eşiği %{min_share * 100:.0f}). Projeye "
             "özgü sabit sözlük kullanılmadı."
         )
     elif sample:
         note_parts.append(
-            f"UYARI: OpenAlex yalnızca {sample} özetli makale döndürdü. Sorgu "
-            "büyük olasılıkla İngilizce değil; kavram çıkarımı güvenilir değil. "
+            f"UYARI: {source} yalnızca {sample} özetli yayın döndürdü. "
+            "Örneklem kavram çıkarımı için küçük. "
             "`--concept-seed` ile kavramları verin veya `--query-en` ile "
             "İngilizce sorgu girin."
         )
@@ -456,36 +543,49 @@ def derive_concepts_from_literature(
                 "mesh": [],
                 "relations": [],
                 "source": "derived",
+                "validation_status": "proposed",
                 "definition_scope": "Alanyazın taraması yapılamadı; başlık anchor alındı.",
             }
         ]
         if sample < 5:
             note_parts.append(
-                "OpenAlex taraması güvenilir sonuç vermedi; başlık anchor alındı."
+                f"{source} taraması yeterli sonuç vermedi; başlık çekirdek adayı alındı."
             )
 
     return concepts, " ".join(note_parts), mined
 
 
 def attach_mesh(concepts: List[Dict[str, Any]], mesh_results: Dict[str, Any]) -> None:
-    """MeSH projeksiyonunu kavramlara bağla."""
+    """Birlikte görülen MeSH terimleri eş anlamlı veya doğrudan karşılık değildir."""
     for concept in concepts:
         if concept.get("mesh_applicable") is False:
             continue  # bu alan PubMed'de indekslenmiyor; MeSH yanıltır
         primary = (concept.get("english_terms") or [""])[0]
         result = mesh_results.get(primary)
-        if not result or not result.get("found"):
+        if not result:
             continue
+        concept["mesh_projection"] = {
+            "query": result.get("query"), "error": result.get("error"),
+            "article_count": len(result.get("articles") or []),
+        }
         descriptors = [
             row["term"]
             for row in result.get("mesh_terms") or []
             if row.get("count", 0) >= 2
         ][:6]
-        concept["mesh"] = descriptors
-        # MeSH'ten gelen ek arama terimleri: İngilizce karşılık listesini genişlet.
-        for term in descriptors:
-            if term.lower() not in {t.lower() for t in concept["english_terms"]}:
-                concept["english_terms"].append(term)
+        concept["related_mesh"] = [
+            {**row, "relation": "co_occurrence", "status": "proposed"}
+            for row in result.get("mesh_terms", []) if row["term"] in descriptors
+        ]
+
+
+def attach_vocabulary(concept: Dict[str, Any], result: Dict[str, Any]) -> None:
+    """Yalnızca tam sözlük eşleşmesini kullan; birlikte görülme burada yeterli değil."""
+    entries = [e for e in result.get("entries") or [] if e.get("match_type") == "exact_label"]
+    concept["mesh_entries"] = entries
+    concept["mesh"] = [entry["term"] for entry in entries]
+    concept["vocabulary_status"] = "error" if result.get("error") else ("matched" if entries else "not_found")
+    concept["vocabulary_error"] = result.get("error")
 
 
 # --------------------------------------------------------------------------- #
@@ -566,13 +666,13 @@ def build_queries(concepts: List[Dict[str, Any]]) -> None:
             }
         )
         # 2) MeSH terimleri birlikte: kontrollü sözlük genişletmesi.
-        mesh = concept.get("mesh") or []
+        mesh = [e["term"] for e in concept.get("mesh_entries") or [] if e.get("match_type") == "exact_label"]
         if mesh:
             queries.append(
                 {
-                    "query": " OR ".join(f'"{m}"' for m in mesh[:3]),
-                    "databases": ["pubmed", "openalex"],
-                    "note": "MeSH projeksiyonu: kontrollü sözlük terimleri.",
+                    "query": " OR ".join(f'"{m}"[MeSH Terms]' for m in mesh[:3]),
+                    "databases": ["pubmed"],
+                    "note": "Tam sözlük eşleşmesi; konuya uygunluk ayrıca değerlendirilir.",
                     "status": "not_run",
                     "result_count": None,
                 }
@@ -767,6 +867,7 @@ def build_report(
     title: Optional[str] = None,
     derivation_note: str = "",
     mined: Optional[Dict[str, Any]] = None,
+    scope: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     warnings: List[str] = []
     anchors = [c for c in concepts if c["role"] == "anchor"]
@@ -790,6 +891,10 @@ def build_report(
             "olmalı. Doğrulanmış listeyi `--concept-seed` ile ver."
         )
     for concept in concepts:
+        if concept.get("vocabulary_error"):
+            warnings.append(f"{concept['term']}: MeSH sözlük sorgusu başarısız ({concept['vocabulary_error']}).")
+        if (concept.get("mesh_projection") or {}).get("error"):
+            warnings.append(f"{concept['term']}: PubMed MeSH projeksiyonu başarısız.")
         if concept.get("mesh") and concept.get("mesh_applicable") is False:
             warnings.append(
                 f"'{concept['term']}' için MeSH terimi var ama alan eğitim: "
@@ -846,6 +951,9 @@ def build_report(
             "Yeni eklenen kavramları doğrula; gerekirse akış 3'e dönüp ara."
         )
 
+    framework = build_framework(concepts, scope)
+    warnings.extend((mined or {}).get("errors") or [])
+    warnings.extend(framework["warnings"])
     return {
         "schema": SCHEMA_ID,
         "project": plan.get("project"),
@@ -859,6 +967,8 @@ def build_report(
         "candidates": (mined or {}).get("candidates") or [],
         "candidate_query": (mined or {}).get("query"),
         "candidate_background": (mined or {}).get("background_query"),
+        "discovery_coverage": (mined or {}).get("coverage") or {},
+        "framework": framework,
         "section_coverage": section_coverage or [],
         "warnings": warnings,
         "next_actions": next_actions,
@@ -878,6 +988,7 @@ def render_html(report: Dict[str, Any]) -> str:
             f'<span class="variant">{esc(v)}</span>' for v in concept.get("variants") or []
         )
         mesh = "".join(f'<span class="mesh">{esc(m)}</span>' for m in concept.get("mesh") or [])
+        related_mesh = ", ".join(esc(row["term"]) for row in concept.get("related_mesh") or [])
         queries = "".join(
             f'<li><code>{esc(q.get("query"))}</code> '
             f'<span class="muted">({esc(", ".join(q.get("databases") or []))})</span></li>'
@@ -926,6 +1037,7 @@ def render_html(report: Dict[str, Any]) -> str:
           <div class="row"><span class="lbl">İngilizce</span><div>{eng or '<span class="muted">—</span>'}</div></div>
           {f'<div class="row"><span class="lbl">Varyant</span><div>{variants}</div></div>' if variants else ''}
           {f'<div class="row"><span class="lbl">MeSH</span><div>{mesh}</div></div>' if mesh else ''}
+          {f'<div class="row"><span class="lbl">İlişkili MeSH</span><div>{related_mesh}<br>Birlikte-görülme; eş anlamlı veya doğrudan karşılık değil.</div></div>' if related_mesh else ''}
           {f'<div class="row"><span class="lbl">Bölümler</span><div>{sections}</div></div>' if sections else ''}
           {f'<div class="row"><span class="lbl">İlişkiler</span><ul class="rel">{rel}</ul></div>' if rel else ''}
           {f'<div class="row"><span class="lbl">Sorgular</span><ol class="queries">{queries}</ol></div>' if queries else ''}
@@ -959,7 +1071,7 @@ def render_html(report: Dict[str, Any]) -> str:
             f"<tr><td><code>{esc(row['term'])}</code>{example_html}</td>"
             f"<td>{row['documents']}/{row['sample_size']}</td>"
             f"<td>{row['title_hits']}</td>"
-            f"<td>{row['specificity']}×</td>"
+            f"<td>{str(row['specificity']) + '×' if row.get('specificity') is not None else 'hesaplanmadı'}</td>"
             f"<td>{row['score']}</td></tr>"
         )
     candidate_block = (
@@ -1046,6 +1158,8 @@ ul.act{{padding-left:1.2rem}}
 
 {candidate_block}
 
+{render_framework(report['framework']) if report.get('framework') else ''}
+
 {f'<h2>Uyarılar</h2><ul class="warn">{warnings}</ul>' if warnings else ''}
 <h2>Sonraki adımlar</h2>
 <ul class="act">{actions}</ul>
@@ -1106,7 +1220,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             "yalnızca medical/psychology alanlarında uygulanır."
         ),
     )
-    parser.add_argument("--mesh", action="store_true", help="PubMed MeSH projeksiyonu yap")
+    parser.add_argument("--mesh", action="store_true", help="MeSH sözlük eşleşmesi ve ayrı PubMed birlikte-görülme analizi")
+    parser.add_argument("--discovery-source", choices=["pubmed", "openalex"], help="Tıp/psikolojide varsayılan PubMed; eğitimde OpenAlex")
+    parser.add_argument("--corpus", type=Path, help="Çevrimdışı aday keşfi için records listeli JSON; ağ araması yapılmaz")
     parser.add_argument("--plan", type=Path, help="Yazım planı JSON")
     parser.add_argument("--input", type=Path, help="Önceki kavram haritası (aşama zinciri)")
     parser.add_argument("-o", "--output-dir", type=Path, help="Çıktı klasörü")
@@ -1114,6 +1230,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--force", action="store_true")
     add_timestamp_argument(parser)
     args = parser.parse_args(argv)
+    if args.corpus and args.mesh:
+        parser.error("--corpus çevrimdışıdır; --mesh ile birlikte kullanılamaz")
+    if not 0 <= args.min_share <= 1:
+        parser.error("--min-share 0 ile 1 arasında olmalı")
 
     root = args.project_root.expanduser().resolve()
     work1 = workflow_dir(root, "1")
@@ -1121,35 +1241,52 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     # Önceki harita varsa kavramları ondan devral.
     seed = load_json(args.concept_seed)
+    if args.concept_seed and seed is None:
+        parser.error("Tohum dosyası bulunamadı")
     previous = load_json(args.input)
+    if args.input and previous is None:
+        parser.error("Önceki harita dosyası bulunamadı")
     mined: Dict[str, Any] = {"candidates": []}
     if previous is None:
-        for candidate in sorted(work1.glob(f"{OUTPUT_STEM}_*.json")):
+        for candidate in sorted(work1.glob(f"{OUTPUT_STEM}_*.json"), key=lambda p: (p.stat().st_mtime_ns, p.name)):
             previous = load_json(candidate)
         previous = previous or load_json(work1 / f"{OUTPUT_STEM}.json")
 
     title = args.title or (plan or {}).get("title") or (previous or {}).get("title") or ""
     framing = (
         args.framing
+        or (seed or {}).get("framing")
         or (previous or {}).get("user_framing")
         or ""
     )
 
-    if previous and previous.get("concepts"):
+    title = args.title or (seed or {}).get("title") or title
+    project_domain = args.domain or (seed or {}).get("domain") or (previous or {}).get("domain") or "education"
+    source = args.discovery_source or ("pubmed" if project_domain in {"medical", "psychology"} else "openalex")
+    corpus_data = load_json(args.corpus) if args.corpus else None
+    if args.corpus and (corpus_data is None or not isinstance(corpus_data.get("records"), list)):
+        parser.error("--corpus dosyası records listesi içermeli")
+    derivation_note = ""
+    if seed:
+        concepts = concepts_from_seed(seed)
+        derivation_note = "Kavramlar tohum dosyasından alındı; doğrulama bekliyor."
+    elif previous and previous.get("concepts") and (args.input or not (args.phase == 1 and (args.title or args.query_en or args.corpus))):
         concepts = previous["concepts"]
+        derivation_note = str(previous.get("derivation_note") or "Önceki haritadan devralındı.")
+        mined = {
+            "candidates": previous.get("candidates") or [],
+            "query": previous.get("candidate_query"),
+            "background_query": previous.get("candidate_background"),
+            "coverage": previous.get("discovery_coverage") or {},
+        }
         for index, concept in enumerate(concepts, start=1):
             concept.setdefault("id", f"C{index}")
-    elif seed:
-        concepts = concepts_from_seed(seed)
-        derivation_note = (
-            f"Kavramlar tohum dosyasından alındı: {args.concept_seed}"
-        )
     else:
         concepts, derivation_note, mined = derive_concepts_from_literature(
-            framing, title, min_share=args.min_share, query_en=args.query_en
+            framing, title, min_share=args.min_share, query_en=args.query_en,
+            source=source, corpus=corpus_data["records"] if corpus_data is not None else None,
         )
 
-    project_domain = args.domain or (seed or {}).get("domain") or "education"
     if args.phase == 1:
         apply_domains(concepts, default=project_domain)
         if args.mesh:
@@ -1174,6 +1311,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                     for concept in applicable:
                         primary = (concept.get("english_terms") or [""])[0]
                         if primary:
+                            result = await mesh_mod.lookup(primary)
+                            attach_vocabulary(concept, result)
                             out[primary] = await mesh_mod.concepts_from_pubmed(
                                 primary,
                                 limit=20,
@@ -1198,9 +1337,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                         + "): eğitim alanyazını PubMed'de indekslenmez, MeSH "
                           "burada yanıltıcı olur."
                     )
-                derivation_note = " ".join(parts)
+                derivation_note += " " + " ".join(parts)
             except Exception as exc:  # noqa: BLE001
-                derivation_note = f"MeSH projeksiyonu atlandı: {str(exc)[:120]}"
+                derivation_note += f" MeSH projeksiyonu atlandı: {type(exc).__name__}"
 
     section_coverage = None
     if args.phase >= 2:
@@ -1235,7 +1374,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         title=title,
         derivation_note=derivation_note,
         mined=mined,
+        scope=(seed.get("scope") or {}) if seed is not None else ((previous or {}).get("framework") or {}).get("scope"),
     )
+    report["domain"] = project_domain
 
     if args.check:
         print(
@@ -1258,10 +1399,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         },
         enabled=args.timestamp,
         force=args.force,
-    )
-    # Sabit adlı kopya: sonraki aşamalar bunu okur.
-    (out_dir / f"{OUTPUT_STEM}.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     print(f"Yazıldı: {result['path']}")
     print(f"Yazıldı: {result['path'].with_suffix('.html')}")

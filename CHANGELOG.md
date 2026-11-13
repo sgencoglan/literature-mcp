@@ -1,5 +1,25 @@
 # Değişiklik Günlüğü
 
+## v2.14.0 — 2026-11-13
+
+- Site filtresiz, eş anlamlıları içeren Scholar sorguları ana keşif adımı
+  olarak eklendi; yayıncı sorguları tamamlayıcı olarak işaretlendi.
+- JSON/CSV/RIS içe aktaran `build_literature_audit.py` eklendi: yeni aday,
+  havuzda bulunan kayıt, başlık üzerinden olası tekrar ve DOI/PMID çelişkisi
+  ayrı gösterilir. Başlık eşleşmeleri otomatik birleştirilmez.
+- Bilinen yayınları bulma kontrolü, sözcüksel kavram boşlukları, soru türüne
+  göre kaynak öncelikleri ve gerçek arama günlüğü raporlanır. İnceleme
+  sırası kalite skoru sayılmaz; eksiksizlik iddiası üretilmez.
+
+- Kavram haritasına kaynak pasajı/kimliği, kapsam boyutları, ilişki önerileri
+  ve çalıştırılmamış PubMed/Scholar bağlantıları içeren `framework` eklendi.
+- Tıp/psikoloji kavram keşfi için PubMed kaynağı, çevrimdışı `--corpus`,
+  örneklem tekilleştirme ve API hatasını boş sonuçtan ayıran kapsam alanı eklendi.
+- MeSH doğrudan NLM RDF kaydından kimlik/tanımla okunur; PubMed'deki
+  birlikte-görülmeler artık eş anlamlı veya doğrudan karşılık sayılmaz.
+- Açık tohumun önceki haritaya önceliği, sonraki aşamadaki tanımsız değişken
+  ve aynı saniyedeki harita sürümlerini yanlış sırayla yükleme düzeltildi.
+
 ## Yayımlanmamış
 
 - Yerel donanım profili, kişisel performans ölçümleri, pilot rapor adları ve

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kaynak izi olan kavram çerçevesi",
+  "type": "object",
+  "required": ["schema", "status", "scope", "dimensions", "nodes", "relations", "search_plan", "missing_dimensions", "warnings", "limitations"],
+  "properties": {
+    "schema": {"const": "concept-framework/1"},
+    "status": {"const": "proposed"},
+    "scope": {"type": "object"},
+    "dimensions": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}},
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "term", "dimension", "status", "observed_in_sources", "vocabulary_match", "evidence", "proposed_definition", "vocabulary_definitions"],
+        "properties": {
+          "id": {"type": "string"},
+          "term": {"type": "string"},
+          "dimension": {"enum": ["phenomenon", "population", "context", "intervention", "outcome", "theory", "measurement", "ethics", "unclassified"]},
+          "status": {"const": "proposed"},
+          "observed_in_sources": {"type": "boolean"},
+          "vocabulary_match": {"type": "boolean"},
+          "evidence": {"type": "array", "items": {"type": "object", "required": ["source_id", "passage"]}},
+          "proposed_definition": {"type": "object", "required": ["text", "status"], "properties": {"text": {"type": "string"}, "status": {"enum": ["proposed", "missing"]}}},
+          "vocabulary_definitions": {"type": "array", "items": {"type": "object", "required": ["text", "source_id", "status"], "properties": {"status": {"const": "vocabulary_definition"}}}}
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {"type": "object", "required": ["source", "target", "type", "status"], "properties": {"source": {"type": "string"}, "target": {"type": "string"}, "status": {"const": "proposed"}}}
+    },
+    "search_plan": {
+      "type": "array",
+      "items": {"type": "object", "required": ["database", "purpose", "query", "url", "status"], "properties": {"database": {"enum": ["pubmed", "scholar"]}, "query": {"type": "string"}, "url": {"type": "string", "format": "uri"}, "status": {"const": "not_run"}}}
+    },
+    "missing_dimensions": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

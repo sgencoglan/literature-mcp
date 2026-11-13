@@ -11,13 +11,13 @@ MeSH hiyerarşiktir: bir terimin alt terimleri (narrower) genellikle arama için
 birlikte döndürür ki kavram haritası bunları sorguya çevirebilsin.
 
 Kullanım:
-    async with mesh.session():
-        entry = await mesh.lookup("<search-term>")
+    entry = await mesh.lookup("<search-term>")
 """
 
 from __future__ import annotations
 
 import logging
+import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
@@ -90,41 +90,79 @@ def _parse(xml_text: str) -> List[Dict[str, Any]]:
                 term_text = term.findtext("String")
                 if term_text:
                     concept_terms.append(term_text)
-        # Alt terimler: AllowableQualifiers değil, alt ağaç düğümleri.
-        narrower: List[str] = []
-        for node in record.findall(".//TreeNumberList/TreeNumber"):
-            if node.text and "." in node.text:
-                narrower.append(node.text)
         entries.append(
             {
                 "term": name,
                 "scope_note": scope_note,
                 "synonyms": sorted({t for t in concept_terms if t and t != name}),
                 "tree_numbers": [t for t in tree_numbers if t],
-                "narrower_tree_numbers": narrower,
+                "narrower_tree_numbers": [],
+                "identifier": record.findtext("DescriptorUI"),
             }
         )
     return entries
 
 
 async def lookup(term: str, retmax: int = 3) -> Dict[str, Any]:
-    """Bir terimi MeSH'te ara; kayıt yoksa boş sonuç döndür."""
+    """NLM RDF sözlüğünden tam etiket eşleşmesi getir; kısmi ad eşleşmesini doğrulama sayma.
+
+    Entrez MeSH EFetch, DescriptorRecord XML döndürmeyi garanti etmez.
+    RDF kaydı ve tercih edilen kavram ayrı okunur. Giriş terimleri ayrıca
+    döndürülür; bu terimler bütün bağlamlarda birebir eş anlamlı sayılmaz.
+    """
     term = (term or "").strip()
     if not term:
         return {"term": term, "found": False, "entries": [], "error": "boş terim"}
     try:
-        ids = await _esearch(term, retmax=retmax)
+        response = await polite_get(
+            "https://id.nlm.nih.gov/mesh/lookup/descriptor",
+            params={"label": term, "match": "exact", "limit": max(1, min(retmax, 10))},
+            attempts=3,
+        )
+        response.raise_for_status()
+        matches = response.json()
+        entries = []
+        for match in matches:
+            identifier = str(match.get("resource", "")).rsplit("/", 1)[-1]
+            if not re.fullmatch(r"D\d+", identifier):
+                continue
+            descriptor = await polite_get(
+                f"https://id.nlm.nih.gov/mesh/{identifier}.json", attempts=3,
+            )
+            descriptor.raise_for_status()
+            data = descriptor.json()
+            if data.get("http://id.nlm.nih.gov/mesh/vocab#active") is False:
+                continue
+            preferred = str(data.get("preferredConcept", "")).rsplit("/", 1)[-1]
+            if not re.fullmatch(r"M\d+", preferred):
+                raise MeshError("MeSH tercih edilen kavram kimliği eksik")
+            concept = await polite_get(
+                f"https://id.nlm.nih.gov/mesh/{preferred}.json", attempts=3,
+            )
+            concept.raise_for_status()
+            details = concept.json()
+            term_response = await polite_get(
+                "https://id.nlm.nih.gov/mesh/lookup/details",
+                params={"descriptor": identifier, "includes": "terms"}, attempts=3,
+            )
+            term_response.raise_for_status()
+            entry_terms = [str(t["label"]) for t in term_response.json().get("terms", []) if t.get("label")]
+            label = _rdf_text(data.get("label"))
+            entries.append({
+                "identifier": identifier,
+                "term": label,
+                "scope_note": _rdf_text(details.get("scopeNote")),
+                "synonyms": [],
+                "entry_terms": entry_terms,
+                "tree_numbers": [str(t).rsplit("/", 1)[-1] for t in data.get("treeNumber", [])],
+                "narrower_tree_numbers": [],
+                "broader_descriptors": data.get("broaderDescriptor", []),
+                "uri": f"https://id.nlm.nih.gov/mesh/{identifier}",
+                "match_type": "exact_label",
+            })
     except Exception as exc:  # noqa: BLE001 - ağ hatası haritayı düşürmesin
-        logger.info("MeSH esearch başarısız (%s): %s", term, exc)
-        return {"term": term, "found": False, "entries": [], "error": str(exc)[:200]}
-    if not ids:
-        return {"term": term, "found": False, "entries": [], "error": None}
-    try:
-        xml_text = await _efetch(ids)
-        entries = _parse(xml_text)
-    except Exception as exc:  # noqa: BLE001
-        logger.info("MeSH efetch başarısız (%s): %s", term, exc)
-        return {"term": term, "found": False, "entries": [], "error": str(exc)[:200]}
+        logger.info("MeSH RDF sorgusu başarısız: %s", type(exc).__name__)
+        return {"term": term, "found": False, "entries": [], "error": type(exc).__name__}
 
     # Arama terimleri: kayıt adı + eş anlamlılar, en fazla 10.
     search_terms: List[str] = []
@@ -140,6 +178,12 @@ async def lookup(term: str, retmax: int = 3) -> Dict[str, Any]:
         "search_terms": search_terms[:10],
         "error": None,
     }
+
+
+def _rdf_text(value: Any) -> str:
+    if isinstance(value, dict):
+        return str(value.get("@value") or "")
+    return str(value or "")
 
 
 def fallback_terms(
@@ -201,7 +245,13 @@ def _parse_pubmed_mesh(xml_text: str) -> List[Dict[str, Any]]:
     root = ET.fromstring(xml_text)
     for article in root.findall(".//PubmedArticle"):
         pmid = article.findtext(".//MedlineCitation/PMID")
-        title = article.findtext(".//Article/ArticleTitle") or ""
+        title = "".join(article.find(".//Article/ArticleTitle").itertext()) if article.find(".//Article/ArticleTitle") is not None else ""
+        abstract = "\n".join(
+            ((node.get("Label") + ": ") if node.get("Label") else "")
+            + "".join(node.itertext())
+            for node in article.findall(".//Article/Abstract/AbstractText")
+        )
+        doi = next((n.text for n in article.findall(".//ArticleId") if n.get("IdType") == "doi"), None)
         descriptors: List[str] = []
         qualifiers: List[str] = []
         for heading in article.findall(".//MeshHeadingList/MeshHeading"):
@@ -215,6 +265,9 @@ def _parse_pubmed_mesh(xml_text: str) -> List[Dict[str, Any]]:
             {
                 "pmid": pmid,
                 "title": title.strip(),
+                "abstract": abstract,
+                "doi": doi,
+                "year": article.findtext(".//JournalIssue/PubDate/Year"),
                 "mesh": descriptors,
                 "qualifiers": qualifiers,
             }
@@ -265,10 +318,13 @@ async def concepts_from_pubmed(
         )
         if response.status_code != 200:
             raise MeshError(f"PubMed esearch HTTP {response.status_code}")
-        ids = list(response.json().get("esearchresult", {}).get("idlist") or [])
+        search = response.json().get("esearchresult", {})
+        if search.get("ERROR") or search.get("errorlist"):
+            raise MeshError("PubMed sorgusu geçersiz")
+        ids = list(search.get("idlist") or [])
     except Exception as exc:  # noqa: BLE001
         logger.info("PubMed esearch başarısız (%s): %s", query, exc)
-        return {"query": query, "found": False, "articles": [], "mesh_terms": [], "error": str(exc)[:200]}
+        return {"query": query, "found": False, "articles": [], "mesh_terms": [], "error": type(exc).__name__}
 
     if not ids:
         return {"query": query, "found": False, "articles": [], "mesh_terms": [], "error": None}
@@ -284,11 +340,11 @@ async def concepts_from_pubmed(
         articles = _parse_pubmed_mesh(fetch.text)
     except Exception as exc:  # noqa: BLE001
         logger.info("PubMed efetch başarısız (%s): %s", query, exc)
-        return {"query": query, "found": False, "articles": [], "mesh_terms": [], "error": str(exc)[:200]}
+        return {"query": query, "found": False, "articles": [], "mesh_terms": [], "error": type(exc).__name__}
 
     counts: Dict[str, int] = {}
     for article in articles:
-        for term in article["mesh"]:
+        for term in set(article["mesh"]):
             if term.strip().lower() in CHECK_TAGS:
                 continue  # demografik/metodolojik etiket, kavram değil
             counts[term] = counts.get(term, 0) + 1
@@ -299,6 +355,7 @@ async def concepts_from_pubmed(
             "term": term,
             "count": count,
             "share": round(count / total, 2),
+            "pmids": [a["pmid"] for a in articles if term in a["mesh"]],
         }
         for term, count in ranked
         if count / total >= min_share
@@ -314,6 +371,8 @@ async def concepts_from_pubmed(
             if count / total < min_share
         ][:10],
         "min_share": min_share,
+        "total_results": int(search.get("count") or 0),
+        "query_translation": search.get("querytranslation"),
         "error": None,
     }
 

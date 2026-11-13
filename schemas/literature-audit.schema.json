@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Eksik kaynak ve kapsam denetimi",
+  "type": "object",
+  "required": ["schema", "generated_at", "domain", "purpose", "completeness", "summary", "comparison", "known_items", "concept_coverage", "source_priorities", "search_log", "next_actions", "limitations"],
+  "properties": {
+    "schema": {"const": "literature-audit/1"},
+    "generated_at": {"type": "string"},
+    "domain": {"enum": ["medical", "psychology", "education"]},
+    "purpose": {"enum": ["overview", "intervention"]},
+    "completeness": {"const": "not_established"},
+    "summary": {
+      "type": "object",
+      "required": ["baseline_records", "additional_records", "new_candidates", "already_present", "review_required", "known_total", "known_confirmed", "known_item_recovery"],
+      "properties": {
+        "known_item_recovery": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      }
+    },
+    "comparison": {
+      "type": "array", "items": {
+        "type": "object", "required": ["record", "classification", "match"],
+        "properties": {
+          "record": {"$ref": "#/$defs/record"},
+          "classification": {"enum": ["new_candidate", "already_present", "possible_duplicate", "identifier_conflict"]},
+          "match": {"$ref": "#/$defs/match"}
+        }
+      }
+    },
+    "known_items": {"type": "array", "items": {"type": "object", "required": ["record", "baseline_match", "combined_match"], "properties": {"record": {"$ref": "#/$defs/record"}, "baseline_match": {"$ref": "#/$defs/match"}, "combined_match": {"$ref": "#/$defs/match"}}}},
+    "concept_coverage": {"type": "array", "items": {"type": "object", "required": ["concept_id", "baseline_ids", "additional_ids", "basis", "evidence_status"], "properties": {"basis": {"const": "lexical_title_or_abstract"}, "evidence_status": {"const": "not_assessed"}}}},
+    "source_priorities": {"type": "array", "items": {"type": "object", "required": ["source", "status", "order", "kind", "action"], "properties": {"status": {"$ref": "#/$defs/searchStatus"}}}},
+    "search_log": {"type": "array", "items": {"type": "object", "required": ["source", "query", "status", "searched_at"], "properties": {"status": {"$ref": "#/$defs/searchStatus"}}}},
+    "next_actions": {"type": "array", "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "searchStatus": {"enum": ["ok", "partial", "error", "rate_limited", "not_run", "unavailable"]},
+    "record": {"type": "object", "required": ["record_id", "origin", "doi", "pmid", "title", "source", "read_level"], "properties": {"read_level": {"enum": ["metadata", "abstract"]}}},
+    "match": {"type": "object", "required": ["status", "matched_ids", "basis"], "properties": {"status": {"enum": ["confirmed", "title_candidate", "identifier_conflict", "not_found"]}, "matched_ids": {"type": "array", "items": {"type": "string"}}}}
+  }
+}

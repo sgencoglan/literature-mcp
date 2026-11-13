@@ -1,0 +1,6 @@
+{
+  "note": "Sentetik test verisi; gerçek yayın veya arama sonucu değildir.",
+  "records": [
+    {"doi": "10.1000/fixture-existing", "title": "Example construct in a sample population", "year": 2024, "source": "fixture"}
+  ]
+}

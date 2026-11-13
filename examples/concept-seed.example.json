@@ -1,0 +1,33 @@
+{
+  "title": "Örnek araştırma başlığı",
+  "domain": "psychology",
+  "framing": "Bu dosya bir giriş şablonudur; gerçek araştırma bulgusu içermez.",
+  "context_terms": ["example setting"],
+  "scope": {
+    "population": "Hedef grubu yazın",
+    "context": "Çalışma ortamını yazın",
+    "outcome": "İncelenecek sonuçları yazın"
+  },
+  "concepts": [
+    {
+      "id": "C1",
+      "term": "Örnek ana kavram",
+      "english_terms": ["example construct"],
+      "synonyms": [],
+      "role": "anchor",
+      "dimension": "phenomenon",
+      "source": "derived",
+      "definition": {},
+      "evidence": [],
+      "relations": []
+    },
+    {
+      "id": "C2",
+      "term": "Örnek bağlam",
+      "english_terms": ["example setting"],
+      "role": "context",
+      "dimension": "context",
+      "source": "derived"
+    }
+  ]
+}

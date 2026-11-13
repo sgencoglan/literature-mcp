@@ -1,0 +1,289 @@
+{
+  "schema": "literature-audit/1",
+  "generated_at": "2026-01-01T00:00:00+00:00",
+  "domain": "psychology",
+  "purpose": "overview",
+  "completeness": "not_established",
+  "summary": {
+    "baseline_records": 1,
+    "additional_records": 2,
+    "new_candidates": 1,
+    "already_present": 1,
+    "review_required": 0,
+    "known_total": 2,
+    "known_confirmed": 1,
+    "known_item_recovery": 0.5
+  },
+  "comparison": [
+    {
+      "record": {
+        "record_id": "additional-1",
+        "origin": "additional",
+        "doi": "10.1000/fixture-existing",
+        "pmid": "",
+        "title": "Example construct in a sample population",
+        "title_key": "example construct in a sample population",
+        "year": 2024,
+        "abstract": "",
+        "source": "unspecified",
+        "publication_type": "JOUR",
+        "is_retracted": null,
+        "read_level": "metadata"
+      },
+      "classification": "already_present",
+      "match": {
+        "status": "confirmed",
+        "matched_ids": [
+          "baseline-1"
+        ],
+        "basis": "doi_or_pmid"
+      }
+    },
+    {
+      "record": {
+        "record_id": "additional-2",
+        "origin": "additional",
+        "doi": "10.1000/fixture-new",
+        "pmid": "",
+        "title": "Example setting and its conceptual framework",
+        "title_key": "example setting and its conceptual framework",
+        "year": 2025,
+        "abstract": "",
+        "source": "unspecified",
+        "publication_type": "CHAP",
+        "is_retracted": null,
+        "read_level": "metadata"
+      },
+      "classification": "new_candidate",
+      "match": {
+        "status": "not_found",
+        "matched_ids": [],
+        "basis": null
+      },
+      "triage": {
+        "priority": 1,
+        "reasons": [
+          "Başlangıçta bulunmayan bilinen yayınla kimlik eşleşmesi",
+          "Başlangıçta görülmeyen kavramla sözcüksel eşleşme: Örnek bağlam"
+        ],
+        "quality_status": "not_assessed"
+      }
+    }
+  ],
+  "known_items": [
+    {
+      "record": {
+        "record_id": "known-1",
+        "origin": "known",
+        "doi": "10.1000/fixture-new",
+        "pmid": "",
+        "title": "Example setting and its conceptual framework",
+        "title_key": "example setting and its conceptual framework",
+        "year": null,
+        "abstract": "",
+        "source": "unspecified",
+        "publication_type": "unknown",
+        "is_retracted": null,
+        "read_level": "metadata"
+      },
+      "baseline_match": {
+        "status": "not_found",
+        "matched_ids": [],
+        "basis": null
+      },
+      "combined_match": {
+        "status": "confirmed",
+        "matched_ids": [
+          "additional-2"
+        ],
+        "basis": "doi_or_pmid"
+      },
+      "search_url": "https://scholar.google.com/scholar?q=10.1000%2Ffixture-new"
+    },
+    {
+      "record": {
+        "record_id": "known-2",
+        "origin": "known",
+        "doi": "10.1000/fixture-missing",
+        "pmid": "",
+        "title": "Example foundational work",
+        "title_key": "example foundational work",
+        "year": null,
+        "abstract": "",
+        "source": "unspecified",
+        "publication_type": "unknown",
+        "is_retracted": null,
+        "read_level": "metadata"
+      },
+      "baseline_match": {
+        "status": "not_found",
+        "matched_ids": [],
+        "basis": null
+      },
+      "combined_match": {
+        "status": "not_found",
+        "matched_ids": [],
+        "basis": null
+      },
+      "search_url": "https://scholar.google.com/scholar?q=10.1000%2Ffixture-missing"
+    }
+  ],
+  "concept_coverage": [
+    {
+      "concept_id": "C1",
+      "term": "Örnek ana kavram",
+      "terms_checked": [
+        "example construct"
+      ],
+      "baseline_ids": [
+        "baseline-1"
+      ],
+      "additional_ids": [
+        "additional-1"
+      ],
+      "basis": "lexical_title_or_abstract",
+      "evidence_status": "not_assessed",
+      "status": "present_in_baseline",
+      "suggested_searches": [
+        {
+          "concept_ids": [
+            "C1"
+          ],
+          "purpose": "Kavramı ayrı sına",
+          "database": "pubmed",
+          "query": "(\"example construct\"[Title/Abstract])",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/?term=%28%22example+construct%22%5BTitle%2FAbstract%5D%29",
+          "status": "not_run"
+        },
+        {
+          "concept_ids": [
+            "C1"
+          ],
+          "purpose": "Yayıncıdan bağımsız keşif",
+          "priority": "primary",
+          "database": "scholar",
+          "query": "\"example construct\"",
+          "url": "https://scholar.google.com/scholar?q=%22example+construct%22",
+          "status": "not_run"
+        }
+      ]
+    },
+    {
+      "concept_id": "C2",
+      "term": "Örnek bağlam",
+      "terms_checked": [
+        "example setting"
+      ],
+      "baseline_ids": [],
+      "additional_ids": [
+        "additional-2"
+      ],
+      "basis": "lexical_title_or_abstract",
+      "evidence_status": "not_assessed",
+      "status": "additional_only",
+      "suggested_searches": [
+        {
+          "concept_ids": [
+            "C2"
+          ],
+          "purpose": "Kavramı ayrı sına",
+          "database": "pubmed",
+          "query": "(\"example setting\"[Title/Abstract])",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/?term=%28%22example+setting%22%5BTitle%2FAbstract%5D%29",
+          "status": "not_run"
+        },
+        {
+          "concept_ids": [
+            "C2"
+          ],
+          "purpose": "Yayıncıdan bağımsız keşif",
+          "priority": "primary",
+          "database": "scholar",
+          "query": "\"example setting\"",
+          "url": "https://scholar.google.com/scholar?q=%22example+setting%22",
+          "status": "not_run"
+        }
+      ]
+    }
+  ],
+  "source_priorities": [
+    {
+      "order": 1,
+      "source": "pubmed",
+      "label": "PubMed / MEDLINE",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/",
+      "kind": "bibliographic",
+      "status": "not_run",
+      "action": "Aramayı tamamla veya erişim sınırını kaydet"
+    },
+    {
+      "order": 2,
+      "source": "psycinfo",
+      "label": "APA PsycInfo",
+      "url": "https://www.apa.org/pubs/databases/psycinfo",
+      "kind": "bibliographic",
+      "status": "not_run",
+      "action": "Aramayı tamamla veya erişim sınırını kaydet"
+    },
+    {
+      "order": 3,
+      "source": "embase",
+      "label": "Embase",
+      "url": "https://www.embase.com/",
+      "kind": "bibliographic",
+      "status": "not_run",
+      "action": "Aramayı tamamla veya erişim sınırını kaydet"
+    },
+    {
+      "order": 4,
+      "source": "scholar",
+      "label": "Google Scholar",
+      "url": "https://scholar.google.com/",
+      "kind": "discovery",
+      "status": "not_run",
+      "action": "Aramayı tamamla veya erişim sınırını kaydet"
+    },
+    {
+      "order": 5,
+      "source": "citation_chaining",
+      "label": "Kaynakça ve ileri atıf takibi",
+      "url": null,
+      "kind": "citation_tracking",
+      "status": "not_run",
+      "action": "Aramayı tamamla veya erişim sınırını kaydet"
+    }
+  ],
+  "search_log": [
+    {
+      "source": "pubmed",
+      "query": "example construct",
+      "status": "not_run",
+      "searched_at": null,
+      "note": "Giriş şablonu; sorgu henüz çalıştırılmadı.",
+      "screening_status": "not_reported"
+    },
+    {
+      "source": "scholar",
+      "query": "example setting",
+      "status": "not_run",
+      "searched_at": null,
+      "note": "İçe aktarılan sentetik dosya gerçek Scholar araması değildir.",
+      "screening_status": "not_reported"
+    }
+  ],
+  "next_actions": [
+    "1 bilinen yayın doğrulanmış kimlikle bulunamadı; DOI/PMID ve sorguları kontrol et.",
+    "Tarama durumu tamamlanmamış kaynaklar: PubMed / MEDLINE, APA PsycInfo, Embase, Google Scholar, Kaynakça ve ileri atıf takibi",
+    "Yeni adayların konuya uygunluğunu, yöntemini ve varsa geri çekilme bilgisini değerlendir.",
+    "İlgili derlemelerin kaynakçalarını ve temel yayınlara atıf yapan çalışmaları tara."
+  ],
+  "limitations": [
+    "Eksiksizlik kanıtlanmadı; sonuçlar yalnızca verilen kayıt ve arama günlüğü için geçerlidir.",
+    "Bilinen yayınları bulma oranı, tüm literatürün yakalanma oranı değildir.",
+    "Yeni aday, önemli/kaliteli veya konuya uygun olduğu doğrulanmış yayın anlamına gelmez.",
+    "İndeks, yayıncı ve atıf sayısı tek başına makalenin yöntem kalitesini göstermez.",
+    "Başlık eşleşmesi otomatik tekilleştirilmez; DOI/PMID çelişkileri incelemeye bırakılır.",
+    "Kavramın başlık/özette görülmesi içerik kapsamı veya bilimsel kanıt değildir.",
+    "Arama bağlantısı veya içe aktarılan kaydın source alanı, veritabanı tarandığını kanıtlamaz."
+  ]
+}

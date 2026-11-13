@@ -4,8 +4,18 @@
 
 Kaynaklı literatür taraması, kanıta dayalı bölüm taslağı ve mevcut taslak denetimi için iki yerel MCP sunucusu, şemalar ve HTML üreticileri.
 
-> **Sürüm:** v2.13.2. Son public sürüm v2.7.1. Depoda PDF, indeks,
+> **Sürüm:** v2.14.0. Son public sürüm v2.7.1. Depoda PDF, indeks,
 > kişisel proje kaydı veya yayımlanmamış bölüm metni tutulmaz.
+
+Konu başlığından kaynak izi olan kavram çerçevesi oluşturmak için
+[kavram çerçevesi kullanımını](docs/concept-framework.md) inceleyin.
+PubMed/OpenAlex aday keşfi, doğrudan MeSH sözlük tanımları ve yayıncıya göre
+Scholar arama bağlantıları içerir; model önerisi ile kaynakta görülme ayrıdır.
+
+“Önemli bir kaynak kaçırıldı mı?” kontrolü için
+[kaynak kapsam denetimini](docs/literature-audit.md) kullanın: site filtresiz
+Scholar keşfi, JSON/CSV/RIS içe aktarma, DOI/PMID ve başlık karşılaştırması,
+bilinen yayınlarla kontrol ve taranmamış kaynakları gösteren HTML raporu.
 
 ## Ne çözer?
 

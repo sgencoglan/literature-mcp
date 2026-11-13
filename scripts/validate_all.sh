@@ -55,6 +55,8 @@ from jsonschema import Draft202012Validator
 
 root = Path(".")
 pairs = [
+    ("schemas/concept-framework.schema.json", "examples/concept-framework.example.json"),
+    ("schemas/literature-audit.schema.json", "examples/literature-audit.example.json"),
     ("schemas/fulltext-list.schema.json", "examples/fulltext-list.example.json"),
     ("schemas/topic-discovery.schema.json", "examples/topic-discovery.example.json"),
     ("schemas/study-design.schema.json", "examples/study-design.example.json"),
